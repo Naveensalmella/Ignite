@@ -199,7 +199,7 @@ export default function App() {
   const pages = {
     dashboard: <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />,
     training: <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} />,
-    nutrition: <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} />,
+    nutrition: <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} profile={profile} />,
     dailyquest: <DailyQuestPage habits={habits} setHabits={setHabits} habitLog={habitLog} setHabitLog={setHabitLog} addXP={addXP} />,
     missions: <MissionsPage tasks={tasks} setTasks={setTasks} addXP={addXP} />,
     focus: <FocusTimer addXP={addXP} />,
