@@ -2,21 +2,16 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// ═══════════════════════════════════════
-// PASTE YOUR FIREBASE CONFIG BELOW
-// Get it from: Firebase Console → Project Settings → Your apps → Config
-// ═══════════════════════════════════════
-
+// Config loaded from environment variables (.env file)
+// NEVER commit actual keys to GitHub
 const firebaseConfig = {
-    apiKey: "AIzaSyC5YCv_7O_VxeQwLdCFMWVpRhHvdULMmOU",
-    authDomain: "ignite-app-fbb69.firebaseapp.com",
-    projectId: "ignite-app-fbb69",
-    storageBucket: "ignite-app-fbb69.firebasestorage.app",
-    messagingSenderId: "618449695536",
-    appId: "1:618449695536:web:e2c58e57dd26fd49d6cef5"
+    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
-
-// ═══════════════════════════════════════
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
