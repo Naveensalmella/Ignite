@@ -1,37 +1,31 @@
-// Storage utility — works in both Claude artifacts and deployed websites
-const memStore = {};
+import { db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
+// Firestore-powered storage — syncs across all devices
 const store = {
-  async get(k) {
-    // Try Claude's window.storage first
-    if (typeof window !== 'undefined' && window.storage) {
-      try {
-        const r = await window.storage.get(k);
-        if (r && r.value) return JSON.parse(r.value);
-        return null;
-      } catch { /* fall through */ }
-    }
-    // Fallback to localStorage for deployed version
+  // Get user data from Firestore
+  async getUserData(userId) {
     try {
-      const v = localStorage.getItem(`ignite_${k}`);
-      return v ? JSON.parse(v) : null;
-    } catch {
-      return memStore[k] || null;
+      const docRef = doc(db, 'users', userId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) return docSnap.data();
+      return null;
+    } catch (e) {
+      console.error('Firestore read error:', e);
+      return null;
     }
   },
 
-  async set(k, v) {
-    memStore[k] = v;
-    // Try Claude's window.storage first
-    if (typeof window !== 'undefined' && window.storage) {
-      try { await window.storage.set(k, JSON.stringify(v)); return true; } catch { /* fall through */ }
-    }
-    // Fallback to localStorage
+  // Save user data to Firestore (merges with existing)
+  async saveUserData(userId, data) {
     try {
-      localStorage.setItem(`ignite_${k}`, JSON.stringify(v));
+      await setDoc(doc(db, 'users', userId), data, { merge: true });
       return true;
-    } catch { return true; }
-  }
+    } catch (e) {
+      console.error('Firestore write error:', e);
+      return false;
+    }
+  },
 };
 
 export default store;
