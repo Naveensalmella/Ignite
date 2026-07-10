@@ -99,7 +99,7 @@ COACHING GUIDELINES:
     } catch (err) {
       setChatHistory(h => [...h, {
         role: "assistant",
-        content: `⚠️ ${err.message}\n\nMake sure the ANTHROPIC_API_KEY is set in your Vercel environment variables. Go to Vercel → Settings → Environment Variables.`
+        content: `⚠️ ${err.message}\n\nMake sure GEMINI_API_KEY is set in Vercel → Settings → Environment Variables. Get a free key at aistudio.google.com/apikey`
       }]);
     }
     setLoading(false);
