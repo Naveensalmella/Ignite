@@ -207,7 +207,7 @@ export default function App() {
     return <OnboardingPage onComplete={handleOnboardingComplete} />;
   }
 
-  const appState = { foodLog, habits, habitLog, tasks, journal, finances, profile, user };
+  const appState = { foodLog, habits, habitLog, tasks, journal, finances, profile, user, pillarProg };
   const pages = {
     dashboard: <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />,
     training: <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} />,
