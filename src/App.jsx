@@ -20,6 +20,7 @@ import ProfilePage from './components/ProfilePage';
 import XPToast from './components/XPToast';
 import LevelUpOverlay from './components/LevelUpOverlay';
 import HeaderXPBar from './components/HeaderXPBar';
+import OnboardingPage from './components/OnboardingPage';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -194,6 +195,17 @@ export default function App() {
 
   // Auth screen (not logged in)
   if (!user) return <AuthPage />;
+
+  // Onboarding for new users
+  const handleOnboardingComplete = async (profileData) => {
+    setProfile(p => ({ ...p, ...profileData }));
+    // Save immediately
+    await store.saveUserData(user.uid, { profile: { ...profile, ...profileData } });
+  };
+
+  if (!profile.onboardingComplete) {
+    return <OnboardingPage onComplete={handleOnboardingComplete} />;
+  }
 
   const appState = { foodLog, habits, habitLog, tasks, journal, finances, profile, user };
   const pages = {
