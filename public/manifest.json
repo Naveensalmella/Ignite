@@ -1,18 +1,9 @@
 {
   "short_name": "IGNITE",
   "name": "IGNITE — Level Up Your Life",
-  "description": "Gamified self-improvement with workouts, combat training, and RPG leveling",
-  "icons": [
-    {
-      "src": "logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ],
+  "icons": [{"src": "logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#060a0c",
-  "background_color": "#060a0c",
-  "orientation": "portrait"
+  "theme_color": "#07090d",
+  "background_color": "#07090d"
 }

@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { today } from '../utils';
+import { useState } from 'react';
 import { XP } from '../data';
+import { today } from '../utils';
 
 export default function MissionsPage({tasks,setTasks,addXP}){
   const [newT,setNewT]=useState("");const [pri,setPri]=useState("medium");const [filter,setFilter]=useState("all");

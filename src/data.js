@@ -1,4 +1,4 @@
-// IGNITE — All Data & Constants
+// IGNITE — Data & Constants
 
 export const FOOD_DB = [
   {id:1,name:"Apple",emoji:"🍎",cal:95,protein:0.5,carbs:25,fat:0.3,fiber:4.4,category:"Fruits"},
@@ -326,6 +326,5 @@ export const PILLAR_MISSIONS={
 export const XP={workout:60,combat:40,habit:12,food:3,journal:10,mood:5,focus:15,finance:3,gratitude:8,task_epic:20,task_rare:12,task_common:8};
 export const DAILY_PENALTY=40;
 export const STREAK_MULT={7:1.5,14:2,30:2.5,60:3};
-
 
 // ── CSS ──

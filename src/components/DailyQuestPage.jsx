@@ -16,8 +16,8 @@ function MiniRing({ pct, color, size = 80, stroke = 6, children }) {
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
           strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))}
           strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} />
       </svg>
@@ -144,7 +144,7 @@ export default function DailyQuestPage({ habits, setHabits, habitLog, setHabitLo
           </div>
           <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
             {progress >= 100 ? "All quests complete! 🎉" :
-              `${habits.length - checked.length} remaining today`}
+             `${habits.length - checked.length} remaining today`}
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
             <span style={{ fontSize: 12, color: "#fbbf24", fontWeight: 600 }}>+{xpEarned} XP earned</span>
@@ -323,12 +323,12 @@ export default function DailyQuestPage({ habits, setHabits, habitLog, setHabitLo
                 <div key={i} style={{
                   padding: 6, borderRadius: 6, fontSize: 12, fontWeight: 600,
                   background: day?.completed ? "rgba(34,197,94,.15)" :
-                    day?.partial ? "rgba(245,158,11,.1)" :
-                      day?.date === d ? "rgba(16,185,129,.05)" : "transparent",
+                             day?.partial ? "rgba(245,158,11,.1)" :
+                             day?.date === d ? "rgba(16,185,129,.05)" : "transparent",
                   border: day?.date === d ? "1px solid rgba(16,185,129,.2)" : "1px solid transparent",
                   color: day?.completed ? "#22c55e" :
-                    day?.partial ? "#f59e0b" :
-                      day ? "#4b5563" : "transparent",
+                         day?.partial ? "#f59e0b" :
+                         day ? "#4b5563" : "transparent",
                 }}>
                   {day?.day || ""}
                   {day?.completed && <div style={{ width: 4, height: 4, borderRadius: 2, background: "#22c55e", margin: "2px auto 0" }} />}

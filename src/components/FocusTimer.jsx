@@ -27,8 +27,8 @@ function MiniRing({ pct, color, size, stroke = 6, children }) {
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
           strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))}
           strokeLinecap="round" style={{ transition: "stroke-dashoffset .6s" }} />
       </svg>
@@ -339,7 +339,7 @@ export default function FocusTimer({ addXP, focusLog, setFocusLog }) {
                 {[60, 90, 120, 150, 180].map(m => (
                   <span key={m} className={`chip ${dailyGoal === m ? "chip-a" : "chip-i"}`}
                     onClick={() => setDailyGoal(m)} style={{ flex: 1, justifyContent: "center" }}>
-                    {m >= 60 ? `${m / 60}h` : `${m}m`}{m === 60 ? "" : m === 120 ? "" : ""}
+                    {m >= 60 ? `${m/60}h` : `${m}m`}{m === 60 ? "" : m === 120 ? "" : ""}
                   </span>
                 ))}
               </div>

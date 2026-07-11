@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { PILLAR_MISSIONS, XP } from '../data';
+import { useState } from 'react';
+import { PILLAR_MISSIONS } from '../data';
 
 export default function GrowthPage({pillarProg,setPillarProg}){
   const [openPillar,setOpenPillar]=useState(null);

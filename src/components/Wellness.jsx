@@ -29,8 +29,8 @@ function MiniRing({ pct, color, size = 52, stroke = 5, children }) {
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
           strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))}
           strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} />
       </svg>
@@ -148,8 +148,7 @@ export default function Wellness({ journal, setJournal, addXP }) {
         <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 12 }}>
           {MOODS.map(m => (
             <div key={m.val} onClick={() => update("mood", m.val)}
-              style={{
-                textAlign: "center", cursor: "pointer", padding: "8px 12px", borderRadius: 10, transition: "all .25s",
+              style={{ textAlign: "center", cursor: "pointer", padding: "8px 12px", borderRadius: 10, transition: "all .25s",
                 background: entry.mood === m.val ? `${m.color}15` : "transparent",
                 border: entry.mood === m.val ? `1px solid ${m.color}40` : "1px solid transparent",
                 transform: entry.mood === m.val ? "scale(1.1)" : "scale(1)",
@@ -254,10 +253,8 @@ export default function Wellness({ journal, setJournal, addXP }) {
               return (
                 <div key={date} style={{ marginBottom: 4 }}>
                   <div onClick={() => setHistoryDate(isOpen ? null : date)}
-                    style={{
-                      display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 8, cursor: "pointer",
-                      background: isOpen ? "rgba(16,185,129,.04)" : "transparent"
-                    }}>
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 8, cursor: "pointer",
+                      background: isOpen ? "rgba(16,185,129,.04)" : "transparent" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{ fontSize: 22 }}>{moodInfo?.emoji || "😐"}</span>
                       <div>

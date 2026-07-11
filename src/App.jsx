@@ -181,16 +181,16 @@ export default function App() {
       if (x.type === "add_task") setTasks(p => [...p, { id: Date.now(), text: x.text, done: false, priority: x.priority || "medium", created: today() }]);
       if (x.type === "add_habit") setHabits(p => [...p, { id: `h${Date.now()}`, name: x.name, icon: x.icon || "⭐", pillar: x.pillar || "power" }]);
       if (x.type === "navigate") setPage(x.page);
-    } catch { }
+    } catch {}
   };
 
   // Loading screen
   if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#060a0c" }}>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 44, marginBottom: 12, animation: "float 2s ease-in-out infinite", filter: "drop-shadow(0 0 15px rgba(16,185,129,.5))" }}>🔥</div>
-        <div style={{ color: "#10b981", fontSize: 22, fontWeight: 900, letterSpacing: 6, fontFamily: "Rajdhani,sans-serif" }}>IGNITE</div>
-        <div style={{ color: "#6b7280", fontSize: 12, marginTop: 8 }}>Loading your data...</div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#060a0c"}}>
+      <div style={{textAlign:"center"}}>
+        <div style={{fontSize:44,marginBottom:12,animation:"float 2s ease-in-out infinite",filter:"drop-shadow(0 0 15px rgba(16,185,129,.5))"}}>🔥</div>
+        <div style={{color:"#10b981",fontSize:22,fontWeight:900,letterSpacing:6,fontFamily:"Rajdhani,sans-serif"}}>IGNITE</div>
+        <div style={{color:"#6b7280",fontSize:12,marginTop:8}}>Loading your data...</div>
       </div>
     </div>
   );
@@ -228,45 +228,45 @@ export default function App() {
     <>
       <XPToast xpEvents={xpEvents} />
       {levelUp && <LevelUpOverlay level={levelUp.level} rank={levelUp.rank} onClose={() => setLevelUp(null)} />}
-      <div style={{ display: "flex", height: "100vh", background: "#060a0c", overflow: "hidden", position: "relative" }}>
-        <div style={{ position: "fixed", top: "-20%", right: "-10%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle,rgba(16,185,129,.025),transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{display:"flex",height:"100vh",background:"#060a0c",overflow:"hidden",position:"relative"}}>
+        <div style={{position:"fixed",top:"-20%",right:"-10%",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle,rgba(16,185,129,.025),transparent 70%)",pointerEvents:"none",zIndex:0}} />
 
-        {sideOpen && <div onClick={() => setSideOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 45, backdropFilter: "blur(4px)" }} />}
+        {sideOpen && <div onClick={() => setSideOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:45,backdropFilter:"blur(4px)"}} />}
 
         {/* Sidebar */}
-        <nav style={{ width: sideOpen ? 240 : 72, minWidth: sideOpen ? 240 : 72, background: "linear-gradient(180deg,rgba(10,10,18,.99),rgba(8,8,14,.99))", borderRight: "1px solid rgba(16,185,129,.06)", display: "flex", flexDirection: "column", transition: "all .3s", zIndex: 50, position: isMobile ? "fixed" : "relative", height: "100%", left: isMobile && !sideOpen ? -72 : 0 }}>
-          <div onClick={() => setSideOpen(!sideOpen)} style={{ padding: "20px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid rgba(255,255,255,.04)" }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0, fontFamily: "Rajdhani,sans-serif" }}>I</div>
-            {sideOpen && <span style={{ fontSize: 18, fontWeight: 800, fontFamily: "Rajdhani,sans-serif", background: "linear-gradient(135deg,#10b981,#06b6d4,#22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: 4 }}>IGNITE</span>}
+        <nav style={{width:sideOpen?240:72,minWidth:sideOpen?240:72,background:"linear-gradient(180deg,rgba(10,10,18,.99),rgba(8,8,14,.99))",borderRight:"1px solid rgba(16,185,129,.06)",display:"flex",flexDirection:"column",transition:"all .3s",zIndex:50,position:isMobile?"fixed":"relative",height:"100%",left:isMobile&&!sideOpen?-72:0}}>
+          <div onClick={() => setSideOpen(!sideOpen)} style={{padding:"20px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+            <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#10b981,#06b6d4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:"#fff",flexShrink:0,fontFamily:"Rajdhani,sans-serif"}}>I</div>
+            {sideOpen && <span style={{fontSize:18,fontWeight:800,fontFamily:"Rajdhani,sans-serif",background:"linear-gradient(135deg,#10b981,#06b6d4,#22d3ee)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:4}}>IGNITE</span>}
           </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: "12px 0" }}>
+          <div style={{flex:1,overflowY:"auto",padding:"12px 0"}}>
             {navItems.map(n => (
-              <div key={n.key} className={`ni ${page === n.key ? "act" : ""}`} onClick={() => { setPage(n.key); setSideOpen(false) }}>
-                <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>{n.icon}</span>
+              <div key={n.key} className={`ni ${page===n.key?"act":""}`} onClick={() => {setPage(n.key);setSideOpen(false)}}>
+                <span style={{fontSize:18,width:24,textAlign:"center",flexShrink:0}}>{n.icon}</span>
                 {sideOpen && <span>{n.label}</span>}
               </div>
             ))}
           </div>
-          <div className="ni" onClick={logout} style={{ margin: "8px 8px 16px", color: "#ef4444" }}>
-            <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>⏻</span>
+          <div className="ni" onClick={logout} style={{margin:"8px 8px 16px",color:"#ef4444"}}>
+            <span style={{fontSize:18,width:24,textAlign:"center"}}>⏻</span>
             {sideOpen && <span>Log Out</span>}
           </div>
         </nav>
 
         {/* Main Content */}
-        <main style={{ flex: 1, overflow: "auto", position: "relative", zIndex: 1 }}>
-          <header style={{ padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(6,10,12,.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(16,185,129,.05)", position: "sticky", top: 0, zIndex: 30, gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-              {isMobile && <span onClick={() => setSideOpen(true)} style={{ cursor: "pointer", fontSize: 22, color: "#6b7280" }}>☰</span>}
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>{navItems.find(n => n.key === page)?.label}</h2>
+        <main style={{flex:1,overflow:"auto",position:"relative",zIndex:1}}>
+          <header style={{padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",background:"rgba(6,10,12,.92)",backdropFilter:"blur(20px)",borderBottom:"1px solid rgba(16,185,129,.05)",position:"sticky",top:0,zIndex:30,gap:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
+              {isMobile && <span onClick={() => setSideOpen(true)} style={{cursor:"pointer",fontSize:22,color:"#6b7280"}}>☰</span>}
+              <h2 style={{fontSize:16,fontWeight:700,color:"#f3f4f6",fontFamily:"Rajdhani,sans-serif",letterSpacing:1}}>{navItems.find(n => n.key === page)?.label}</h2>
             </div>
             <HeaderXPBar totalXP={totalXP} streak={streak} />
-            <div onClick={() => setPage("profile")} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "4px 10px 4px 14px", borderRadius: 100, background: "rgba(16,185,129,.04)", border: "1px solid rgba(16,185,129,.08)", flexShrink: 0 }}>
-              <span className="do" style={{ fontSize: 12, color: "#34d399" }}>{user.name}</span>
-              <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff" }}>{user.name?.[0]?.toUpperCase() || "U"}</div>
+            <div onClick={() => setPage("profile")} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"4px 10px 4px 14px",borderRadius:100,background:"rgba(16,185,129,.04)",border:"1px solid rgba(16,185,129,.08)",flexShrink:0}}>
+              <span className="do" style={{fontSize:12,color:"#34d399"}}>{user.name}</span>
+              <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#10b981,#06b6d4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff"}}>{user.name?.[0]?.toUpperCase() || "U"}</div>
             </div>
           </header>
-          <div className="fade-in" key={page} style={{ padding: 24, maxWidth: 1120, margin: "0 auto" }}>
+          <div className="fade-in" key={page} style={{padding:24,maxWidth:1120,margin:"0 auto"}}>
             {pages[page]}
           </div>
         </main>
