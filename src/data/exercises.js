@@ -258,6 +258,65 @@ export const COOLDOWN = [
   {name:"Deep Breathing",sets:1,reps:60,cal:1,anim:"plank",timed:true,steps:["4 count inhale, 4 count hold, 4 count exhale"],tips:["Calm the nervous system"]},
 ];
 
+
+// ── RUNNING PROGRAMS ──
+export const RUNNING = {
+  easy: [
+    {name:"Easy Jog",sets:1,reps:1200,cal:120,muscle:"Cardio, Legs",bodyPart:"cardio",difficulty:1,anim:"run",timed:true,
+      steps:["Maintain conversational pace","Breathe rhythmically — in through nose, out through mouth","Land midfoot, not on heels","Keep shoulders relaxed, arms at 90°"],tips:["If you can't talk, slow down","This builds your aerobic base"]},
+    {name:"Walk-Run Intervals",sets:6,reps:120,cal:80,muscle:"Cardio, Endurance",bodyPart:"cardio",difficulty:1,anim:"run",timed:true,
+      steps:["Run 2 minutes at comfortable pace","Walk 1 minute to recover","Repeat 6 rounds","Total: 18 minutes"],tips:["Perfect for beginners","Gradually increase run time"]},
+  ],
+  moderate: [
+    {name:"Tempo Run",sets:1,reps:1500,cal:180,muscle:"Cardio, Stamina",bodyPart:"cardio",difficulty:2,anim:"run",timed:true,
+      steps:["5 min warm-up jog","15 min at 'comfortably hard' pace","5 min cool-down jog","You should be able to say short phrases but not chat"],tips:["This is your race pace training","Push but don't sprint"]},
+    {name:"Sprint Intervals",sets:8,reps:30,cal:150,muscle:"Speed, Power",bodyPart:"legs",difficulty:2,anim:"run",timed:true,
+      steps:["Sprint all-out for 30 seconds","Walk/jog 60 seconds to recover","Repeat 8 rounds","Warm up with 5 min jog first"],tips:["True sprints = maximum effort","Walk recovery, don't stand still"]},
+    {name:"Hill Sprints",sets:6,reps:30,cal:130,muscle:"Power, Glutes, Calves",bodyPart:"legs",difficulty:2,anim:"run",timed:true,
+      steps:["Find a hill or incline","Sprint up for 30 seconds","Walk back down to recover","Repeat 6 times"],tips:["Lean slightly forward uphill","Pump arms hard"]},
+  ],
+  advanced: [
+    {name:"Long Run",sets:1,reps:2400,cal:300,muscle:"Endurance, Mental",bodyPart:"cardio",difficulty:3,anim:"run",timed:true,
+      steps:["Run at easy pace for 40 minutes","Stay relaxed and consistent","Hydrate before and during if needed","This builds mental toughness"],tips:["Slow down if breathing gets hard","The last 10 min is where you grow"]},
+    {name:"Fartlek Run",sets:1,reps:1800,cal:200,muscle:"Speed Endurance",bodyPart:"cardio",difficulty:2,anim:"run",timed:true,
+      steps:["30 min total: alternate fast and slow","Sprint to a landmark, jog to the next","No set pattern — play with speed","Mix of speed and recovery"],tips:["Swedish for 'speed play'","Makes running fun and varied"]},
+  ],
+};
+
+// ── YOGA / FLEXIBILITY ──
+export const YOGA = [
+  {name:"Sun Salutation (Surya Namaskar)",sets:3,reps:1,cal:8,muscle:"Full Body, Flexibility",bodyPart:"full",difficulty:1,anim:"yoga",
+    steps:["Mountain pose → Forward fold → Halfway lift","Step back to plank → Lower to floor","Cobra → Downward dog → Step forward","Halfway lift → Forward fold → Mountain"],tips:["One breath per movement","Flow smoothly between poses"]},
+  {name:"Warrior I",sets:1,reps:30,cal:3,muscle:"Legs, Core, Balance",bodyPart:"legs",difficulty:1,anim:"yoga",timed:true,
+    steps:["Lunge position, rear foot at 45°","Arms overhead, hips square forward","Hold and breathe deeply","Switch sides"],tips:["Press rear heel into ground","Sink deeper into the front knee"]},
+  {name:"Warrior II",sets:1,reps:30,cal:3,muscle:"Legs, Arms, Core",bodyPart:"legs",difficulty:1,anim:"yoga",timed:true,
+    steps:["Wide stance, front foot forward, back foot sideways","Arms extended parallel to ground","Gaze over front fingertips","Hold each side 30 seconds"],tips:["Keep front knee over ankle","Strong arms, relaxed shoulders"]},
+  {name:"Downward Dog",sets:1,reps:45,cal:3,muscle:"Shoulders, Hamstrings, Back",bodyPart:"back",difficulty:1,anim:"yoga",timed:true,
+    steps:["Hands and feet on ground, hips high","Press chest toward thighs","Heels reaching toward ground","Spread fingers wide, press through palms"],tips:["Bend knees if hamstrings are tight","Create length in the spine"]},
+  {name:"Pigeon Pose",sets:1,reps:60,cal:2,muscle:"Hips, Glutes",bodyPart:"glutes",difficulty:1,anim:"yoga",timed:true,
+    steps:["From downward dog, bring right knee forward","Right shin across the mat","Extend left leg straight back","Fold forward over front leg"],tips:["Best hip opener in yoga","Hold 60 seconds each side"]},
+  {name:"Tree Pose",sets:1,reps:30,cal:2,muscle:"Balance, Core, Ankles",bodyPart:"core",difficulty:1,anim:"yoga",timed:true,
+    steps:["Stand on one leg","Place other foot on inner thigh or calf","Hands at heart or overhead","Find a fixed point to gaze at"],tips:["Never place foot on knee","Start with foot on calf if needed"]},
+  {name:"Bridge Pose",sets:3,reps:20,cal:4,muscle:"Glutes, Back, Core",bodyPart:"glutes",difficulty:1,anim:"yoga",timed:true,
+    steps:["Lie on back, knees bent, feet flat","Lift hips toward ceiling","Squeeze glutes at top","Lower slowly"],tips:["Press through heels","Keep knees hip-width apart"]},
+  {name:"Cobra Stretch",sets:1,reps:30,cal:2,muscle:"Back, Chest",bodyPart:"back",difficulty:1,anim:"yoga",timed:true,
+    steps:["Lie face down, hands under shoulders","Press up, lifting chest","Keep hips on ground","Look slightly upward"],tips:["Don't push too high at first","Feel the stretch in your abs"]},
+];
+
+// ── HIIT WORKOUTS ──
+export const HIIT = [
+  {name:"Tabata Burpees",sets:8,reps:20,cal:15,muscle:"Full Body",bodyPart:"cardio",difficulty:2,anim:"hiit",timed:true,
+    steps:["20 seconds all-out burpees","10 seconds rest","Repeat 8 rounds","Total: 4 minutes of hell"],tips:["Go MAXIMUM effort each round","10 sec rest is sacred — use it"]},
+  {name:"Jump Squat + Push-up Combo",sets:5,reps:30,cal:12,muscle:"Legs, Chest, Cardio",bodyPart:"cardio",difficulty:2,anim:"hiit",timed:true,
+    steps:["30 sec: Alternate jump squats and push-ups","30 sec rest","Repeat 5 rounds","No pausing during work intervals"],tips:["Quality reps > speed","Transition quickly between exercises"]},
+  {name:"Mountain Climber Blitz",sets:4,reps:30,cal:10,muscle:"Core, Shoulders, Cardio",bodyPart:"core",difficulty:1,anim:"hiit",timed:true,
+    steps:["30 seconds mountain climbers at max speed","30 seconds rest","Repeat 4 rounds","Keep hips level"],tips:["Drive knees to chest aggressively","Arms locked, core engaged"]},
+  {name:"EMOM (Every Minute on the Minute)",sets:10,reps:60,cal:12,muscle:"Full Body",bodyPart:"cardio",difficulty:2,anim:"hiit",timed:true,
+    steps:["Minute 1: 10 burpees, rest remaining time","Minute 2: 15 squats, rest remaining time","Minute 3: 10 push-ups, rest remaining time","Repeat for 10 minutes"],tips:["Finish reps fast = more rest","Classic CrossFit format"]},
+  {name:"Ladder Drill",sets:1,reps:600,cal:50,muscle:"Full Body, Mental",bodyPart:"cardio",difficulty:2,anim:"hiit",timed:true,
+    steps:["Round 1: 1 burpee, 1 squat, 1 push-up","Round 2: 2 of each","Round 3: 3 of each","Go up to 10, then back down to 1"],tips:["This is a mental challenge","By round 7-8 you'll want to quit. Don't."]},
+];
+
 // ── WORKOUT GENERATOR ──
 const SPLIT_ROTATION = {
   0: ["chest", "shoulders", "arms"],       // Sunday: Push
@@ -279,7 +338,33 @@ const SPLIT_NAMES = {
   6: "Active Recovery & Cardio",
 };
 
-export function generateWorkout(profile) {
+// Activity type mapping for daily configurator
+export const ACTIVITY_TYPES = [
+  { id: "bodyweight", label: "Bodyweight", icon: "🤸", desc: "No equipment needed" },
+  { id: "gym", label: "Gym", icon: "🏋️", desc: "Weights & machines" },
+  { id: "running", label: "Running", icon: "🏃", desc: "Cardio & endurance" },
+  { id: "boxing", label: "Boxing", icon: "🥊", desc: "Punches & footwork" },
+  { id: "kickboxing", label: "Kickboxing", icon: "🦵", desc: "Strikes & kicks" },
+  { id: "mma", label: "MMA", icon: "⚔️", desc: "Mixed martial arts" },
+  { id: "martial_arts", label: "Martial Arts", icon: "🥋", desc: "Traditional techniques" },
+  { id: "yoga", label: "Yoga", icon: "🧘", desc: "Flexibility & balance" },
+  { id: "hiit", label: "HIIT", icon: "⚡", desc: "High intensity intervals" },
+];
+
+export const BODY_PARTS = [
+  { id: "chest", label: "Chest", icon: "🫁" },
+  { id: "back", label: "Back", icon: "🔙" },
+  { id: "shoulders", label: "Shoulders", icon: "💪" },
+  { id: "arms", label: "Arms", icon: "🦾" },
+  { id: "core", label: "Core", icon: "🔥" },
+  { id: "legs", label: "Legs", icon: "🦵" },
+  { id: "glutes", label: "Glutes", icon: "🍑" },
+  { id: "full", label: "Full Body", icon: "⚡" },
+];
+
+export const TIME_OPTIONS = [15, 30, 45, 60, 90];
+
+export function generateWorkout(profile, dailyConfig = null) {
   const dayOfWeek = new Date().getDay();
   const equipment = profile.trainingType || "bodyweight";
   const level = profile.fitnessLevel || "intermediate";

@@ -129,7 +129,7 @@ export default function App() {
       let missed = 0; const dt = new Date(ck); dt.setDate(dt.getDate() + 1);
       while (dt < td) {
         const ds = dt.toISOString().split("T")[0];
-        if ((habitLog[ds] || []).length < REQUIRED_DAILY) missed++;
+        if (!workoutLog[ds]) missed++;
         dt.setDate(dt.getDate() + 1);
       }
       if (missed > 0) {
@@ -143,7 +143,7 @@ export default function App() {
     let s = 0; const dt2 = new Date(); dt2.setDate(dt2.getDate() - 1);
     for (let i = 0; i < 365; i++) {
       const ds = dt2.toISOString().split("T")[0];
-      if ((habitLog[ds] || []).length >= REQUIRED_DAILY) { s++; dt2.setDate(dt2.getDate() - 1); } else break;
+      if (workoutLog[ds]) { s++; dt2.setDate(dt2.getDate() - 1); } else break;
     }
     setStreak(s); setLastCheck(d);
   }, [user, habitLog, lastCheck]);
@@ -184,6 +184,18 @@ export default function App() {
     } catch {}
   };
 
+
+  // Exit confirmation
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "Are you sure you want to leave IGNITE? Your unsaved progress may be lost.";
+      return e.returnValue;
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
   // Loading screen
   if (loading) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#060a0c"}}>
@@ -209,12 +221,12 @@ export default function App() {
     return <OnboardingPage onComplete={handleOnboardingComplete} />;
   }
 
-  const appState = { foodLog, habits, habitLog, tasks, journal, finances, profile, user, pillarProg };
+  const appState = { foodLog, habits, habitLog, tasks, journal, finances, profile, user, pillarProg, focusLog };
   const pages = {
     dashboard: <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />,
     training: <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} />,
     nutrition: <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} profile={profile} />,
-    dailyquest: <DailyQuestPage habits={habits} setHabits={setHabits} habitLog={habitLog} setHabitLog={setHabitLog} addXP={addXP} />,
+    dailyquest: <DailyQuestPage habits={habits} setHabits={setHabits} habitLog={habitLog} setHabitLog={setHabitLog} addXP={addXP} workoutLog={workoutLog} />,
     missions: <MissionsPage tasks={tasks} setTasks={setTasks} addXP={addXP} />,
     focus: <FocusTimer addXP={addXP} focusLog={focusLog} setFocusLog={setFocusLog} />,
     wellness: <Wellness journal={journal} setJournal={setJournal} addXP={addXP} />,

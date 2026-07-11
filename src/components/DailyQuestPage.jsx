@@ -28,7 +28,7 @@ function MiniRing({ pct, color, size = 80, stroke = 6, children }) {
   );
 }
 
-export default function DailyQuestPage({ habits, setHabits, habitLog, setHabitLog, addXP }) {
+export default function DailyQuestPage({ habits, setHabits, habitLog, setHabitLog, addXP, workoutLog }) {
   const [newName, setNewName] = useState("");
   const [newCat, setNewCat] = useState("life");
   const [showAdd, setShowAdd] = useState(false);
@@ -83,7 +83,8 @@ export default function DailyQuestPage({ habits, setHabits, habitLog, setHabitLo
   const required = habits.filter(h => h.required);
   const optional = habits.filter(h => !h.required);
   const progress = habits.length > 0 ? Math.round((checked.length / habits.length) * 100) : 0;
-  const penaltyRisk = checked.length < REQUIRED_DAILY;
+  const todayTrained = !!(workoutLog && workoutLog[today()]);
+  const penaltyRisk = !todayTrained;
   const xpEarned = checked.length * XP.habit;
 
   // Calendar data - current month

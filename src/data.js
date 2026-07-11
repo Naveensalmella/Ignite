@@ -24,15 +24,15 @@ export const FOOD_DB = [
 ];
 
 export const DEFAULT_HABITS = [
-  {id:"h1",name:"100 Push-ups",icon:"💪",pillar:"power",required:true},
-  {id:"h2",name:"100 Squats",icon:"🦵",pillar:"power",required:true},
-  {id:"h3",name:"100 Sit-ups",icon:"🔥",pillar:"power",required:true},
-  {id:"h4",name:"10km Run / 30min Cardio",icon:"🏃",pillar:"power",required:true},
-  {id:"h5",name:"Stretch 15 min",icon:"🧘",pillar:"spirit"},
-  {id:"h6",name:"Read 20 pages",icon:"📖",pillar:"mind"},
-  {id:"h7",name:"Drink 3L water",icon:"💧",pillar:"power"},
+  {id:"h1",name:"Complete Daily Training",icon:"⚔️",pillar:"power",required:true},
+  {id:"h2",name:"Log all meals",icon:"🍎",pillar:"power"},
+  {id:"h3",name:"Drink 3L water",icon:"💧",pillar:"power"},
+  {id:"h4",name:"Read 20 pages",icon:"📖",pillar:"mind"},
+  {id:"h5",name:"Journal / Reflect",icon:"📝",pillar:"heart"},
+  {id:"h6",name:"Meditate 10 min",icon:"🧘",pillar:"spirit"},
+  {id:"h7",name:"Track expenses",icon:"💰",pillar:"fortune"},
 ];
-export const REQUIRED_DAILY=4;
+export const REQUIRED_DAILY=1;
 export const pillars=[
   {key:"power",label:"Power",icon:"🔥",color:"#ef4444",gradient:"linear-gradient(135deg,#ef4444,#dc2626)",desc:"Strength, combat & endurance"},
   {key:"mind",label:"Mind",icon:"⚡",color:"#10b981",gradient:"linear-gradient(135deg,#10b981,#059669)",desc:"Strategy, focus & knowledge"},
@@ -49,16 +49,21 @@ export const navItems=[
 ];
 
 export const RANKS=[
-  {name:"Spark",min:1,max:5,color:"#94a3b8",emoji:"✦",tier:1},
-  {name:"Ember",min:6,max:12,color:"#2dd4bf",emoji:"✦✦",tier:2},
-  {name:"Flame",min:13,max:22,color:"#06b6d4",emoji:"◆",tier:3},
-  {name:"Blaze",min:23,max:34,color:"#f43f5e",emoji:"◆◆",tier:4},
-  {name:"Inferno",min:35,max:48,color:"#e11d48",emoji:"★",tier:5},
-  {name:"Firestorm",min:49,max:62,color:"#f97316",emoji:"★★",tier:6},
-  {name:"Phoenix",min:63,max:76,color:"#f59e0b",emoji:"◈",tier:7},
-  {name:"Titan",min:77,max:88,color:"#fbbf24",emoji:"◈◈",tier:8},
-  {name:"Legend",min:89,max:96,color:"#fde68a",emoji:"♛",tier:9},
-  {name:"Eternal",min:97,max:100,color:"#fff",emoji:"♛♛",tier:10},
+  {name:"Cinder",min:1,max:4,color:"#64748b",emoji:"▪",tier:1,title:"The Awakening"},
+  {name:"Iron",min:5,max:10,color:"#94a3b8",emoji:"◆",tier:2,title:"Forged in Silence"},
+  {name:"Steel",min:11,max:18,color:"#06b6d4",emoji:"◆◆",tier:3,title:"Unbreaking Will"},
+  {name:"Shadow",min:19,max:28,color:"#8b5cf6",emoji:"◈",tier:4,title:"Walking the Edge"},
+  {name:"Storm",min:29,max:40,color:"#3b82f6",emoji:"◈◈",tier:5,title:"Thunder Within"},
+  {name:"Wrath",min:41,max:54,color:"#ef4444",emoji:"★",tier:6,title:"Fury Unleashed"},
+  {name:"Phantom",min:55,max:70,color:"#e11d48",emoji:"★★",tier:7,title:"Beyond the Veil"},
+  {name:"Dragon",min:71,max:88,color:"#f97316",emoji:"✦",tier:8,title:"Ancient Fire Awakened"},
+  {name:"Apex",min:89,max:108,color:"#f59e0b",emoji:"✦✦",tier:9,title:"Peak of Mortals"},
+  {name:"Sovereign",min:109,max:130,color:"#fbbf24",emoji:"♛",tier:10,title:"Ruler of Self"},
+  {name:"Mythic",min:131,max:160,color:"#a78bfa",emoji:"♛♛",tier:11,title:"Legend Incarnate"},
+  {name:"Celestial",min:161,max:200,color:"#22d3ee",emoji:"✧",tier:12,title:"Heavenly Ascension"},
+  {name:"Eternal",min:201,max:260,color:"#e0f2fe",emoji:"✧✧",tier:13,title:"Beyond Time"},
+  {name:"Void",min:261,max:350,color:"#c4b5fd",emoji:"◉",tier:14,title:"The Boundless"},
+  {name:"Absolute",min:351,max:999999,color:"#ffffff",emoji:"◉◉",tier:15,title:"The One Above All"},
 ];
 
 // ── GATES WITH DETAILED INSTRUCTIONS ──
@@ -324,7 +329,7 @@ export const PILLAR_MISSIONS={
 };
 
 export const XP={workout:60,combat:40,habit:12,food:3,journal:10,mood:5,focus:15,finance:3,gratitude:8,task_epic:20,task_rare:12,task_common:8};
-export const DAILY_PENALTY=40;
+export const DAILY_PENALTY=50;
 export const STREAK_MULT={7:1.5,14:2,30:2.5,60:3};
 
 // ── CSS ──
