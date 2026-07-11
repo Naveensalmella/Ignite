@@ -44,6 +44,7 @@ export default function App() {
   const [lastCheck, setLastCheck] = useState("");
   const [pillarProg, setPillarProg] = useState({});
   const [activityLog, setActivityLog] = useState([]);
+  const [focusLog, setFocusLog] = useState({});
   const saveTimer = useRef(null);
 
   const logActivity = (type, detail) => {
@@ -93,6 +94,7 @@ export default function App() {
       d.workoutLog && setWorkoutLog(d.workoutLog);
       d.pillarProg && setPillarProg(d.pillarProg);
       d.activityLog && setActivityLog(d.activityLog);
+      d.focusLog && setFocusLog(d.focusLog);
       if (d.totalXP !== undefined) setTotalXP(d.totalXP);
       if (d.streak !== undefined) setStreak(d.streak);
       if (d.lastCheck) setLastCheck(d.lastCheck);
@@ -104,10 +106,10 @@ export default function App() {
     if (!user) return;
     await store.saveUserData(user.uid, {
       foodLog, habits, habitLog, tasks, journal, finances, profile,
-      chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg, activityLog,
+      chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg, activityLog, focusLog,
       lastSaved: new Date().toISOString(),
     });
-  }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile, chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg, activityLog]);
+  }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile, chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg, activityLog, focusLog]);
 
   // Debounced auto-save: saves 2 seconds after the last state change
   useEffect(() => {
@@ -168,7 +170,7 @@ export default function App() {
     setUser(null); setFoodLog({}); setHabits(DEFAULT_HABITS); setHabitLog({});
     setTasks([]); setJournal({}); setFinances([]); setProfile({});
     setChatHistory([]); setTotalXP(0); setWorkoutLog({}); setStreak(0);
-    setPillarProg({}); setActivityLog([]);
+    setPillarProg({}); setActivityLog([]); setFocusLog({});
   };
 
   // AI action handler
@@ -214,7 +216,7 @@ export default function App() {
     nutrition: <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} profile={profile} />,
     dailyquest: <DailyQuestPage habits={habits} setHabits={setHabits} habitLog={habitLog} setHabitLog={setHabitLog} addXP={addXP} />,
     missions: <MissionsPage tasks={tasks} setTasks={setTasks} addXP={addXP} />,
-    focus: <FocusTimer addXP={addXP} />,
+    focus: <FocusTimer addXP={addXP} focusLog={focusLog} setFocusLog={setFocusLog} />,
     wellness: <Wellness journal={journal} setJournal={setJournal} addXP={addXP} />,
     finance: <FinancePage finances={finances} setFinances={setFinances} addXP={addXP} />,
     growth: <GrowthPage pillarProg={pillarProg} setPillarProg={setPillarProg} />,
