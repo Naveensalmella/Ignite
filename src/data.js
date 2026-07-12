@@ -45,7 +45,7 @@ export const navItems=[
   {key:"nutrition",label:"Nutrition",icon:"🍎"},{key:"dailyquest",label:"Daily Quest",icon:"🎯"},
   {key:"missions",label:"Missions",icon:"📋"},{key:"focus",label:"Focus",icon:"⏱"},
   {key:"wellness",label:"Wellness",icon:"💛"},{key:"finance",label:"Finance",icon:"💰"},
-  {key:"growth",label:"Growth",icon:"🌱"},{key:"chat",label:"Flame Oracle",icon:"🔮"},{key:"profile",label:"Profile",icon:"👤"},
+  {key:"routine",label:"My Day",icon:"📅"},{key:"growth",label:"Growth",icon:"🌱"},{key:"chat",label:"Flame Oracle",icon:"🔮"},{key:"profile",label:"Profile",icon:"👤"},
 ];
 
 export const RANKS=[

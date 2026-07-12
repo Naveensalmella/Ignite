@@ -20,6 +20,7 @@ import ProfilePage from './components/ProfilePage';
 import XPToast from './components/XPToast';
 import LevelUpOverlay from './components/LevelUpOverlay';
 import HeaderXPBar from './components/HeaderXPBar';
+import RoutinePage from './components/RoutinePage';
 import OnboardingPage from './components/OnboardingPage';
 
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
   const [pillarProg, setPillarProg] = useState({});
   const [activityLog, setActivityLog] = useState([]);
   const [focusLog, setFocusLog] = useState({});
+  const [routineData, setRoutineData] = useState(null);
   const saveTimer = useRef(null);
 
   const logActivity = (type, detail) => {
@@ -95,6 +97,7 @@ export default function App() {
       d.pillarProg && setPillarProg(d.pillarProg);
       d.activityLog && setActivityLog(d.activityLog);
       d.focusLog && setFocusLog(d.focusLog);
+      d.routineData && setRoutineData(d.routineData);
       if (d.totalXP !== undefined) setTotalXP(d.totalXP);
       if (d.streak !== undefined) setStreak(d.streak);
       if (d.lastCheck) setLastCheck(d.lastCheck);
@@ -106,10 +109,10 @@ export default function App() {
     if (!user) return;
     await store.saveUserData(user.uid, {
       foodLog, habits, habitLog, tasks, journal, finances, profile,
-      chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg, activityLog, focusLog,
+      chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg, activityLog, focusLog, routineData,
       lastSaved: new Date().toISOString(),
     });
-  }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile, chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg, activityLog, focusLog]);
+  }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile, chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg, activityLog, focusLog, routineData]);
 
   // Debounced auto-save: saves 2 seconds after the last state change
   useEffect(() => {
@@ -170,7 +173,7 @@ export default function App() {
     setUser(null); setFoodLog({}); setHabits(DEFAULT_HABITS); setHabitLog({});
     setTasks([]); setJournal({}); setFinances([]); setProfile({});
     setChatHistory([]); setTotalXP(0); setWorkoutLog({}); setStreak(0);
-    setPillarProg({}); setActivityLog([]); setFocusLog({});
+    setPillarProg({}); setActivityLog([]); setFocusLog({}); setRoutineData(null);
   };
 
   // AI action handler
@@ -185,15 +188,26 @@ export default function App() {
   };
 
 
-  // Exit confirmation
+  // Exit confirmation — works on mobile back button
+  const [showExitModal, setShowExitModal] = useState(false);
   useEffect(() => {
+    // Push a fake history state so back button triggers popstate
+    window.history.pushState({ ignite: true }, "");
+    const handlePopState = (e) => {
+      setShowExitModal(true);
+      window.history.pushState({ ignite: true }, ""); // Keep pushing to stay on page
+    };
     const handleBeforeUnload = (e) => {
       e.preventDefault();
-      e.returnValue = "Are you sure you want to leave IGNITE? Your unsaved progress may be lost.";
-      return e.returnValue;
+      e.returnValue = "";
+      return "";
     };
+    window.addEventListener("popstate", handlePopState);
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
   }, []);
 
   // Loading screen
@@ -231,6 +245,7 @@ export default function App() {
     focus: <FocusTimer addXP={addXP} focusLog={focusLog} setFocusLog={setFocusLog} />,
     wellness: <Wellness journal={journal} setJournal={setJournal} addXP={addXP} />,
     finance: <FinancePage finances={finances} setFinances={setFinances} addXP={addXP} />,
+    routine: <RoutinePage profile={profile} routineData={routineData} setRoutineData={setRoutineData} />,
     growth: <GrowthPage pillarProg={pillarProg} setPillarProg={setPillarProg} />,
     chat: <AIChat appState={appState} onAction={handleAI} chatHistory={chatHistory} setChatHistory={setChatHistory} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />,
     profile: <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} />,
