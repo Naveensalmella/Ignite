@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { XP } from '../data';
 import { today } from '../utils';
+import HistoryPanel from './HistoryPanel';
+import { formatFinanceHistory } from '../historyFormatters';
 
 const EXPENSE_CATS = [
   { id: "food", label: "Food & Dining", icon: "🍽️", color: "#f59e0b" },
@@ -30,8 +32,8 @@ function MiniRing({ pct, color, size = 52, stroke = 5, children }) {
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
           strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))}
           strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} />
       </svg>
@@ -254,30 +256,7 @@ export default function FinancePage({ finances, setFinances, addXP }) {
       )}
 
       {/* ══ TRANSACTIONS ══ */}
-      <div className="gs">
-        <div className="sl">Transactions · {filtered.length}</div>
-        {filtered.length === 0 && <div style={{ fontSize: 13, color: "#6b7280", padding: "16px 0", textAlign: "center" }}>No transactions yet. Start tracking above.</div>}
-        {filtered.slice(0, 25).map(f => {
-          const catInfo = getCatInfo(f.category);
-          return (
-            <div key={f.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 18 }}>{catInfo.icon}</span>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: "#e5e7eb" }}>{catInfo.label}{f.note ? ` — ${f.note}` : ""}</div>
-                  <div style={{ fontSize: 11, color: "#4b5563" }}>{f.date} {f.time || ""}</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontWeight: 700, fontSize: 14, color: f.type === "income" ? "#22c55e" : "#ef4444" }}>
-                  {f.type === "income" ? "+" : "−"}₹{f.amount.toLocaleString()}
-                </span>
-                <span onClick={() => remove(f.id)} style={{ cursor: "pointer", color: "#4b5563", fontSize: 14 }}>×</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <HistoryPanel entries={formatFinanceHistory(filtered)} title="Transaction History" emptyText="Add a transaction to see history" />
     </div>
   );
 }

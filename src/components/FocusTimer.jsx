@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { XP } from '../data';
 import { today } from '../utils';
+import HistoryPanel from './HistoryPanel';
+import { formatFocusHistory } from '../historyFormatters';
 
 const MODES = [
   { key: "focus", label: "Focus", duration: 25 * 60, color: "#10b981", icon: "⚡" },
@@ -27,8 +29,8 @@ function MiniRing({ pct, color, size, stroke = 6, children }) {
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
           strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))}
           strokeLinecap="round" style={{ transition: "stroke-dashoffset .6s" }} />
       </svg>
@@ -339,7 +341,7 @@ export default function FocusTimer({ addXP, focusLog, setFocusLog }) {
                 {[60, 90, 120, 150, 180].map(m => (
                   <span key={m} className={`chip ${dailyGoal === m ? "chip-a" : "chip-i"}`}
                     onClick={() => setDailyGoal(m)} style={{ flex: 1, justifyContent: "center" }}>
-                    {m >= 60 ? `${m/60}h` : `${m}m`}{m === 60 ? "" : m === 120 ? "" : ""}
+                    {m >= 60 ? `${m / 60}h` : `${m}m`}{m === 60 ? "" : m === 120 ? "" : ""}
                   </span>
                 ))}
               </div>
@@ -402,34 +404,7 @@ export default function FocusTimer({ addXP, focusLog, setFocusLog }) {
       </div>
 
       {/* ══ HISTORY ══ */}
-      <div className="gs">
-        <div onClick={() => setShowHistory(!showHistory)} style={{ display: "flex", justifyContent: "space-between", cursor: "pointer" }}>
-          <div className="sl" style={{ margin: 0 }}>History · {historyDates.length} days</div>
-          <span style={{ color: "#6b7280", fontSize: 14 }}>{showHistory ? "▾" : "▸"}</span>
-        </div>
-        {showHistory && (
-          <div style={{ marginTop: 12 }}>
-            {historyDates.length === 0 && <div style={{ fontSize: 13, color: "#6b7280", padding: "12px 0" }}>No focus sessions yet. Start one above!</div>}
-            {historyDates.slice(0, 20).map(date => {
-              const daySessions = log[date] || [];
-              const dayMins = daySessions.reduce((s, sess) => s + (sess.duration || 0), 0);
-              const label = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
-              return (
-                <div key={date} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: "#e5e7eb" }}>{label}</div>
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>
-                      {daySessions.length} session{daySessions.length !== 1 ? "s" : ""} ·
-                      {daySessions.map(s => TAGS.find(t => t.id === s.tag)?.icon || "⭐").join(" ")}
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "#10b981", fontFamily: "Rajdhani,sans-serif" }}>{dayMins}min</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <HistoryPanel entries={formatFocusHistory(log)} title="Focus History" emptyText="Complete a focus session to see history" />
     </div>
   );
 }

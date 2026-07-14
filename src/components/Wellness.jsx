@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { XP } from '../data';
 import { today } from '../utils';
+import HistoryPanel from './HistoryPanel';
+import { formatWellnessHistory } from '../historyFormatters';
 
 const MOODS = [
   { val: 1, emoji: "😫", label: "Burned Out", color: "#ef4444" },
@@ -29,8 +31,8 @@ function MiniRing({ pct, color, size = 52, stroke = 5, children }) {
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
           strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))}
           strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} />
       </svg>
@@ -148,7 +150,8 @@ export default function Wellness({ journal, setJournal, addXP }) {
         <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 12 }}>
           {MOODS.map(m => (
             <div key={m.val} onClick={() => update("mood", m.val)}
-              style={{ textAlign: "center", cursor: "pointer", padding: "8px 12px", borderRadius: 10, transition: "all .25s",
+              style={{
+                textAlign: "center", cursor: "pointer", padding: "8px 12px", borderRadius: 10, transition: "all .25s",
                 background: entry.mood === m.val ? `${m.color}15` : "transparent",
                 border: entry.mood === m.val ? `1px solid ${m.color}40` : "1px solid transparent",
                 transform: entry.mood === m.val ? "scale(1.1)" : "scale(1)",
@@ -237,61 +240,7 @@ export default function Wellness({ journal, setJournal, addXP }) {
       </div>
 
       {/* ══ HISTORY ══ */}
-      <div className="gs">
-        <div onClick={() => setShowHistory(!showHistory)} style={{ display: "flex", justifyContent: "space-between", cursor: "pointer" }}>
-          <div className="sl" style={{ margin: 0 }}>History · {historyDates.length} entries</div>
-          <span style={{ color: "#6b7280", fontSize: 14 }}>{showHistory ? "▾" : "▸"}</span>
-        </div>
-        {showHistory && (
-          <div style={{ marginTop: 12 }}>
-            {historyDates.length === 0 && <div style={{ fontSize: 13, color: "#6b7280", padding: "12px 0" }}>No previous entries yet.</div>}
-            {historyDates.slice(0, 20).map(date => {
-              const e = journal[date];
-              const isOpen = historyDate === date;
-              const moodInfo = MOODS[(e.mood || 1) - 1];
-              const label = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
-              return (
-                <div key={date} style={{ marginBottom: 4 }}>
-                  <div onClick={() => setHistoryDate(isOpen ? null : date)}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 8, cursor: "pointer",
-                      background: isOpen ? "rgba(16,185,129,.04)" : "transparent" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 22 }}>{moodInfo?.emoji || "😐"}</span>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: "#e5e7eb" }}>{label}</div>
-                        <div style={{ fontSize: 11, color: moodInfo?.color }}>{moodInfo?.label}</div>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      {e.entry?.length > 10 && <span style={{ fontSize: 10, color: "#6b7280" }}>📝</span>}
-                      {e.gratitude?.filter(g => g.trim()).length > 0 && <span style={{ fontSize: 10, color: "#6b7280" }}>🙏</span>}
-                      <span style={{ color: "#4b5563", fontSize: 14 }}>{isOpen ? "▾" : "▸"}</span>
-                    </div>
-                  </div>
-                  {isOpen && (
-                    <div className="fade-in" style={{ padding: "8px 12px" }}>
-                      {e.gratitude?.filter(g => g.trim()).length > 0 && (
-                        <div style={{ marginBottom: 8 }}>
-                          <div style={{ fontSize: 11, color: "#10b981", fontWeight: 600, marginBottom: 4 }}>Grateful for:</div>
-                          {e.gratitude.filter(g => g.trim()).map((g, i) => (
-                            <div key={i} style={{ fontSize: 13, color: "#d1d5db", paddingLeft: 8, borderLeft: "2px solid rgba(16,185,129,.2)", marginBottom: 4 }}>{g}</div>
-                          ))}
-                        </div>
-                      )}
-                      {e.entry && (
-                        <div>
-                          <div style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600, marginBottom: 4 }}>Journal:</div>
-                          <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{e.entry}</div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <HistoryPanel entries={formatWellnessHistory(journal)} title="Wellness History" emptyText="Log your mood or write in your journal to see history" />
     </div>
   );
 }
