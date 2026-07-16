@@ -1,335 +1,483 @@
 // IGNITE — Data & Constants
 
 export const FOOD_DB = [
-  {id:1,name:"Apple",emoji:"🍎",cal:95,protein:0.5,carbs:25,fat:0.3,fiber:4.4,category:"Fruits"},
-  {id:2,name:"Banana",emoji:"🍌",cal:105,protein:1.3,carbs:27,fat:0.4,fiber:3.1,category:"Fruits"},
-  {id:3,name:"Orange",emoji:"🍊",cal:62,protein:1.2,carbs:15,fat:0.2,fiber:3.1,category:"Fruits"},
-  {id:5,name:"Mango",emoji:"🥭",cal:99,protein:1.4,carbs:25,fat:0.6,fiber:2.6,category:"Fruits"},
-  {id:26,name:"Avocado",emoji:"🥑",cal:234,protein:2.9,carbs:12,fat:21,fiber:10,category:"Fruits"},
-  {id:7,name:"Chicken Breast",emoji:"🍗",cal:165,protein:31,carbs:0,fat:3.6,fiber:0,category:"Protein"},
-  {id:8,name:"Egg",emoji:"🥚",cal:78,protein:6,carbs:0.6,fat:5,fiber:0,category:"Protein"},
-  {id:9,name:"Salmon",emoji:"🐟",cal:208,protein:20,carbs:0,fat:13,fiber:0,category:"Protein"},
-  {id:10,name:"Paneer",emoji:"🧀",cal:265,protein:18,carbs:1.2,fat:20,fiber:0,category:"Protein"},
-  {id:25,name:"Dal (1 cup)",emoji:"🍲",cal:198,protein:14,carbs:34,fat:0.8,fiber:8,category:"Protein"},
-  {id:12,name:"Rice (1 cup)",emoji:"🍚",cal:206,protein:4.3,carbs:45,fat:0.4,fiber:0.6,category:"Grains"},
-  {id:14,name:"Oats (1 cup)",emoji:"🥣",cal:154,protein:5,carbs:27,fat:2.6,fiber:4,category:"Grains"},
-  {id:15,name:"Roti (1 pc)",emoji:"🫓",cal:104,protein:3,carbs:18,fat:3.7,fiber:2,category:"Grains"},
-  {id:17,name:"Broccoli",emoji:"🥦",cal:55,protein:3.7,carbs:11,fat:0.6,fiber:5.1,category:"Vegetables"},
-  {id:18,name:"Spinach",emoji:"🥬",cal:23,protein:2.9,carbs:3.6,fat:0.4,fiber:2.2,category:"Vegetables"},
-  {id:20,name:"Sweet Potato",emoji:"🍠",cal:103,protein:2.3,carbs:24,fat:0.1,fiber:3.8,category:"Vegetables"},
-  {id:21,name:"Milk (1 cup)",emoji:"🥛",cal:149,protein:8,carbs:12,fat:8,fiber:0,category:"Dairy"},
-  {id:22,name:"Yogurt (1 cup)",emoji:"🫙",cal:100,protein:17,carbs:6,fat:0.7,fiber:0,category:"Dairy"},
-  {id:23,name:"Almonds (28g)",emoji:"🥜",cal:164,protein:6,carbs:6,fat:14,fiber:3.5,category:"Nuts"},
-  {id:24,name:"Peanut Butter",emoji:"🥜",cal:190,protein:7,carbs:7,fat:16,fiber:2,category:"Nuts"},
+  { id: 1, name: "Apple", emoji: "🍎", cal: 95, protein: 0.5, carbs: 25, fat: 0.3, fiber: 4.4, category: "Fruits" },
+  { id: 2, name: "Banana", emoji: "🍌", cal: 105, protein: 1.3, carbs: 27, fat: 0.4, fiber: 3.1, category: "Fruits" },
+  { id: 3, name: "Orange", emoji: "🍊", cal: 62, protein: 1.2, carbs: 15, fat: 0.2, fiber: 3.1, category: "Fruits" },
+  { id: 5, name: "Mango", emoji: "🥭", cal: 99, protein: 1.4, carbs: 25, fat: 0.6, fiber: 2.6, category: "Fruits" },
+  { id: 26, name: "Avocado", emoji: "🥑", cal: 234, protein: 2.9, carbs: 12, fat: 21, fiber: 10, category: "Fruits" },
+  { id: 7, name: "Chicken Breast", emoji: "🍗", cal: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, category: "Protein" },
+  { id: 8, name: "Egg", emoji: "🥚", cal: 78, protein: 6, carbs: 0.6, fat: 5, fiber: 0, category: "Protein" },
+  { id: 9, name: "Salmon", emoji: "🐟", cal: 208, protein: 20, carbs: 0, fat: 13, fiber: 0, category: "Protein" },
+  { id: 10, name: "Paneer", emoji: "🧀", cal: 265, protein: 18, carbs: 1.2, fat: 20, fiber: 0, category: "Protein" },
+  { id: 25, name: "Dal (1 cup)", emoji: "🍲", cal: 198, protein: 14, carbs: 34, fat: 0.8, fiber: 8, category: "Protein" },
+  { id: 12, name: "Rice (1 cup)", emoji: "🍚", cal: 206, protein: 4.3, carbs: 45, fat: 0.4, fiber: 0.6, category: "Grains" },
+  { id: 14, name: "Oats (1 cup)", emoji: "🥣", cal: 154, protein: 5, carbs: 27, fat: 2.6, fiber: 4, category: "Grains" },
+  { id: 15, name: "Roti (1 pc)", emoji: "🫓", cal: 104, protein: 3, carbs: 18, fat: 3.7, fiber: 2, category: "Grains" },
+  { id: 17, name: "Broccoli", emoji: "🥦", cal: 55, protein: 3.7, carbs: 11, fat: 0.6, fiber: 5.1, category: "Vegetables" },
+  { id: 18, name: "Spinach", emoji: "🥬", cal: 23, protein: 2.9, carbs: 3.6, fat: 0.4, fiber: 2.2, category: "Vegetables" },
+  { id: 20, name: "Sweet Potato", emoji: "🍠", cal: 103, protein: 2.3, carbs: 24, fat: 0.1, fiber: 3.8, category: "Vegetables" },
+  { id: 21, name: "Milk (1 cup)", emoji: "🥛", cal: 149, protein: 8, carbs: 12, fat: 8, fiber: 0, category: "Dairy" },
+  { id: 22, name: "Yogurt (1 cup)", emoji: "🫙", cal: 100, protein: 17, carbs: 6, fat: 0.7, fiber: 0, category: "Dairy" },
+  { id: 23, name: "Almonds (28g)", emoji: "🥜", cal: 164, protein: 6, carbs: 6, fat: 14, fiber: 3.5, category: "Nuts" },
+  { id: 24, name: "Peanut Butter", emoji: "🥜", cal: 190, protein: 7, carbs: 7, fat: 16, fiber: 2, category: "Nuts" },
 ];
 
 export const DEFAULT_HABITS = [
-  {id:"h1",name:"Complete Daily Training",icon:"⚔️",pillar:"power",required:true},
-  {id:"h2",name:"Log all meals",icon:"🍎",pillar:"power"},
-  {id:"h3",name:"Drink 3L water",icon:"💧",pillar:"power"},
-  {id:"h4",name:"Read 20 pages",icon:"📖",pillar:"mind"},
-  {id:"h5",name:"Journal / Reflect",icon:"📝",pillar:"heart"},
-  {id:"h6",name:"Meditate 10 min",icon:"🧘",pillar:"spirit"},
-  {id:"h7",name:"Track expenses",icon:"💰",pillar:"fortune"},
+  { id: "h1", name: "Complete Daily Training", icon: "⚔️", pillar: "power", required: true },
+  { id: "h2", name: "Log all meals", icon: "🍎", pillar: "power" },
+  { id: "h3", name: "Drink 3L water", icon: "💧", pillar: "power" },
+  { id: "h4", name: "Read 20 pages", icon: "📖", pillar: "mind" },
+  { id: "h5", name: "Journal / Reflect", icon: "📝", pillar: "heart" },
+  { id: "h6", name: "Meditate 10 min", icon: "🧘", pillar: "spirit" },
+  { id: "h7", name: "Track expenses", icon: "💰", pillar: "fortune" },
 ];
-export const REQUIRED_DAILY=1;
-export const pillars=[
-  {key:"power",label:"Power",icon:"🔥",color:"#ef4444",gradient:"linear-gradient(135deg,#ef4444,#dc2626)",desc:"Strength, combat & endurance"},
-  {key:"mind",label:"Mind",icon:"⚡",color:"#10b981",gradient:"linear-gradient(135deg,#10b981,#059669)",desc:"Strategy, focus & knowledge"},
-  {key:"heart",label:"Heart",icon:"💛",color:"#f59e0b",gradient:"linear-gradient(135deg,#f59e0b,#d97706)",desc:"Mood, bonds & willpower"},
-  {key:"spirit",label:"Spirit",icon:"🌟",color:"#34d399",gradient:"linear-gradient(135deg,#34d399,#10b981)",desc:"Discipline, recovery & clarity"},
-  {key:"fortune",label:"Fortune",icon:"💎",color:"#fbbf24",gradient:"linear-gradient(135deg,#fbbf24,#f59e0b)",desc:"Wealth & resource management"},
+export const REQUIRED_DAILY = 1;
+export const pillars = [
+  { key: "power", label: "Power", icon: "🔥", color: "#ef4444", gradient: "linear-gradient(135deg,#ef4444,#dc2626)", desc: "Strength, combat & endurance" },
+  { key: "mind", label: "Mind", icon: "⚡", color: "#10b981", gradient: "linear-gradient(135deg,#10b981,#059669)", desc: "Strategy, focus & knowledge" },
+  { key: "heart", label: "Heart", icon: "💛", color: "#f59e0b", gradient: "linear-gradient(135deg,#f59e0b,#d97706)", desc: "Mood, bonds & willpower" },
+  { key: "spirit", label: "Spirit", icon: "🌟", color: "#34d399", gradient: "linear-gradient(135deg,#34d399,#10b981)", desc: "Discipline, recovery & clarity" },
+  { key: "fortune", label: "Fortune", icon: "💎", color: "#fbbf24", gradient: "linear-gradient(135deg,#fbbf24,#f59e0b)", desc: "Wealth & resource management" },
 ];
-export const navItems=[
-  {key:"dashboard",label:"Dashboard",icon:"🔥"},{key:"training",label:"Training",icon:"⚔️"},
-  {key:"nutrition",label:"Nutrition",icon:"🍎"},{key:"dailyquest",label:"Daily Quest",icon:"🎯"},
-  {key:"missions",label:"Missions",icon:"📋"},{key:"focus",label:"Focus",icon:"⏱"},
-  {key:"wellness",label:"Wellness",icon:"💛"},{key:"finance",label:"Finance",icon:"💰"},
-  {key:"routine",label:"My Day",icon:"📅"},{key:"growth",label:"Growth",icon:"🌱"},{key:"chat",label:"Flame Oracle",icon:"🔮"},{key:"profile",label:"Profile",icon:"👤"},
+export const navItems = [
+  { key: "dashboard", label: "Dashboard", icon: "🔥" }, { key: "training", label: "Training", icon: "⚔️" },
+  { key: "nutrition", label: "Nutrition", icon: "🍎" }, { key: "dailyquest", label: "Daily Quest", icon: "🎯" },
+  { key: "missions", label: "Missions", icon: "📋" }, { key: "focus", label: "Focus", icon: "⏱" },
+  { key: "wellness", label: "Wellness", icon: "💛" }, { key: "finance", label: "Finance", icon: "💰" },
+  { key: "routine", label: "My Day", icon: "📅" }, { key: "growth", label: "Growth", icon: "🌱" }, { key: "chat", label: "Flame Oracle", icon: "🔮" }, { key: "profile", label: "Profile", icon: "👤" },
+  { key: "body", label: "Body", icon: "📊" },
+  { key: "challenges", label: "Challenges", icon: "🏆" },
 ];
 
-export const RANKS=[
-  {name:"Cinder",min:1,max:4,color:"#64748b",emoji:"▪",tier:1,title:"The Awakening"},
-  {name:"Iron",min:5,max:10,color:"#94a3b8",emoji:"◆",tier:2,title:"Forged in Silence"},
-  {name:"Steel",min:11,max:18,color:"#06b6d4",emoji:"◆◆",tier:3,title:"Unbreaking Will"},
-  {name:"Shadow",min:19,max:28,color:"#8b5cf6",emoji:"◈",tier:4,title:"Walking the Edge"},
-  {name:"Storm",min:29,max:40,color:"#3b82f6",emoji:"◈◈",tier:5,title:"Thunder Within"},
-  {name:"Wrath",min:41,max:54,color:"#ef4444",emoji:"★",tier:6,title:"Fury Unleashed"},
-  {name:"Phantom",min:55,max:70,color:"#e11d48",emoji:"★★",tier:7,title:"Beyond the Veil"},
-  {name:"Dragon",min:71,max:88,color:"#f97316",emoji:"✦",tier:8,title:"Ancient Fire Awakened"},
-  {name:"Apex",min:89,max:108,color:"#f59e0b",emoji:"✦✦",tier:9,title:"Peak of Mortals"},
-  {name:"Sovereign",min:109,max:130,color:"#fbbf24",emoji:"♛",tier:10,title:"Ruler of Self"},
-  {name:"Mythic",min:131,max:160,color:"#a78bfa",emoji:"♛♛",tier:11,title:"Legend Incarnate"},
-  {name:"Celestial",min:161,max:200,color:"#22d3ee",emoji:"✧",tier:12,title:"Heavenly Ascension"},
-  {name:"Eternal",min:201,max:260,color:"#e0f2fe",emoji:"✧✧",tier:13,title:"Beyond Time"},
-  {name:"Void",min:261,max:350,color:"#c4b5fd",emoji:"◉",tier:14,title:"The Boundless"},
-  {name:"Absolute",min:351,max:999999,color:"#ffffff",emoji:"◉◉",tier:15,title:"The One Above All"},
+export const RANKS = [
+  { name: "Cinder", min: 1, max: 4, color: "#64748b", emoji: "▪", tier: 1, title: "The Awakening" },
+  { name: "Iron", min: 5, max: 10, color: "#94a3b8", emoji: "◆", tier: 2, title: "Forged in Silence" },
+  { name: "Steel", min: 11, max: 18, color: "#06b6d4", emoji: "◆◆", tier: 3, title: "Unbreaking Will" },
+  { name: "Shadow", min: 19, max: 28, color: "#8b5cf6", emoji: "◈", tier: 4, title: "Walking the Edge" },
+  { name: "Storm", min: 29, max: 40, color: "#3b82f6", emoji: "◈◈", tier: 5, title: "Thunder Within" },
+  { name: "Wrath", min: 41, max: 54, color: "#ef4444", emoji: "★", tier: 6, title: "Fury Unleashed" },
+  { name: "Phantom", min: 55, max: 70, color: "#e11d48", emoji: "★★", tier: 7, title: "Beyond the Veil" },
+  { name: "Dragon", min: 71, max: 88, color: "#f97316", emoji: "✦", tier: 8, title: "Ancient Fire Awakened" },
+  { name: "Apex", min: 89, max: 108, color: "#f59e0b", emoji: "✦✦", tier: 9, title: "Peak of Mortals" },
+  { name: "Sovereign", min: 109, max: 130, color: "#fbbf24", emoji: "♛", tier: 10, title: "Ruler of Self" },
+  { name: "Mythic", min: 131, max: 160, color: "#a78bfa", emoji: "♛♛", tier: 11, title: "Legend Incarnate" },
+  { name: "Celestial", min: 161, max: 200, color: "#22d3ee", emoji: "✧", tier: 12, title: "Heavenly Ascension" },
+  { name: "Eternal", min: 201, max: 260, color: "#e0f2fe", emoji: "✧✧", tier: 13, title: "Beyond Time" },
+  { name: "Void", min: 261, max: 350, color: "#c4b5fd", emoji: "◉", tier: 14, title: "The Boundless" },
+  { name: "Absolute", min: 351, max: 999999, color: "#ffffff", emoji: "◉◉", tier: 15, title: "The One Above All" },
 ];
 
 // ── GATES WITH DETAILED INSTRUCTIONS ──
-export const GATES=[
-  {gate:1,name:"Foundation",unlock:1,color:"#94a3b8",
-    exercises:[
-      {name:"Standard Push-ups",reps:"4×15",cal:8,muscle:"Chest, Triceps, Shoulders",anim:"push",
-        steps:["Start in plank position, hands shoulder-width apart","Keep your body in a straight line from head to heels","Lower chest to the ground by bending elbows","Push back up explosively, fully extending arms","Breathe in on the way down, out on the way up"],
-        tips:["Don't let hips sag or pike up","Keep core tight throughout","Elbows at 45° angle, not flared out"]},
-      {name:"Bodyweight Squats",reps:"4×20",cal:10,muscle:"Quads, Glutes, Hamstrings",anim:"squat",
-        steps:["Stand with feet shoulder-width apart, toes slightly out","Push hips back and bend knees as if sitting in a chair","Lower until thighs are parallel to the ground","Drive through heels to stand back up","Keep chest up and back straight throughout"],
-        tips:["Knees should track over toes","Weight in heels, not toes","Go as deep as mobility allows"]},
-      {name:"Plank Hold",reps:"3×45s",cal:5,muscle:"Core, Shoulders, Back",anim:"plank",
-        steps:["Start in forearm plank position, elbows under shoulders","Create a straight line from head to heels","Squeeze glutes and brace core as if bracing for a punch","Hold the position, breathing steadily","Don't let hips rise or sag"],
-        tips:["Look at a spot between your hands","Squeeze everything — glutes, quads, core","If shaking, you're doing it right"]},
-      {name:"Burpees",reps:"3×10",cal:12,muscle:"Full Body, Cardio",anim:"burpee",
-        steps:["Stand tall, then drop into a squat, hands on floor","Jump feet back into plank position","Perform a push-up (chest touches ground)","Jump feet forward to hands","Explode upward into a jump, arms overhead"],
-        tips:["Move fluidly — no pausing between steps","Land softly on the jump","Scale by removing the push-up if needed"]},
-      {name:"Lunges",reps:"3×12 each",cal:8,muscle:"Quads, Glutes, Balance",anim:"squat",
-        steps:["Stand tall, take a big step forward","Lower back knee toward the ground","Front knee stays over ankle, not past toes","Push through front heel to return to standing","Alternate legs each rep"],
-        tips:["Keep torso upright","Don't let front knee cave inward","Control the descent — don't crash down"]},
-      {name:"Mountain Climbers",reps:"3×30s",cal:10,muscle:"Core, Shoulders, Hip Flexors",anim:"burpee",
-        steps:["Start in push-up position, arms straight","Drive right knee toward chest rapidly","As right foot returns, drive left knee forward","Continue alternating at a fast pace","Keep hips low and level throughout"],
-        tips:["The faster you go, the more cardio benefit","Don't bounce hips up and down","Keep arms locked, shoulders over wrists"]},
+export const GATES = [
+  {
+    gate: 1, name: "Foundation", unlock: 1, color: "#94a3b8",
+    exercises: [
+      {
+        name: "Standard Push-ups", reps: "4×15", cal: 8, muscle: "Chest, Triceps, Shoulders", anim: "push",
+        steps: ["Start in plank position, hands shoulder-width apart", "Keep your body in a straight line from head to heels", "Lower chest to the ground by bending elbows", "Push back up explosively, fully extending arms", "Breathe in on the way down, out on the way up"],
+        tips: ["Don't let hips sag or pike up", "Keep core tight throughout", "Elbows at 45° angle, not flared out"]
+      },
+      {
+        name: "Bodyweight Squats", reps: "4×20", cal: 10, muscle: "Quads, Glutes, Hamstrings", anim: "squat",
+        steps: ["Stand with feet shoulder-width apart, toes slightly out", "Push hips back and bend knees as if sitting in a chair", "Lower until thighs are parallel to the ground", "Drive through heels to stand back up", "Keep chest up and back straight throughout"],
+        tips: ["Knees should track over toes", "Weight in heels, not toes", "Go as deep as mobility allows"]
+      },
+      {
+        name: "Plank Hold", reps: "3×45s", cal: 5, muscle: "Core, Shoulders, Back", anim: "plank",
+        steps: ["Start in forearm plank position, elbows under shoulders", "Create a straight line from head to heels", "Squeeze glutes and brace core as if bracing for a punch", "Hold the position, breathing steadily", "Don't let hips rise or sag"],
+        tips: ["Look at a spot between your hands", "Squeeze everything — glutes, quads, core", "If shaking, you're doing it right"]
+      },
+      {
+        name: "Burpees", reps: "3×10", cal: 12, muscle: "Full Body, Cardio", anim: "burpee",
+        steps: ["Stand tall, then drop into a squat, hands on floor", "Jump feet back into plank position", "Perform a push-up (chest touches ground)", "Jump feet forward to hands", "Explode upward into a jump, arms overhead"],
+        tips: ["Move fluidly — no pausing between steps", "Land softly on the jump", "Scale by removing the push-up if needed"]
+      },
+      {
+        name: "Lunges", reps: "3×12 each", cal: 8, muscle: "Quads, Glutes, Balance", anim: "squat",
+        steps: ["Stand tall, take a big step forward", "Lower back knee toward the ground", "Front knee stays over ankle, not past toes", "Push through front heel to return to standing", "Alternate legs each rep"],
+        tips: ["Keep torso upright", "Don't let front knee cave inward", "Control the descent — don't crash down"]
+      },
+      {
+        name: "Mountain Climbers", reps: "3×30s", cal: 10, muscle: "Core, Shoulders, Hip Flexors", anim: "burpee",
+        steps: ["Start in push-up position, arms straight", "Drive right knee toward chest rapidly", "As right foot returns, drive left knee forward", "Continue alternating at a fast pace", "Keep hips low and level throughout"],
+        tips: ["The faster you go, the more cardio benefit", "Don't bounce hips up and down", "Keep arms locked, shoulders over wrists"]
+      },
     ],
-    combat:[
-      {name:"Jab",reps:"3×30 each hand",cal:8,anim:"punch",
-        steps:["Stand in fighting stance — lead foot forward, hands up by chin","Extend lead hand straight forward, rotating fist palm-down","Snap the punch back to guard position immediately","Keep rear hand protecting your chin","Rotate shoulder forward to extend reach"],
-        tips:["Speed over power — the jab is a range-finder","Keep your chin tucked behind your shoulder","Step forward slightly with the jab for extra reach"]},
-      {name:"Cross (Rear Straight)",reps:"3×30 each hand",cal:8,anim:"punch",
-        steps:["From fighting stance, rotate hips and rear foot","Drive rear hand straight forward, rotating palm down","Full hip rotation generates the power","Pull hand back to guard immediately","Your body weight should shift forward slightly"],
-        tips:["The power comes from your hips, not your arm","Pivot on the ball of your rear foot","Don't drop your lead hand when throwing the cross"]},
-      {name:"Front Kick (Teep)",reps:"3×15 each leg",cal:10,anim:"kick",
-        steps:["From stance, lift lead knee to waist height","Extend leg forward, pushing with the ball of your foot","Aim for the opponent's midsection or solar plexus","Retract the kick quickly — don't leave your leg out","Return to fighting stance"],
-        tips:["Chamber the knee high before extending","Push through the target, don't just tap it","This is a defensive kick — use it to create distance"]},
-    ]},
-  {gate:2,name:"Warrior's Path",unlock:10,color:"#34d399",
-    exercises:[
-      {name:"Diamond Push-ups",reps:"4×12",cal:10,muscle:"Triceps, Inner Chest",anim:"push",
-        steps:["Place hands close together forming a diamond shape with index fingers and thumbs","Lower chest to your hands keeping elbows close to body","Push back up, focusing on tricep contraction","Keep core engaged and body straight"],
-        tips:["Harder than standard push-ups — scale reps if needed","Keep elbows pointing backward, not outward"]},
-      {name:"Jump Squats",reps:"4×15",cal:14,muscle:"Quads, Glutes, Explosiveness",anim:"squat",
-        steps:["Perform a regular squat going below parallel","At the bottom, explode upward into a jump","Land softly on balls of feet, immediately going into next squat","Swing arms for momentum"],
-        tips:["Land quietly — if you're stomping, work on soft landings","Go deep before each jump for maximum power"]},
-      {name:"Pike Push-ups",reps:"3×10",cal:9,muscle:"Shoulders, Triceps",anim:"push",
-        steps:["Start in downward dog position — hips high, hands and feet on ground","Bend elbows and lower head toward the ground between your hands","Push back up to starting position","Keep legs as straight as possible"],
-        tips:["Elevate feet on a step for more difficulty","This is the foundation for handstand push-ups"]},
-      {name:"Pistol Squat Progression",reps:"3×8 each",cal:12,muscle:"Single Leg Strength, Balance",anim:"squat",
-        steps:["Stand on one leg, extending the other leg forward","Slowly lower yourself down on the standing leg","Go as deep as you can while keeping balance","Push back up to standing","Use a doorframe or chair for support if needed"],
-        tips:["Start with assisted versions — hold onto something","Flexibility in ankles and hamstrings is key"]},
-      {name:"Hanging Knee Raises",reps:"3×12",cal:8,muscle:"Lower Abs, Hip Flexors",anim:"plank",
-        steps:["Hang from a bar with arms fully extended","Bring knees up to chest level","Control the descent — don't swing","Keep shoulders engaged, don't just hang passively"],
-        tips:["No swinging — if you swing, you're using momentum","Squeeze abs at the top of each rep"]},
-      {name:"Tuck Jumps",reps:"3×10",cal:15,muscle:"Legs, Explosive Power",anim:"burpee",
-        steps:["Stand with feet hip-width apart","Jump as high as possible","At the peak, pull knees to chest","Land softly and immediately jump again"],
-        tips:["Focus on height, not speed","Land on balls of feet with bent knees"]},
+    combat: [
+      {
+        name: "Jab", reps: "3×30 each hand", cal: 8, anim: "punch",
+        steps: ["Stand in fighting stance — lead foot forward, hands up by chin", "Extend lead hand straight forward, rotating fist palm-down", "Snap the punch back to guard position immediately", "Keep rear hand protecting your chin", "Rotate shoulder forward to extend reach"],
+        tips: ["Speed over power — the jab is a range-finder", "Keep your chin tucked behind your shoulder", "Step forward slightly with the jab for extra reach"]
+      },
+      {
+        name: "Cross (Rear Straight)", reps: "3×30 each hand", cal: 8, anim: "punch",
+        steps: ["From fighting stance, rotate hips and rear foot", "Drive rear hand straight forward, rotating palm down", "Full hip rotation generates the power", "Pull hand back to guard immediately", "Your body weight should shift forward slightly"],
+        tips: ["The power comes from your hips, not your arm", "Pivot on the ball of your rear foot", "Don't drop your lead hand when throwing the cross"]
+      },
+      {
+        name: "Front Kick (Teep)", reps: "3×15 each leg", cal: 10, anim: "kick",
+        steps: ["From stance, lift lead knee to waist height", "Extend leg forward, pushing with the ball of your foot", "Aim for the opponent's midsection or solar plexus", "Retract the kick quickly — don't leave your leg out", "Return to fighting stance"],
+        tips: ["Chamber the knee high before extending", "Push through the target, don't just tap it", "This is a defensive kick — use it to create distance"]
+      },
+    ]
+  },
+  {
+    gate: 2, name: "Warrior's Path", unlock: 10, color: "#34d399",
+    exercises: [
+      {
+        name: "Diamond Push-ups", reps: "4×12", cal: 10, muscle: "Triceps, Inner Chest", anim: "push",
+        steps: ["Place hands close together forming a diamond shape with index fingers and thumbs", "Lower chest to your hands keeping elbows close to body", "Push back up, focusing on tricep contraction", "Keep core engaged and body straight"],
+        tips: ["Harder than standard push-ups — scale reps if needed", "Keep elbows pointing backward, not outward"]
+      },
+      {
+        name: "Jump Squats", reps: "4×15", cal: 14, muscle: "Quads, Glutes, Explosiveness", anim: "squat",
+        steps: ["Perform a regular squat going below parallel", "At the bottom, explode upward into a jump", "Land softly on balls of feet, immediately going into next squat", "Swing arms for momentum"],
+        tips: ["Land quietly — if you're stomping, work on soft landings", "Go deep before each jump for maximum power"]
+      },
+      {
+        name: "Pike Push-ups", reps: "3×10", cal: 9, muscle: "Shoulders, Triceps", anim: "push",
+        steps: ["Start in downward dog position — hips high, hands and feet on ground", "Bend elbows and lower head toward the ground between your hands", "Push back up to starting position", "Keep legs as straight as possible"],
+        tips: ["Elevate feet on a step for more difficulty", "This is the foundation for handstand push-ups"]
+      },
+      {
+        name: "Pistol Squat Progression", reps: "3×8 each", cal: 12, muscle: "Single Leg Strength, Balance", anim: "squat",
+        steps: ["Stand on one leg, extending the other leg forward", "Slowly lower yourself down on the standing leg", "Go as deep as you can while keeping balance", "Push back up to standing", "Use a doorframe or chair for support if needed"],
+        tips: ["Start with assisted versions — hold onto something", "Flexibility in ankles and hamstrings is key"]
+      },
+      {
+        name: "Hanging Knee Raises", reps: "3×12", cal: 8, muscle: "Lower Abs, Hip Flexors", anim: "plank",
+        steps: ["Hang from a bar with arms fully extended", "Bring knees up to chest level", "Control the descent — don't swing", "Keep shoulders engaged, don't just hang passively"],
+        tips: ["No swinging — if you swing, you're using momentum", "Squeeze abs at the top of each rep"]
+      },
+      {
+        name: "Tuck Jumps", reps: "3×10", cal: 15, muscle: "Legs, Explosive Power", anim: "burpee",
+        steps: ["Stand with feet hip-width apart", "Jump as high as possible", "At the peak, pull knees to chest", "Land softly and immediately jump again"],
+        tips: ["Focus on height, not speed", "Land on balls of feet with bent knees"]
+      },
     ],
-    combat:[
-      {name:"Jab-Cross Combo",reps:"5×20 combos",cal:14,anim:"punch",
-        steps:["Start in fighting stance, hands at chin","Throw a quick jab with lead hand","Immediately follow with a cross from rear hand","Full hip rotation on the cross","Return both hands to guard position"],
-        tips:["The combo should flow as one motion, not two separate punches","Double the speed, keep the power","Practice in front of a mirror to check form"]},
-      {name:"Hook Punch",reps:"3×20 each",cal:10,anim:"punch",
-        steps:["From stance, keep elbow bent at 90 degrees","Rotate hips and pivot lead foot","Swing arm in a horizontal arc, fist at chin level","The power comes from the hip rotation, not the arm","Pull hand back to guard immediately"],
-        tips:["Don't wind up — the hook comes from your guard","Think of rotating your body around a central axis","Short, tight hook is better than a wide, looping one"]},
-      {name:"Roundhouse Kick",reps:"3×12 each",cal:14,anim:"kick",
-        steps:["From stance, pivot on support foot, turning it 90-180 degrees","Lift kicking knee up and to the side","Whip the shin through the target horizontally","Strike with the shin, not the foot","Retract the kick and return to stance"],
-        tips:["The pivot foot turn is everything — turn it AWAY from the target","Drive your hip through the kick for power","Practice the pivot slowly before adding speed"]},
-      {name:"Slip & Counter Drill",reps:"3×60s",cal:12,anim:"punch",
-        steps:["Visualize an incoming jab to your head","Bend knees and slip head to the outside of the punch","Immediately counter with your own cross","Reset to stance and repeat on other side","Keep eyes forward — don't look at the ground"],
-        tips:["Slip with your LEGS, not just your neck","The counter should come as you rise from the slip","This is the foundation of counter-fighting"]},
-    ]},
-  {gate:3,name:"Iron Body",unlock:22,color:"#10b981",
-    exercises:[
-      {name:"Archer Push-ups",reps:"3×8 each",cal:12,muscle:"Chest, Single-arm Prep",anim:"push",
-        steps:["Wide push-up position — one arm bends while the other stays straight","Lower toward the bending arm side","Push back up, then switch sides","The straight arm acts as an assist"],
-        tips:["This is the bridge to one-arm push-ups","Keep the assisting arm as straight as possible"]},
-      {name:"Bulgarian Split Squats",reps:"4×10 each",cal:12,muscle:"Quads, Glutes, Balance",anim:"squat",
-        steps:["Place rear foot on an elevated surface behind you","Lower until front thigh is parallel to ground","Front knee stays over ankle","Drive through front heel to return up"],
-        tips:["The further forward your front foot, the more glute activation","Keep torso upright throughout"]},
-      {name:"L-Sit Progression",reps:"3×20s hold",cal:8,muscle:"Core, Hip Flexors, Triceps",anim:"plank",
-        steps:["Sit on floor, hands beside hips, fingers forward","Press down and lift entire body off the ground","Extend legs straight out in front, parallel to floor","Hold the position with legs locked out"],
-        tips:["Start with tucked knees if full L-sit is too hard","Press shoulders DOWN away from ears"]},
-      {name:"Decline Push-ups",reps:"4×12",cal:10,muscle:"Upper Chest, Shoulders",anim:"push",
-        steps:["Place feet on an elevated surface, hands on ground","Perform push-ups with body declining toward hands","Lower chest to ground, push back up"],
-        tips:["Higher feet = more shoulder activation","Keep core tight to avoid sagging"]},
-      {name:"Dragon Flag Progression",reps:"3×6",cal:10,muscle:"Full Core Chain",anim:"plank",
-        steps:["Lie on bench or ground, grip behind head","Lift entire body up, keeping it rigid and straight","Slowly lower body toward ground, staying straight","Only shoulders touch the surface","Control the negative — don't crash down"],
-        tips:["Bruce Lee's signature move — start with negatives only","Your core should feel like a steel rod"]},
+    combat: [
+      {
+        name: "Jab-Cross Combo", reps: "5×20 combos", cal: 14, anim: "punch",
+        steps: ["Start in fighting stance, hands at chin", "Throw a quick jab with lead hand", "Immediately follow with a cross from rear hand", "Full hip rotation on the cross", "Return both hands to guard position"],
+        tips: ["The combo should flow as one motion, not two separate punches", "Double the speed, keep the power", "Practice in front of a mirror to check form"]
+      },
+      {
+        name: "Hook Punch", reps: "3×20 each", cal: 10, anim: "punch",
+        steps: ["From stance, keep elbow bent at 90 degrees", "Rotate hips and pivot lead foot", "Swing arm in a horizontal arc, fist at chin level", "The power comes from the hip rotation, not the arm", "Pull hand back to guard immediately"],
+        tips: ["Don't wind up — the hook comes from your guard", "Think of rotating your body around a central axis", "Short, tight hook is better than a wide, looping one"]
+      },
+      {
+        name: "Roundhouse Kick", reps: "3×12 each", cal: 14, anim: "kick",
+        steps: ["From stance, pivot on support foot, turning it 90-180 degrees", "Lift kicking knee up and to the side", "Whip the shin through the target horizontally", "Strike with the shin, not the foot", "Retract the kick and return to stance"],
+        tips: ["The pivot foot turn is everything — turn it AWAY from the target", "Drive your hip through the kick for power", "Practice the pivot slowly before adding speed"]
+      },
+      {
+        name: "Slip & Counter Drill", reps: "3×60s", cal: 12, anim: "punch",
+        steps: ["Visualize an incoming jab to your head", "Bend knees and slip head to the outside of the punch", "Immediately counter with your own cross", "Reset to stance and repeat on other side", "Keep eyes forward — don't look at the ground"],
+        tips: ["Slip with your LEGS, not just your neck", "The counter should come as you rise from the slip", "This is the foundation of counter-fighting"]
+      },
+    ]
+  },
+  {
+    gate: 3, name: "Iron Body", unlock: 22, color: "#10b981",
+    exercises: [
+      {
+        name: "Archer Push-ups", reps: "3×8 each", cal: 12, muscle: "Chest, Single-arm Prep", anim: "push",
+        steps: ["Wide push-up position — one arm bends while the other stays straight", "Lower toward the bending arm side", "Push back up, then switch sides", "The straight arm acts as an assist"],
+        tips: ["This is the bridge to one-arm push-ups", "Keep the assisting arm as straight as possible"]
+      },
+      {
+        name: "Bulgarian Split Squats", reps: "4×10 each", cal: 12, muscle: "Quads, Glutes, Balance", anim: "squat",
+        steps: ["Place rear foot on an elevated surface behind you", "Lower until front thigh is parallel to ground", "Front knee stays over ankle", "Drive through front heel to return up"],
+        tips: ["The further forward your front foot, the more glute activation", "Keep torso upright throughout"]
+      },
+      {
+        name: "L-Sit Progression", reps: "3×20s hold", cal: 8, muscle: "Core, Hip Flexors, Triceps", anim: "plank",
+        steps: ["Sit on floor, hands beside hips, fingers forward", "Press down and lift entire body off the ground", "Extend legs straight out in front, parallel to floor", "Hold the position with legs locked out"],
+        tips: ["Start with tucked knees if full L-sit is too hard", "Press shoulders DOWN away from ears"]
+      },
+      {
+        name: "Decline Push-ups", reps: "4×12", cal: 10, muscle: "Upper Chest, Shoulders", anim: "push",
+        steps: ["Place feet on an elevated surface, hands on ground", "Perform push-ups with body declining toward hands", "Lower chest to ground, push back up"],
+        tips: ["Higher feet = more shoulder activation", "Keep core tight to avoid sagging"]
+      },
+      {
+        name: "Dragon Flag Progression", reps: "3×6", cal: 10, muscle: "Full Core Chain", anim: "plank",
+        steps: ["Lie on bench or ground, grip behind head", "Lift entire body up, keeping it rigid and straight", "Slowly lower body toward ground, staying straight", "Only shoulders touch the surface", "Control the negative — don't crash down"],
+        tips: ["Bruce Lee's signature move — start with negatives only", "Your core should feel like a steel rod"]
+      },
     ],
-    combat:[
-      {name:"4-Punch Combo (Jab-Cross-Hook-Cross)",reps:"5×15 combos",cal:18,anim:"punch",
-        steps:["Jab (lead) → Cross (rear) → Hook (lead) → Cross (rear)","Each punch flows into the next","Full hip rotation on every cross and hook","Hands return to guard between combos"],
-        tips:["This is THE fundamental boxing combination","Speed first, then add power as the pattern becomes natural"]},
-      {name:"Knee Strikes",reps:"3×15 each",cal:14,anim:"kick",
-        steps:["From clinch position (hands up, elbows in)","Pull opponent toward you with hands","Drive knee upward into midsection","Squeeze hip flexors at the top","Return foot to ground and reset"],
-        tips:["Grab the back of the neck to pull opponent onto the knee","Rise up on the support foot for more height","The hip thrust forward is what generates power"]},
-      {name:"Elbow Strikes (3 types)",reps:"3×12 each",cal:10,anim:"punch",
-        steps:["Horizontal elbow: Swing elbow parallel to ground across target","Upward elbow: Drive elbow upward from below chin level","Downward elbow: Drop elbow down on top of target","Keep opposite hand guarding your face"],
-        tips:["Elbows are the sharpest weapon in striking","Very close range — step IN to use them","Rotate entire body into each strike"]},
-      {name:"Shadow Boxing",reps:"3×3min rounds",cal:25,anim:"punch",
-        steps:["Move around your space in fighting stance","Throw combinations freely — mix punches, kicks, elbows, knees","Focus on footwork between combinations","Visualize an opponent — don't just throw at air","1 min rest between rounds"],
-        tips:["This is where you put everything together","Stay relaxed — tension kills speed","Breathe out sharply with each strike"]},
-    ]},
-  {gate:4,name:"Flame Knight",unlock:35,color:"#ef4444",
-    exercises:[
-      {name:"One-Arm Push-up Progression",reps:"3×5 each",cal:14,muscle:"Chest, Triceps, Core",anim:"push",
-        steps:["Wide stance, one hand on ground, other behind back","Lower chest toward the ground","Push back up maintaining body alignment","Start elevated (wall, then table, then floor)"],
-        tips:["Feet wider = easier balance","Don't rotate your body — fight to stay square"]},
-      {name:"Handstand Push-up Progression",reps:"4×6",cal:14,muscle:"Shoulders, Triceps",anim:"push",
-        steps:["Kick up into handstand against a wall","Lower head to the ground by bending arms","Press back up to full handstand","Start with pike push-ups feet elevated if too hard"],
-        tips:["Look at a spot between your hands","Keep core tight to avoid arching"]},
-      {name:"Pistol Squats (Full)",reps:"3×8 each",cal:14,muscle:"Single Leg Mastery",anim:"squat",
-        steps:["Stand on one leg, other leg extended forward","Lower all the way down on the standing leg","At the bottom, your hamstring should touch your calf","Stand back up without using the other leg"],
-        tips:["Hold a light counterweight in front for balance","Ankle mobility is usually the limiting factor"]},
-      {name:"Plyometric Clap Push-ups",reps:"3×8",cal:12,muscle:"Chest Power, Fast Twitch",anim:"push",
-        steps:["Perform a push-up and explode off the ground","Clap hands at the peak","Land with soft elbows, immediately go into next rep"],
-        tips:["Land quietly — absorb the impact","Start with just lifting hands off ground before adding claps"]},
+    combat: [
+      {
+        name: "4-Punch Combo (Jab-Cross-Hook-Cross)", reps: "5×15 combos", cal: 18, anim: "punch",
+        steps: ["Jab (lead) → Cross (rear) → Hook (lead) → Cross (rear)", "Each punch flows into the next", "Full hip rotation on every cross and hook", "Hands return to guard between combos"],
+        tips: ["This is THE fundamental boxing combination", "Speed first, then add power as the pattern becomes natural"]
+      },
+      {
+        name: "Knee Strikes", reps: "3×15 each", cal: 14, anim: "kick",
+        steps: ["From clinch position (hands up, elbows in)", "Pull opponent toward you with hands", "Drive knee upward into midsection", "Squeeze hip flexors at the top", "Return foot to ground and reset"],
+        tips: ["Grab the back of the neck to pull opponent onto the knee", "Rise up on the support foot for more height", "The hip thrust forward is what generates power"]
+      },
+      {
+        name: "Elbow Strikes (3 types)", reps: "3×12 each", cal: 10, anim: "punch",
+        steps: ["Horizontal elbow: Swing elbow parallel to ground across target", "Upward elbow: Drive elbow upward from below chin level", "Downward elbow: Drop elbow down on top of target", "Keep opposite hand guarding your face"],
+        tips: ["Elbows are the sharpest weapon in striking", "Very close range — step IN to use them", "Rotate entire body into each strike"]
+      },
+      {
+        name: "Shadow Boxing", reps: "3×3min rounds", cal: 25, anim: "punch",
+        steps: ["Move around your space in fighting stance", "Throw combinations freely — mix punches, kicks, elbows, knees", "Focus on footwork between combinations", "Visualize an opponent — don't just throw at air", "1 min rest between rounds"],
+        tips: ["This is where you put everything together", "Stay relaxed — tension kills speed", "Breathe out sharply with each strike"]
+      },
+    ]
+  },
+  {
+    gate: 4, name: "Flame Knight", unlock: 35, color: "#ef4444",
+    exercises: [
+      {
+        name: "One-Arm Push-up Progression", reps: "3×5 each", cal: 14, muscle: "Chest, Triceps, Core", anim: "push",
+        steps: ["Wide stance, one hand on ground, other behind back", "Lower chest toward the ground", "Push back up maintaining body alignment", "Start elevated (wall, then table, then floor)"],
+        tips: ["Feet wider = easier balance", "Don't rotate your body — fight to stay square"]
+      },
+      {
+        name: "Handstand Push-up Progression", reps: "4×6", cal: 14, muscle: "Shoulders, Triceps", anim: "push",
+        steps: ["Kick up into handstand against a wall", "Lower head to the ground by bending arms", "Press back up to full handstand", "Start with pike push-ups feet elevated if too hard"],
+        tips: ["Look at a spot between your hands", "Keep core tight to avoid arching"]
+      },
+      {
+        name: "Pistol Squats (Full)", reps: "3×8 each", cal: 14, muscle: "Single Leg Mastery", anim: "squat",
+        steps: ["Stand on one leg, other leg extended forward", "Lower all the way down on the standing leg", "At the bottom, your hamstring should touch your calf", "Stand back up without using the other leg"],
+        tips: ["Hold a light counterweight in front for balance", "Ankle mobility is usually the limiting factor"]
+      },
+      {
+        name: "Plyometric Clap Push-ups", reps: "3×8", cal: 12, muscle: "Chest Power, Fast Twitch", anim: "push",
+        steps: ["Perform a push-up and explode off the ground", "Clap hands at the peak", "Land with soft elbows, immediately go into next rep"],
+        tips: ["Land quietly — absorb the impact", "Start with just lifting hands off ground before adding claps"]
+      },
     ],
-    combat:[
-      {name:"Spinning Back Fist",reps:"3×8 each",cal:12,anim:"punch",
-        steps:["From stance, pivot on lead foot and spin 180°","As you spin, extend your rear arm horizontally","Strike with the back of your fist at head level","Continue the spin back to your stance","Keep eyes on target — spot like a dancer"],
-        tips:["Speed of the spin = power of the strike","Practice the spin slowly first, then add speed","The element of surprise is this move's greatest asset"]},
-      {name:"Spinning Hook Kick",reps:"3×8 each",cal:14,anim:"kick",
-        steps:["Pivot on front foot, turning away from target","Lift rear leg as you spin 360°","Hook the heel through the target at head level","Complete the rotation back to stance"],
-        tips:["Chamber the knee high during the spin","Spot your target early as you come around","One of the most devastating kicks in martial arts"]},
-      {name:"Defensive Footwork",reps:"5×60s",cal:15,anim:"squat",
-        steps:["Practice lateral movement — side to side in stance","Angle out to 45° after each combination","Level change — drop levels then explode up","Circle away from opponent's power hand","Never cross your feet while moving"],
-        tips:["Footwork wins fights more than punches do","Stay on the balls of your feet","Small, quick steps — never take big strides"]},
-    ]},
-  {gate:5,name:"Phoenix Form",unlock:50,color:"#f59e0b",
-    exercises:[
-      {name:"Planche Lean Progression",reps:"5×15s",cal:12,muscle:"Shoulders, Core, Full Body",anim:"plank",
-        steps:["Push-up position, lean forward until shoulders are past hands","Hold the forward lean with arms straight","Feet may lighten or lift slightly","Progress by leaning further forward over time"],
-        tips:["This builds toward the full planche — one of the hardest bodyweight skills","Wrist flexibility is crucial — warm up wrists first"]},
-      {name:"Front Lever Progression",reps:"4×10s",cal:14,muscle:"Back, Core, Lats",anim:"plank",
-        steps:["Hang from a bar, then lift body to horizontal","Keep body straight and rigid, face up","Hold the position parallel to the ground","Start with tucked knees, progress to full"],
-        tips:["Engage lats hard — think of pulling the bar toward your hips","The full front lever requires insane core strength"]},
-      {name:"Human Flag Progression",reps:"3×8s each",cal:14,muscle:"Obliques, Lats, Shoulders",anim:"plank",
-        steps:["Grip a vertical pole — bottom hand pushes, top hand pulls","Lift body sideways to horizontal","Hold body rigid and straight like a flag","Start with tucked knees"],
-        tips:["One of the ultimate displays of relative strength","The bottom arm does most of the work"]},
+    combat: [
+      {
+        name: "Spinning Back Fist", reps: "3×8 each", cal: 12, anim: "punch",
+        steps: ["From stance, pivot on lead foot and spin 180°", "As you spin, extend your rear arm horizontally", "Strike with the back of your fist at head level", "Continue the spin back to your stance", "Keep eyes on target — spot like a dancer"],
+        tips: ["Speed of the spin = power of the strike", "Practice the spin slowly first, then add speed", "The element of surprise is this move's greatest asset"]
+      },
+      {
+        name: "Spinning Hook Kick", reps: "3×8 each", cal: 14, anim: "kick",
+        steps: ["Pivot on front foot, turning away from target", "Lift rear leg as you spin 360°", "Hook the heel through the target at head level", "Complete the rotation back to stance"],
+        tips: ["Chamber the knee high during the spin", "Spot your target early as you come around", "One of the most devastating kicks in martial arts"]
+      },
+      {
+        name: "Defensive Footwork", reps: "5×60s", cal: 15, anim: "squat",
+        steps: ["Practice lateral movement — side to side in stance", "Angle out to 45° after each combination", "Level change — drop levels then explode up", "Circle away from opponent's power hand", "Never cross your feet while moving"],
+        tips: ["Footwork wins fights more than punches do", "Stay on the balls of your feet", "Small, quick steps — never take big strides"]
+      },
+    ]
+  },
+  {
+    gate: 5, name: "Phoenix Form", unlock: 50, color: "#f59e0b",
+    exercises: [
+      {
+        name: "Planche Lean Progression", reps: "5×15s", cal: 12, muscle: "Shoulders, Core, Full Body", anim: "plank",
+        steps: ["Push-up position, lean forward until shoulders are past hands", "Hold the forward lean with arms straight", "Feet may lighten or lift slightly", "Progress by leaning further forward over time"],
+        tips: ["This builds toward the full planche — one of the hardest bodyweight skills", "Wrist flexibility is crucial — warm up wrists first"]
+      },
+      {
+        name: "Front Lever Progression", reps: "4×10s", cal: 14, muscle: "Back, Core, Lats", anim: "plank",
+        steps: ["Hang from a bar, then lift body to horizontal", "Keep body straight and rigid, face up", "Hold the position parallel to the ground", "Start with tucked knees, progress to full"],
+        tips: ["Engage lats hard — think of pulling the bar toward your hips", "The full front lever requires insane core strength"]
+      },
+      {
+        name: "Human Flag Progression", reps: "3×8s each", cal: 14, muscle: "Obliques, Lats, Shoulders", anim: "plank",
+        steps: ["Grip a vertical pole — bottom hand pushes, top hand pulls", "Lift body sideways to horizontal", "Hold body rigid and straight like a flag", "Start with tucked knees"],
+        tips: ["One of the ultimate displays of relative strength", "The bottom arm does most of the work"]
+      },
     ],
-    combat:[
-      {name:"Flying Knee",reps:"3×8 each",cal:14,anim:"kick",
-        steps:["From stance, take a quick step forward","Explosively jump off the front foot","Drive rear knee upward while airborne","Strike with the knee at chest/chin level","Land and reset to stance"],
-        tips:["Commitment is key — fully launch yourself","Pull opponent's head down as you jump up","One of the most dramatic and powerful strikes"]},
-      {name:"Axe Kick",reps:"3×10 each",cal:12,anim:"kick",
-        steps:["Swing leg straight up as high as possible","At the peak, drive heel straight downward","Strike with the heel onto the target's shoulder or head","Return to stance after the downward strike"],
-        tips:["Flexibility is essential for this kick","The power comes from the falling motion","Great for breaking through a high guard"]},
-      {name:"Combat Flow Drill",reps:"4×3min",cal:30,anim:"punch",
-        steps:["Combine all learned techniques in continuous flow","Punch combo → kick → knee → elbow → footwork → repeat","No pausing between techniques","Maintain fighting stance throughout","1 min rest between rounds"],
-        tips:["This is where a fighter is made — the transition between techniques","Stay relaxed and breathe rhythmically","Imagine a fight scenario with each combination"]},
-    ]},
-  {gate:6,name:"Titan's Trial",unlock:70,color:"#fbbf24",
-    exercises:[
-      {name:"Full Planche (or progression)",reps:"5×8s",cal:16,muscle:"Shoulders, Core, Full Body",anim:"plank",
-        steps:["From planche lean, lift feet off ground","Hold body horizontal with arms straight, face down","Only hands touch the ground — body floats","Progress: tuck → straddle → full"],
-        tips:["This can take years to achieve — embrace the journey","Straight arm strength is a different kind of strength"]},
-      {name:"Full Front Lever Rows",reps:"3×5",cal:16,muscle:"Back, Biceps, Core",anim:"push",
-        steps:["Hold front lever position on a bar","Pull chest to the bar while maintaining horizontal body","Lower back to front lever position","This combines the hardest hold with the hardest pull"],
-        tips:["If you can do these, you have elite-level strength","Start with tucked lever rows"]},
-      {name:"Nordic Hamstring Curls",reps:"3×8",cal:14,muscle:"Hamstrings",anim:"squat",
-        steps:["Kneel with feet anchored under something solid","Slowly lower your body forward, keeping hips extended","Lower as far as possible under control","Use hands to catch yourself, then pull back up"],
-        tips:["Legendary for hamstring development and injury prevention","The negative (lowering) is the most important part"]},
+    combat: [
+      {
+        name: "Flying Knee", reps: "3×8 each", cal: 14, anim: "kick",
+        steps: ["From stance, take a quick step forward", "Explosively jump off the front foot", "Drive rear knee upward while airborne", "Strike with the knee at chest/chin level", "Land and reset to stance"],
+        tips: ["Commitment is key — fully launch yourself", "Pull opponent's head down as you jump up", "One of the most dramatic and powerful strikes"]
+      },
+      {
+        name: "Axe Kick", reps: "3×10 each", cal: 12, anim: "kick",
+        steps: ["Swing leg straight up as high as possible", "At the peak, drive heel straight downward", "Strike with the heel onto the target's shoulder or head", "Return to stance after the downward strike"],
+        tips: ["Flexibility is essential for this kick", "The power comes from the falling motion", "Great for breaking through a high guard"]
+      },
+      {
+        name: "Combat Flow Drill", reps: "4×3min", cal: 30, anim: "punch",
+        steps: ["Combine all learned techniques in continuous flow", "Punch combo → kick → knee → elbow → footwork → repeat", "No pausing between techniques", "Maintain fighting stance throughout", "1 min rest between rounds"],
+        tips: ["This is where a fighter is made — the transition between techniques", "Stay relaxed and breathe rhythmically", "Imagine a fight scenario with each combination"]
+      },
+    ]
+  },
+  {
+    gate: 6, name: "Titan's Trial", unlock: 70, color: "#fbbf24",
+    exercises: [
+      {
+        name: "Full Planche (or progression)", reps: "5×8s", cal: 16, muscle: "Shoulders, Core, Full Body", anim: "plank",
+        steps: ["From planche lean, lift feet off ground", "Hold body horizontal with arms straight, face down", "Only hands touch the ground — body floats", "Progress: tuck → straddle → full"],
+        tips: ["This can take years to achieve — embrace the journey", "Straight arm strength is a different kind of strength"]
+      },
+      {
+        name: "Full Front Lever Rows", reps: "3×5", cal: 16, muscle: "Back, Biceps, Core", anim: "push",
+        steps: ["Hold front lever position on a bar", "Pull chest to the bar while maintaining horizontal body", "Lower back to front lever position", "This combines the hardest hold with the hardest pull"],
+        tips: ["If you can do these, you have elite-level strength", "Start with tucked lever rows"]
+      },
+      {
+        name: "Nordic Hamstring Curls", reps: "3×8", cal: 14, muscle: "Hamstrings", anim: "squat",
+        steps: ["Kneel with feet anchored under something solid", "Slowly lower your body forward, keeping hips extended", "Lower as far as possible under control", "Use hands to catch yourself, then pull back up"],
+        tips: ["Legendary for hamstring development and injury prevention", "The negative (lowering) is the most important part"]
+      },
     ],
-    combat:[
-      {name:"Tornado Kick",reps:"3×6 each",cal:16,anim:"kick",
-        steps:["Step forward and begin a 360° spin","Jump off the ground during the spin","At 270°, chamber the kicking leg","Complete the 360° with a roundhouse kick at head level","Land in fighting stance"],
-        tips:["Start by practicing the spin without the kick","This is an advanced, flashy technique — master basics first","Spot your target through the entire spin"]},
-      {name:"10-Round Fight Simulation",reps:"10×3min",cal:80,anim:"punch",
-        steps:["Round 1-3: Focus on jabs, crosses, and footwork","Round 4-6: Add hooks, uppercuts, and kicks","Round 7-8: Include knees, elbows, and clinch work","Round 9-10: Everything — full intensity, empty the tank","1 min rest between rounds, stay moving during rest"],
-        tips:["This is the ultimate test of everything you've built","Pace yourself — don't gas out in round 3","By round 10, you should have nothing left"]},
-      {name:"Warrior's Meditation Kata",reps:"2×10min",cal:15,anim:"plank",
-        steps:["Perform every strike and kick you know in slow motion","Each movement takes 5-10 seconds to complete","Focus on perfect form in every technique","Breathe deeply with each movement","This is moving meditation — mind and body united"],
-        tips:["The slowest practice produces the fastest fighters","Feel every muscle engaging in each technique","This is how masters train — precision over speed"]},
-    ]},
+    combat: [
+      {
+        name: "Tornado Kick", reps: "3×6 each", cal: 16, anim: "kick",
+        steps: ["Step forward and begin a 360° spin", "Jump off the ground during the spin", "At 270°, chamber the kicking leg", "Complete the 360° with a roundhouse kick at head level", "Land in fighting stance"],
+        tips: ["Start by practicing the spin without the kick", "This is an advanced, flashy technique — master basics first", "Spot your target through the entire spin"]
+      },
+      {
+        name: "10-Round Fight Simulation", reps: "10×3min", cal: 80, anim: "punch",
+        steps: ["Round 1-3: Focus on jabs, crosses, and footwork", "Round 4-6: Add hooks, uppercuts, and kicks", "Round 7-8: Include knees, elbows, and clinch work", "Round 9-10: Everything — full intensity, empty the tank", "1 min rest between rounds, stay moving during rest"],
+        tips: ["This is the ultimate test of everything you've built", "Pace yourself — don't gas out in round 3", "By round 10, you should have nothing left"]
+      },
+      {
+        name: "Warrior's Meditation Kata", reps: "2×10min", cal: 15, anim: "plank",
+        steps: ["Perform every strike and kick you know in slow motion", "Each movement takes 5-10 seconds to complete", "Focus on perfect form in every technique", "Breathe deeply with each movement", "This is moving meditation — mind and body united"],
+        tips: ["The slowest practice produces the fastest fighters", "Feel every muscle engaging in each technique", "This is how masters train — precision over speed"]
+      },
+    ]
+  },
 ];
 
 // ── PILLAR GROWTH MISSIONS (separate from XP leveling) ──
-export const PILLAR_MISSIONS={
-  mind:{label:"Mind",icon:"⚡",color:"#06b6d4",tiers:[
-    {tier:1,name:"Awakening",missions:[
-      {id:"m1_1",name:"Read 10 Pages Daily for 7 Days",icon:"📖",desc:"Build the reading habit with a small daily commitment.",how:["Choose a book that genuinely interests you","Set a fixed reading time each day","No phone for 10 min before reading","Track each day in your journal"]},
-      {id:"m1_2",name:"Learn 5 New Words Daily for 5 Days",icon:"📝",desc:"Expand vocabulary — learn, define, and use 5 new words each day.",how:["Use a dictionary app or word-of-the-day","Write meaning and create a sentence for each","Review yesterday's words before new ones"]},
-      {id:"m1_3",name:"Solve a Logic Puzzle",icon:"🧩",desc:"Challenge your brain — Sudoku, crossword, riddle, or brain teaser.",how:["Pick a puzzle type you've never tried","Spend at least 15 min without looking up answers","Try harder difficulty next time"]},
-      {id:"m1_4",name:"Write a 500-Word Reflection",icon:"✍️",desc:"Write about something you learned recently in organized paragraphs.",how:["Pick one thing you learned this week","Write intro, body, conclusion","Don't edit while writing — flow first, edit after"]},
-    ]},
-    {tier:2,name:"Scholar's Path",missions:[
-      {id:"m2_1",name:"Finish an Entire Book",icon:"📚",desc:"Read a complete book cover to cover. Any genre counts.",how:["Set 20-30 pages/day target","Take notes on key ideas","Write summary after finishing","Discuss with someone"]},
-      {id:"m2_2",name:"Start Learning a New Skill",icon:"🎯",desc:"Begin something new — coding, drawing, music, cooking, a language.",how:["Choose what excites you, not what you 'should' learn","Find a free resource online","Practice 20 min daily","Accept being terrible at first"]},
-      {id:"m2_3",name:"Teach Someone Something You Know",icon:"🎓",desc:"Explain a concept you understand well to someone else.",how:["Choose a topic you know deeply","Explain without jargon","Ask questions to check their understanding","Notice gaps in your own knowledge"]},
-      {id:"m2_4",name:"7-Day Social Media Detox",icon:"📵",desc:"No social media for 7 days. Use freed time for learning.",how:["Delete apps (not accounts)","Replace scroll time with reading","Notice urges — write them down","After 7 days, evaluate what you actually missed"]},
-    ]},
-    {tier:3,name:"Sage's Wisdom",missions:[
-      {id:"m3_1",name:"Complete an Online Course",icon:"🏆",desc:"Finish an entire course with all assignments.",how:["Choose a challenging subject","Treat it like a real class with a schedule","Do ALL assignments","Get the certificate if available"]},
-      {id:"m3_2",name:"Build a Small Project",icon:"🔨",desc:"Create something tangible — a website, essay collection, plan, or prototype.",how:["Define a clear achievable goal","Break into daily tasks","Dedicate 30 min daily","Share the finished result"]},
-    ]},
-    {tier:4,name:"Master's Domain",missions:[
-      {id:"m4_1",name:"Learn Basics of a New Language",icon:"🌍",desc:"Learn 200+ words and basic grammar of a language you don't speak.",how:["Use spaced repetition (Anki, Duolingo)","15 min daily minimum","Try thinking in the new language","Have a basic conversation"]},
-      {id:"m4_2",name:"30-Day Daily Learning Streak",icon:"⚡",desc:"Maintain 30 min daily learning for 30 consecutive days.",how:["Same time, same place, every day","Mix reading, practice, review","Track with a streak counter","This becomes part of your identity"]},
-    ]},
-  ]},
-  heart:{label:"Heart",icon:"💛",color:"#f59e0b",tiers:[
-    {tier:1,name:"Open Heart",missions:[
-      {id:"h1_1",name:"Journal for 7 Days Straight",icon:"📝",desc:"Write about feelings, thoughts, and experiences daily for a week.",how:["5+ sentences each day","Be honest — no one reads this","Include good and difficult moments","Same time daily"]},
-      {id:"h1_2",name:"Reach Out to Someone You Miss",icon:"📞",desc:"Call or visit a friend/family member you haven't spoken to recently.",how:["Choose someone you've been meaning to contact","Have a real conversation, not just texting","Listen more than you talk","Make plans to connect again"]},
-      {id:"h1_3",name:"Express Gratitude to 3 People",icon:"🙏",desc:"Tell three people specifically why you appreciate them.",how:["Think of people who've impacted your life","Be specific about what they did","Say it directly — in person or writing","This is harder than it sounds"]},
-      {id:"h1_4",name:"Practice Active Listening for a Day",icon:"👂",desc:"Focus entirely on listening in every conversation without planning your response.",how:["Make eye contact, give full attention","Don't interrupt or pre-plan your reply","Ask follow-up questions based on what they said","Notice how people respond to being truly heard"]},
-    ]},
-    {tier:2,name:"Brave Heart",missions:[
-      {id:"h2_1",name:"Have a Difficult Conversation",icon:"💬",desc:"Address something you've been avoiding — respectfully and honestly.",how:["Prepare what to say, stay flexible","Use 'I feel' statements, not 'you always'","Listen to their perspective fully","Goal is understanding, not winning"]},
-      {id:"h2_2",name:"Help a Stranger",icon:"🤝",desc:"Do something kind for someone you don't know. No recognition expected.",how:["Look for opportunities in daily routine","Help carry, give directions, pay it forward","Do it anonymously if possible","Notice how it makes you feel"]},
-      {id:"h2_3",name:"Forgive Someone (or Yourself)",icon:"🕊️",desc:"Release resentment toward someone, or forgive yourself for a past mistake.",how:["Write down what happened and how it affected you","Acknowledge your pain — don't minimize","Choose to release the weight","Forgiveness is for YOU, not them"]},
-    ]},
-    {tier:3,name:"Lion Heart",missions:[
-      {id:"h3_1",name:"Mentor or Support Someone",icon:"🌟",desc:"Help someone less experienced navigate a challenge you've overcome.",how:["Share honestly, including your failures","Listen before advising","Check in regularly","Guidance, not control"]},
-      {id:"h3_2",name:"Rewrite 3 Limiting Beliefs",icon:"🧠",desc:"Find beliefs holding you back and replace them with empowering ones.",how:["Write beliefs that make you feel stuck","Ask: 'Is this absolutely true?'","Write a new empowering belief","Read it daily for 21 days"]},
-    ]},
-    {tier:4,name:"Unbreakable",missions:[
-      {id:"h4_1",name:"30-Day Emotional Regulation Practice",icon:"💛",desc:"When triggered, pause for 10 breaths before reacting — every time, 30 days.",how:["Notice physical sensation of emotion arising","Take 10 slow breaths before responding","Choose your response, don't react","Journal triggers and responses"]},
-    ]},
-  ]},
-  spirit:{label:"Spirit",icon:"🌟",color:"#8b5cf6",tiers:[
-    {tier:1,name:"First Breath",missions:[
-      {id:"s1_1",name:"Meditate 5 Min Daily for 7 Days",icon:"🧘",desc:"Sit still, focus on breath, observe thoughts without judgment.",how:["Quiet spot, sit comfortably, close eyes","Focus on sensation of breathing","When thoughts arise, notice and return to breath","Use a timer — 5 min to start"]},
-      {id:"s1_2",name:"Practice Box Breathing (5 Sessions)",icon:"🌬️",desc:"Inhale 4s, hold 4s, exhale 4s, hold 4s. Used by military for calm under pressure.",how:["Sit upright, relax shoulders","Inhale nose 4s → Hold 4s → Exhale mouth 4s → Hold 4s","Repeat 5 minutes per session","Notice your heart rate dropping"]},
-      {id:"s1_3",name:"30 Minutes in Nature Without Phone",icon:"🌿",desc:"Go outside — park, garden, trail — fully present without devices.",how:["Leave phone behind","Walk slowly, notice details — sounds, smells, textures","Sit somewhere and observe for 10 min","This is presence practice, not exercise"]},
-      {id:"s1_4",name:"Define Your 5 Core Values",icon:"📜",desc:"Identify the 5 values most important to you and write why.",how:["Brainstorm 15-20 resonating values","Narrow to top 5","Write WHY each matters","Check: are you living by these now?"]},
-    ]},
-    {tier:2,name:"Inner Flame",missions:[
-      {id:"s2_1",name:"14-Day Meditation Streak",icon:"🔥",desc:"10+ min meditation daily for 14 consecutive days.",how:["Same time daily — morning ideal","Try different styles: breath, body scan, loving-kindness","Don't judge sessions","Consistency > quality"]},
-      {id:"s2_2",name:"Full Digital Detox Day (24 Hours)",icon:"🔇",desc:"Zero screens for 24 hours — no phone, laptop, TV.",how:["Tell people in advance","Prepare: books, journal, walks","Notice phone-checking urges","Journal about it the next day"]},
-      {id:"s2_3",name:"Create a Morning Ritual (14 Days)",icon:"🌅",desc:"Design and follow a consistent morning routine for 2 weeks.",how:["Wake same time daily","Include: hydration, movement, mindfulness, intention","No phone first 30 min","Write it down, follow exactly"]},
-    ]},
-    {tier:3,name:"Still Water",missions:[
-      {id:"s3_1",name:"30-Day Meditation Streak",icon:"🧘",desc:"One full month daily meditation. Transformation happens here.",how:["15-20 min per session now","Notice changes in daily reactions","This is becoming who you are"]},
-      {id:"s3_2",name:"Practice Mindful Eating for a Week",icon:"🍽️",desc:"Eat every meal slowly, no screens, fully focused on the experience.",how:["No devices during meals","Chew each bite 20-30 times","Notice flavors, textures, body signals","Stop at 80% full"]},
-    ]},
-    {tier:4,name:"Eternal Calm",missions:[
-      {id:"s4_1",name:"100-Day Meditation Streak",icon:"👁️",desc:"The ultimate discipline. 100 consecutive days. No excuses.",how:["20+ min daily","Even 5 min on hard days counts","You will face resistance around day 30-40. Push through.","At 100 days, meditation IS who you are"]},
-    ]},
-  ]},
-  fortune:{label:"Fortune",icon:"💎",color:"#eab308",tiers:[
-    {tier:1,name:"First Coin",missions:[
-      {id:"f1_1",name:"Track Every Expense for 7 Days",icon:"📊",desc:"Write down every rupee spent for a full week. Awareness is step one.",how:["Use this app's finance tracker","Record EVERYTHING — even small purchases","Categorize: food, transport, entertainment","Review at week's end — where does money go?"]},
-      {id:"f1_2",name:"Create a Monthly Budget",icon:"📋",desc:"Plan income allocation across all categories for this month.",how:["List all income sources","List fixed expenses (rent, bills)","Allocate variable expenses","Set a savings target — even ₹500"]},
-      {id:"f1_3",name:"Save ₹1000 This Month",icon:"💰",desc:"Set aside ₹1000 you don't touch. First step to financial discipline.",how:["Separate savings spot (jar, account)","Transfer on day 1, not month's end","Cut one unnecessary expense","Watch it grow"]},
-      {id:"f1_4",name:"Identify 3 Unnecessary Expenses",icon:"✂️",desc:"Find three spending habits that don't add real value to your life.",how:["Review your expense tracking","Ask: 'Did this truly make me happier?'","Cut the three that matter least","Redirect to savings"]},
-    ]},
-    {tier:2,name:"Merchant's Mind",missions:[
-      {id:"f2_1",name:"Build a ₹5,000 Emergency Fund",icon:"🛡️",desc:"Save ₹5,000 specifically for emergencies only.",how:["Separate from regular savings","Automate small daily/weekly transfers","Don't touch unless true emergency","This creates a new kind of security"]},
-      {id:"f2_2",name:"Learn Investing Basics",icon:"📈",desc:"Understand stocks, mutual funds, SIPs, and compound interest.",how:["Read/watch intro investing content","Understand risk vs reward, diversification","Learn what SIP is and how to start","Knowledge first, action later"]},
-      {id:"f2_3",name:"7 Days Without Unnecessary Purchases",icon:"🚫",desc:"Only absolute necessities for a full week. Zero impulse buys.",how:["Before buying: 'NEED or WANT?'","Delay want-purchases by 48 hours","Cook at home instead of ordering","Notice how much you save"]},
-    ]},
-    {tier:3,name:"Treasurer",missions:[
-      {id:"f3_1",name:"Save 3 Months of Expenses",icon:"🏦",desc:"Build a buffer of 3 months living expenses. Real financial security.",how:["Calculate monthly expenses","Set monthly savings target","Automate if possible","This means you can handle any surprise"]},
-      {id:"f3_2",name:"Start Your First Investment",icon:"💹",desc:"Actually invest — SIP, stock, or mutual fund. Even ₹500/month counts.",how:["Start small","Use a reputable platform","Long term, not quick gains","Don't invest money you need soon"]},
-    ]},
-    {tier:4,name:"Empire Builder",missions:[
-      {id:"f4_1",name:"Build a Financial Independence Plan",icon:"👑",desc:"Calculate your FI number and create a roadmap to reach it.",how:["Annual expenses × 25 = FI number","Determine current savings rate","Calculate years to reach FI","Increase income, decrease expenses"]},
-      {id:"f4_2",name:"6-Month Emergency Fund",icon:"🛡️",desc:"Save 6 full months of expenses. You become nearly unshakeable.",how:["Build on your 3-month fund","Same discipline that got you here","Invest excess beyond 6 months","True financial peace of mind"]},
-    ]},
-  ]},
+export const PILLAR_MISSIONS = {
+  mind: {
+    label: "Mind", icon: "⚡", color: "#06b6d4", tiers: [
+      {
+        tier: 1, name: "Awakening", missions: [
+          { id: "m1_1", name: "Read 10 Pages Daily for 7 Days", icon: "📖", desc: "Build the reading habit with a small daily commitment.", how: ["Choose a book that genuinely interests you", "Set a fixed reading time each day", "No phone for 10 min before reading", "Track each day in your journal"] },
+          { id: "m1_2", name: "Learn 5 New Words Daily for 5 Days", icon: "📝", desc: "Expand vocabulary — learn, define, and use 5 new words each day.", how: ["Use a dictionary app or word-of-the-day", "Write meaning and create a sentence for each", "Review yesterday's words before new ones"] },
+          { id: "m1_3", name: "Solve a Logic Puzzle", icon: "🧩", desc: "Challenge your brain — Sudoku, crossword, riddle, or brain teaser.", how: ["Pick a puzzle type you've never tried", "Spend at least 15 min without looking up answers", "Try harder difficulty next time"] },
+          { id: "m1_4", name: "Write a 500-Word Reflection", icon: "✍️", desc: "Write about something you learned recently in organized paragraphs.", how: ["Pick one thing you learned this week", "Write intro, body, conclusion", "Don't edit while writing — flow first, edit after"] },
+        ]
+      },
+      {
+        tier: 2, name: "Scholar's Path", missions: [
+          { id: "m2_1", name: "Finish an Entire Book", icon: "📚", desc: "Read a complete book cover to cover. Any genre counts.", how: ["Set 20-30 pages/day target", "Take notes on key ideas", "Write summary after finishing", "Discuss with someone"] },
+          { id: "m2_2", name: "Start Learning a New Skill", icon: "🎯", desc: "Begin something new — coding, drawing, music, cooking, a language.", how: ["Choose what excites you, not what you 'should' learn", "Find a free resource online", "Practice 20 min daily", "Accept being terrible at first"] },
+          { id: "m2_3", name: "Teach Someone Something You Know", icon: "🎓", desc: "Explain a concept you understand well to someone else.", how: ["Choose a topic you know deeply", "Explain without jargon", "Ask questions to check their understanding", "Notice gaps in your own knowledge"] },
+          { id: "m2_4", name: "7-Day Social Media Detox", icon: "📵", desc: "No social media for 7 days. Use freed time for learning.", how: ["Delete apps (not accounts)", "Replace scroll time with reading", "Notice urges — write them down", "After 7 days, evaluate what you actually missed"] },
+        ]
+      },
+      {
+        tier: 3, name: "Sage's Wisdom", missions: [
+          { id: "m3_1", name: "Complete an Online Course", icon: "🏆", desc: "Finish an entire course with all assignments.", how: ["Choose a challenging subject", "Treat it like a real class with a schedule", "Do ALL assignments", "Get the certificate if available"] },
+          { id: "m3_2", name: "Build a Small Project", icon: "🔨", desc: "Create something tangible — a website, essay collection, plan, or prototype.", how: ["Define a clear achievable goal", "Break into daily tasks", "Dedicate 30 min daily", "Share the finished result"] },
+        ]
+      },
+      {
+        tier: 4, name: "Master's Domain", missions: [
+          { id: "m4_1", name: "Learn Basics of a New Language", icon: "🌍", desc: "Learn 200+ words and basic grammar of a language you don't speak.", how: ["Use spaced repetition (Anki, Duolingo)", "15 min daily minimum", "Try thinking in the new language", "Have a basic conversation"] },
+          { id: "m4_2", name: "30-Day Daily Learning Streak", icon: "⚡", desc: "Maintain 30 min daily learning for 30 consecutive days.", how: ["Same time, same place, every day", "Mix reading, practice, review", "Track with a streak counter", "This becomes part of your identity"] },
+        ]
+      },
+    ]
+  },
+  heart: {
+    label: "Heart", icon: "💛", color: "#f59e0b", tiers: [
+      {
+        tier: 1, name: "Open Heart", missions: [
+          { id: "h1_1", name: "Journal for 7 Days Straight", icon: "📝", desc: "Write about feelings, thoughts, and experiences daily for a week.", how: ["5+ sentences each day", "Be honest — no one reads this", "Include good and difficult moments", "Same time daily"] },
+          { id: "h1_2", name: "Reach Out to Someone You Miss", icon: "📞", desc: "Call or visit a friend/family member you haven't spoken to recently.", how: ["Choose someone you've been meaning to contact", "Have a real conversation, not just texting", "Listen more than you talk", "Make plans to connect again"] },
+          { id: "h1_3", name: "Express Gratitude to 3 People", icon: "🙏", desc: "Tell three people specifically why you appreciate them.", how: ["Think of people who've impacted your life", "Be specific about what they did", "Say it directly — in person or writing", "This is harder than it sounds"] },
+          { id: "h1_4", name: "Practice Active Listening for a Day", icon: "👂", desc: "Focus entirely on listening in every conversation without planning your response.", how: ["Make eye contact, give full attention", "Don't interrupt or pre-plan your reply", "Ask follow-up questions based on what they said", "Notice how people respond to being truly heard"] },
+        ]
+      },
+      {
+        tier: 2, name: "Brave Heart", missions: [
+          { id: "h2_1", name: "Have a Difficult Conversation", icon: "💬", desc: "Address something you've been avoiding — respectfully and honestly.", how: ["Prepare what to say, stay flexible", "Use 'I feel' statements, not 'you always'", "Listen to their perspective fully", "Goal is understanding, not winning"] },
+          { id: "h2_2", name: "Help a Stranger", icon: "🤝", desc: "Do something kind for someone you don't know. No recognition expected.", how: ["Look for opportunities in daily routine", "Help carry, give directions, pay it forward", "Do it anonymously if possible", "Notice how it makes you feel"] },
+          { id: "h2_3", name: "Forgive Someone (or Yourself)", icon: "🕊️", desc: "Release resentment toward someone, or forgive yourself for a past mistake.", how: ["Write down what happened and how it affected you", "Acknowledge your pain — don't minimize", "Choose to release the weight", "Forgiveness is for YOU, not them"] },
+        ]
+      },
+      {
+        tier: 3, name: "Lion Heart", missions: [
+          { id: "h3_1", name: "Mentor or Support Someone", icon: "🌟", desc: "Help someone less experienced navigate a challenge you've overcome.", how: ["Share honestly, including your failures", "Listen before advising", "Check in regularly", "Guidance, not control"] },
+          { id: "h3_2", name: "Rewrite 3 Limiting Beliefs", icon: "🧠", desc: "Find beliefs holding you back and replace them with empowering ones.", how: ["Write beliefs that make you feel stuck", "Ask: 'Is this absolutely true?'", "Write a new empowering belief", "Read it daily for 21 days"] },
+        ]
+      },
+      {
+        tier: 4, name: "Unbreakable", missions: [
+          { id: "h4_1", name: "30-Day Emotional Regulation Practice", icon: "💛", desc: "When triggered, pause for 10 breaths before reacting — every time, 30 days.", how: ["Notice physical sensation of emotion arising", "Take 10 slow breaths before responding", "Choose your response, don't react", "Journal triggers and responses"] },
+        ]
+      },
+    ]
+  },
+  spirit: {
+    label: "Spirit", icon: "🌟", color: "#8b5cf6", tiers: [
+      {
+        tier: 1, name: "First Breath", missions: [
+          { id: "s1_1", name: "Meditate 5 Min Daily for 7 Days", icon: "🧘", desc: "Sit still, focus on breath, observe thoughts without judgment.", how: ["Quiet spot, sit comfortably, close eyes", "Focus on sensation of breathing", "When thoughts arise, notice and return to breath", "Use a timer — 5 min to start"] },
+          { id: "s1_2", name: "Practice Box Breathing (5 Sessions)", icon: "🌬️", desc: "Inhale 4s, hold 4s, exhale 4s, hold 4s. Used by military for calm under pressure.", how: ["Sit upright, relax shoulders", "Inhale nose 4s → Hold 4s → Exhale mouth 4s → Hold 4s", "Repeat 5 minutes per session", "Notice your heart rate dropping"] },
+          { id: "s1_3", name: "30 Minutes in Nature Without Phone", icon: "🌿", desc: "Go outside — park, garden, trail — fully present without devices.", how: ["Leave phone behind", "Walk slowly, notice details — sounds, smells, textures", "Sit somewhere and observe for 10 min", "This is presence practice, not exercise"] },
+          { id: "s1_4", name: "Define Your 5 Core Values", icon: "📜", desc: "Identify the 5 values most important to you and write why.", how: ["Brainstorm 15-20 resonating values", "Narrow to top 5", "Write WHY each matters", "Check: are you living by these now?"] },
+        ]
+      },
+      {
+        tier: 2, name: "Inner Flame", missions: [
+          { id: "s2_1", name: "14-Day Meditation Streak", icon: "🔥", desc: "10+ min meditation daily for 14 consecutive days.", how: ["Same time daily — morning ideal", "Try different styles: breath, body scan, loving-kindness", "Don't judge sessions", "Consistency > quality"] },
+          { id: "s2_2", name: "Full Digital Detox Day (24 Hours)", icon: "🔇", desc: "Zero screens for 24 hours — no phone, laptop, TV.", how: ["Tell people in advance", "Prepare: books, journal, walks", "Notice phone-checking urges", "Journal about it the next day"] },
+          { id: "s2_3", name: "Create a Morning Ritual (14 Days)", icon: "🌅", desc: "Design and follow a consistent morning routine for 2 weeks.", how: ["Wake same time daily", "Include: hydration, movement, mindfulness, intention", "No phone first 30 min", "Write it down, follow exactly"] },
+        ]
+      },
+      {
+        tier: 3, name: "Still Water", missions: [
+          { id: "s3_1", name: "30-Day Meditation Streak", icon: "🧘", desc: "One full month daily meditation. Transformation happens here.", how: ["15-20 min per session now", "Notice changes in daily reactions", "This is becoming who you are"] },
+          { id: "s3_2", name: "Practice Mindful Eating for a Week", icon: "🍽️", desc: "Eat every meal slowly, no screens, fully focused on the experience.", how: ["No devices during meals", "Chew each bite 20-30 times", "Notice flavors, textures, body signals", "Stop at 80% full"] },
+        ]
+      },
+      {
+        tier: 4, name: "Eternal Calm", missions: [
+          { id: "s4_1", name: "100-Day Meditation Streak", icon: "👁️", desc: "The ultimate discipline. 100 consecutive days. No excuses.", how: ["20+ min daily", "Even 5 min on hard days counts", "You will face resistance around day 30-40. Push through.", "At 100 days, meditation IS who you are"] },
+        ]
+      },
+    ]
+  },
+  fortune: {
+    label: "Fortune", icon: "💎", color: "#eab308", tiers: [
+      {
+        tier: 1, name: "First Coin", missions: [
+          { id: "f1_1", name: "Track Every Expense for 7 Days", icon: "📊", desc: "Write down every rupee spent for a full week. Awareness is step one.", how: ["Use this app's finance tracker", "Record EVERYTHING — even small purchases", "Categorize: food, transport, entertainment", "Review at week's end — where does money go?"] },
+          { id: "f1_2", name: "Create a Monthly Budget", icon: "📋", desc: "Plan income allocation across all categories for this month.", how: ["List all income sources", "List fixed expenses (rent, bills)", "Allocate variable expenses", "Set a savings target — even ₹500"] },
+          { id: "f1_3", name: "Save ₹1000 This Month", icon: "💰", desc: "Set aside ₹1000 you don't touch. First step to financial discipline.", how: ["Separate savings spot (jar, account)", "Transfer on day 1, not month's end", "Cut one unnecessary expense", "Watch it grow"] },
+          { id: "f1_4", name: "Identify 3 Unnecessary Expenses", icon: "✂️", desc: "Find three spending habits that don't add real value to your life.", how: ["Review your expense tracking", "Ask: 'Did this truly make me happier?'", "Cut the three that matter least", "Redirect to savings"] },
+        ]
+      },
+      {
+        tier: 2, name: "Merchant's Mind", missions: [
+          { id: "f2_1", name: "Build a ₹5,000 Emergency Fund", icon: "🛡️", desc: "Save ₹5,000 specifically for emergencies only.", how: ["Separate from regular savings", "Automate small daily/weekly transfers", "Don't touch unless true emergency", "This creates a new kind of security"] },
+          { id: "f2_2", name: "Learn Investing Basics", icon: "📈", desc: "Understand stocks, mutual funds, SIPs, and compound interest.", how: ["Read/watch intro investing content", "Understand risk vs reward, diversification", "Learn what SIP is and how to start", "Knowledge first, action later"] },
+          { id: "f2_3", name: "7 Days Without Unnecessary Purchases", icon: "🚫", desc: "Only absolute necessities for a full week. Zero impulse buys.", how: ["Before buying: 'NEED or WANT?'", "Delay want-purchases by 48 hours", "Cook at home instead of ordering", "Notice how much you save"] },
+        ]
+      },
+      {
+        tier: 3, name: "Treasurer", missions: [
+          { id: "f3_1", name: "Save 3 Months of Expenses", icon: "🏦", desc: "Build a buffer of 3 months living expenses. Real financial security.", how: ["Calculate monthly expenses", "Set monthly savings target", "Automate if possible", "This means you can handle any surprise"] },
+          { id: "f3_2", name: "Start Your First Investment", icon: "💹", desc: "Actually invest — SIP, stock, or mutual fund. Even ₹500/month counts.", how: ["Start small", "Use a reputable platform", "Long term, not quick gains", "Don't invest money you need soon"] },
+        ]
+      },
+      {
+        tier: 4, name: "Empire Builder", missions: [
+          { id: "f4_1", name: "Build a Financial Independence Plan", icon: "👑", desc: "Calculate your FI number and create a roadmap to reach it.", how: ["Annual expenses × 25 = FI number", "Determine current savings rate", "Calculate years to reach FI", "Increase income, decrease expenses"] },
+          { id: "f4_2", name: "6-Month Emergency Fund", icon: "🛡️", desc: "Save 6 full months of expenses. You become nearly unshakeable.", how: ["Build on your 3-month fund", "Same discipline that got you here", "Invest excess beyond 6 months", "True financial peace of mind"] },
+        ]
+      },
+    ]
+  },
 };
 
-export const XP={workout:60,combat:40,habit:12,food:3,journal:10,mood:5,focus:15,finance:3,gratitude:8,task_epic:20,task_rare:12,task_common:8};
-export const DAILY_PENALTY=50;
-export const STREAK_MULT={7:1.5,14:2,30:2.5,60:3};
+export const XP = { workout: 60, combat: 40, habit: 12, food: 3, journal: 10, mood: 5, focus: 15, finance: 3, gratitude: 8, task_epic: 20, task_rare: 12, task_common: 8 };
+export const DAILY_PENALTY = 50;
+export const STREAK_MULT = { 7: 1.5, 14: 2, 30: 2.5, 60: 3 };
 
 // ── CSS ──

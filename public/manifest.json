@@ -1,9 +1,24 @@
 {
   "short_name": "IGNITE",
-  "name": "IGNITE — Level Up Your Life",
-  "icons": [{"src": "logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}],
-  "start_url": ".",
+  "name": "IGNITE — Self-Improvement RPG",
+  "description": "Level up your real life. Train, track, grow.",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#07090d",
-  "background_color": "#07090d"
+  "orientation": "portrait",
+  "background_color": "#07090d",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/logo192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
