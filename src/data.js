@@ -48,6 +48,8 @@ export const navItems = [
   { key: "routine", label: "My Day", icon: "📅" }, { key: "growth", label: "Growth", icon: "🌱" }, { key: "chat", label: "Flame Oracle", icon: "🔮" }, { key: "profile", label: "Profile", icon: "👤" },
   { key: "body", label: "Body", icon: "📊" },
   { key: "challenges", label: "Challenges", icon: "🏆" },
+  {key:"share",label:"Share",icon:"📱"},
+  {key:"programs",label:"Programs",icon:"📋"}
 ];
 
 export const RANKS = [

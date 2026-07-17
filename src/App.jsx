@@ -24,6 +24,9 @@ import RoutinePage from './components/RoutinePage';
 import OnboardingPage from './components/OnboardingPage';
 import BodyTracker from './components/BodyTracker';
 import ChallengesPage from './components/ChallengesPage';
+import { ConfettiBlast, LevelUpCelebration } from './components/Confetti';
+import ShareCard from './components/ShareCard';
+import WorkoutPrograms from './components/WorkoutPrograms';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -52,6 +55,9 @@ export default function App() {
   const saveTimer = useRef(null);
   const [bodyData, setBodyData] = useState(null);
   const [challengeData, setChallengeData] = useState(null);
+  const [confetti, setConfetti] = useState(0);
+  const [levelUpShow, setLevelUpShow] = useState(null);
+  const [programData, setProgramData] = useState(null);
 
   const logActivity = (type, detail) => {
     const entry = { id: Date.now(), type, detail, date: today(), time: new Date().toLocaleTimeString(), timestamp: Date.now() };
@@ -159,6 +165,9 @@ export default function App() {
   const addXP = useCallback((amount, reason) => {
     const mult = getStreakMult(streak);
     const actual = Math.floor(amount * mult);
+    setConfetti(c => c + 1); // triggers confetti
+    // If level changed:
+    if (newLevel > oldLevel) setLevelUpShow({ level: newLevel, rank: getRank(newLevel) });
     setTotalXP(prev => {
       const oldLv = getLevel(prev); const nxp = prev + actual; const nLv = getLevel(nxp);
       if (nLv > oldLv) setTimeout(() => setLevelUp({ level: nLv, rank: getRank(nLv) }), 300);
@@ -169,6 +178,7 @@ export default function App() {
     setTimeout(() => setXpEvents(p => p.filter(e => e.id !== id)), 1600);
     logActivity("xp", `+${actual} XP: ${reason}`);
   }, [streak]);
+
 
   // Logout via Firebase
   const logout = async () => {
@@ -255,6 +265,8 @@ export default function App() {
     profile: <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} />,
     body: <BodyTracker bodyData={bodyData} setBodyData={setBodyData} />,
     challenges: <ChallengesPage challengeData={challengeData} setChallengeData={setChallengeData} addXP={addXP} />,
+    share: <ShareCard totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} />,
+    programs: <WorkoutPrograms programData={programData} setProgramData={setProgramData} addXP={addXP} />,
   };
 
   return (
@@ -303,6 +315,8 @@ export default function App() {
             {pages[page]}
           </div>
         </main>
+        <ConfettiBlast trigger={confetti} />
+        {levelUpShow && <LevelUpCelebration level={levelUpShow.level} rank={levelUpShow.rank} onClose={() => setLevelUpShow(null)} />}
       </div>
     </>
   );
