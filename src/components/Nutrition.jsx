@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { XP } from '../data';
-import { FOOD_DB, FOOD_CATEGORIES, searchFood } from '../data/foodDatabase';
+import { FOOD_DATABASE, FOOD_CATEGORIES, searchFoods, searchFoodsCombined } from '../data/foodDatabase';
 import { today } from '../utils';
 import HistoryPanel from './HistoryPanel';
 import { formatNutritionHistory } from '../historyFormatters';
@@ -40,6 +40,8 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
   const [showCustom, setShowCustom] = useState(false);
   const [custom, setCustom] = useState({ name: "", cal: "", protein: "", carbs: "", fat: "", fiber: "" });
   const [selCat, setSelCat] = useState("All");
+  const [apiResults, setApiResults] = useState([]);
+  const [apiSearching, setApiSearching] = useState(false);
 
   // Scan state
   const [scanning, setScanning] = useState(false);
@@ -72,7 +74,7 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
   const remaining = target - totals.cal;
 
   const filtered = useMemo(() => {
-    let list = search ? searchFood(search) : FOOD_DB;
+    let list = search ? searchFoods(search) : FOOD_DATABASE;
     if (selCat !== "All") list = list.filter(f => f.category === selCat);
     return list;
   }, [search, selCat]);
@@ -103,6 +105,17 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
   const handleFile = (e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = ev => { setScanPhoto(ev.target.result); stopCam(); analyze(ev.target.result.split(",")[1]) }; r.readAsDataURL(f) };
   const analyze = async (b64) => { setScanning(true); setScanError(null); setScanResults(null); try { const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "food_analyze", imageBase64: b64 }) }); if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Failed"); const d = await r.json(); if (d.foods?.length > 0) setScanResults(d.foods); else setScanError("Could not identify food. Try a clearer photo.") } catch (e) { setScanError(e.message) } setScanning(false) };
   useEffect(() => () => stopCam(), []);
+
+  // API search (debounced — fires 500ms after typing stops)
+  useEffect(() => {
+    if (!search || search.length < 3) { setApiResults([]); return; }
+    const timer = setTimeout(async () => {
+      setApiSearching(true);
+      try { const { api } = await searchFoodsCombined(search); setApiResults(api); } catch (e) { setApiResults([]); }
+      setApiSearching(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // ── Save/Load Plans ──
   const savePlan = () => {
@@ -149,7 +162,7 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
 
     {/* ════ LOG TAB ════ */}
     {tab === "log" && (<div>
-      {/* Remaining calories - prominent */}
+      {/* Remaining calories */}
       <div className="gs" style={{ marginBottom: 16, textAlign: "center", padding: 20 }}>
         <div style={{ fontSize: 11, color: "#6b7280", fontFamily: "Rajdhani,sans-serif", letterSpacing: 2 }}>REMAINING TODAY</div>
         <div style={{ fontSize: 42, fontWeight: 900, color: remaining > 0 ? "#10b981" : "#ef4444", fontFamily: "Rajdhani,sans-serif", lineHeight: 1.1 }}>{remaining > 0 ? remaining : 0}</div>
@@ -182,7 +195,6 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
           <span style={{ fontSize: 28 }}>{selFood.emoji}</span>
           <div style={{ flex: 1 }}><div style={{ fontSize: 16, fontWeight: 600, color: "#f3f4f6" }}>{selFood.name}</div><div style={{ fontSize: 11, color: "#6b7280" }}>{selFood.category} · Nutrition per 100g</div></div>
         </div>
-        {/* Gram input */}
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6 }}>Weight in grams</div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -191,7 +203,6 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
           </div>
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>{GRAM_PRESETS.map(g => <span key={g} className={`chip ${grams === g ? "chip-a" : "chip-i"}`} onClick={() => setGrams(g)} style={{ flex: 1, justifyContent: "center", padding: "6px 0" }}>{g}g</span>)}</div>
         </div>
-        {/* Calculated nutrition */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 6, marginBottom: 12, textAlign: "center", padding: 10, background: "rgba(255,255,255,.02)", borderRadius: 8 }}>
           {[["Cal", Math.round(selFood.cal * grams / 100), "#f59e0b"], ["Protein", Math.round(selFood.protein * grams / 100 * 10) / 10, "#ef4444"], ["Carbs", Math.round(selFood.carbs * grams / 100 * 10) / 10, "#f59e0b"], ["Fat", Math.round(selFood.fat * grams / 100 * 10) / 10, "#06b6d4"], ["Fiber", Math.round(selFood.fiber * grams / 100 * 10) / 10, "#22c55e"]].map(([l, v, c]) => (
             <div key={l}><div style={{ fontSize: 16, fontWeight: 700, color: c }}>{v}{l === "Cal" ? "" : "g"}</div><div style={{ fontSize: 9, color: "#6b7280" }}>{l}</div></div>
@@ -202,15 +213,17 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
 
       {/* Search + Category filter */}
       {!selFood && <>
-        <input className="inp" placeholder="Search foods... (biryani, chicken, apple...)" value={search} onChange={e => setSearch(e.target.value)} style={{ marginBottom: 8 }} />
+        <input className="inp" placeholder="Search 199 foods... (biryani, idli, paneer, dal...)" value={search} onChange={e => setSearch(e.target.value)} style={{ marginBottom: 8 }} />
         <div style={{ display: "flex", gap: 4, marginBottom: 10, overflowX: "auto", paddingBottom: 4 }}>
           <span className={`chip ${selCat === "All" ? "chip-a" : "chip-i"}`} onClick={() => setSelCat("All")} style={{ flexShrink: 0 }}>All</span>
           {FOOD_CATEGORIES.map(c => <span key={c} className={`chip ${selCat === c ? "chip-a" : "chip-i"}`} onClick={() => setSelCat(c)} style={{ flexShrink: 0, fontSize: 11 }}>{c}</span>)}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(105px,1fr))", gap: 8, marginBottom: 12, maxHeight: 300, overflowY: "auto" }}>
-          {filtered.slice(0, 36).map(f => (<div key={f.id} className="fc" onClick={() => { setSelFood(f); setGrams(100) }}><div style={{ fontSize: 20 }}>{f.emoji}</div><div style={{ fontSize: 11, fontWeight: 500, color: "#e5e7eb", marginTop: 3 }}>{f.name}</div><div style={{ fontSize: 9, color: "#6b7280" }}>{f.cal}cal/100g</div></div>))}
+          {filtered.slice(0, 36).map((f, i) => (<div key={f.name + i} className="fc" onClick={() => { setSelFood(f); setGrams(100) }}><div style={{ fontSize: 20 }}>{f.emoji}</div><div style={{ fontSize: 11, fontWeight: 500, color: "#e5e7eb", marginTop: 3 }}>{f.name}</div><div style={{ fontSize: 9, color: "#6b7280" }}>{f.cal}cal/100g</div></div>))}
         </div>
-        {filtered.length === 0 && search && <div style={{ textAlign: "center", color: "#6b7280", padding: "12px 0", fontSize: 13 }}>No food found for "{search}"</div>}
+        {filtered.length === 0 && search && !apiSearching && apiResults.length === 0 && <div style={{ textAlign: "center", color: "#6b7280", padding: "12px 0", fontSize: 13 }}>No food found for "{search}"</div>}
+        {apiSearching && <div style={{ textAlign: "center", padding: "8px 0", fontSize: 12, color: "#06b6d4" }}>Searching global database...</div>}
+        {apiResults.length > 0 && (<div style={{ marginTop: 12 }}><div style={{ fontSize: 12, color: "#06b6d4", fontWeight: 600, marginBottom: 8 }}>More from global database ({apiResults.length})</div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(105px,1fr))", gap: 8, maxHeight: 200, overflowY: "auto" }}>{apiResults.map((f, i) => (<div key={"api" + i} className="fc" onClick={() => { setSelFood(f); setGrams(100); }} style={{ borderColor: "rgba(6,182,212,.15)" }}><div style={{ fontSize: 20 }}>{f.emoji}</div><div style={{ fontSize: 11, fontWeight: 500, color: "#e5e7eb", marginTop: 3 }}>{f.name}</div><div style={{ fontSize: 9, color: "#06b6d4" }}>{f.cal}cal</div></div>))}</div></div>)}
         <span onClick={() => setShowCustom(!showCustom)} style={{ fontSize: 12, color: "#10b981", cursor: "pointer", fontWeight: 600 }}>{showCustom ? "Cancel" : "+ Add Custom Food"}</span>
         {showCustom && (<div className="gs fade-in" style={{ marginTop: 10, border: "1px solid rgba(16,185,129,.15)" }}>
           <input className="inp" placeholder="Food name" value={custom.name} onChange={e => setCustom(p => ({ ...p, name: e.target.value }))} style={{ marginBottom: 8 }} />
@@ -230,14 +243,12 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
 
     {/* ════ PLANS TAB ════ */}
     {tab === "plan" && (<div>
-      {/* TDEE */}
       <div className="gs" style={{ marginBottom: 16, textAlign: "center" }}>
         <div style={{ fontSize: 11, color: "#6b7280", letterSpacing: 2 }}>DAILY TARGET</div>
         <div style={{ fontSize: 36, fontWeight: 900, color: "#10b981", fontFamily: "Rajdhani,sans-serif" }}>{target} cal</div>
         <div style={{ fontSize: 12, color: "#6b7280" }}>TDEE: {tdee} · {profile.goal === "lose" ? "Deficit" : "Maintain"}</div>
       </div>
 
-      {/* Saved Plans */}
       {savedPlans.length > 0 && (<div className="gs" style={{ marginBottom: 16 }}>
         <div className="sl">Saved Plans ({savedPlans.length})</div>
         {savedPlans.map(plan => (<div key={plan.id} className="gc" style={{ padding: 14, marginBottom: 8 }}>
@@ -254,12 +265,10 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
         </div>))}
       </div>)}
 
-      {/* Create/Edit Plan */}
       <div className="gs" style={{ marginBottom: 16 }}>
         <div className="sl">{editingPlan ? "Edit Plan" : "Create New Plan"}</div>
         <input className="inp" placeholder="Plan name (e.g. Weekday Diet, Bulk Plan...)" value={planName} onChange={e => setPlanName(e.target.value)} style={{ marginBottom: 10 }} />
 
-        {/* Plan meals */}
         {MEALS.map(meal => (<div key={meal} style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#10b981", marginBottom: 6 }}>{meal}</div>
           {(planItems[meal] || []).map((f, i) => (<div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
@@ -269,11 +278,10 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
           {(planItems[meal] || []).length === 0 && <div style={{ fontSize: 12, color: "#4b5563", padding: "4px 0" }}>No items yet</div>}
         </div>))}
 
-        {/* Add food to plan */}
         <div style={{ marginTop: 10 }}>
           <input className="inp" placeholder="Search food to add..." value={planSearch} onChange={e => setPlanSearch(e.target.value)} style={{ marginBottom: 8 }} />
           {planSearch.length >= 2 && <div style={{ maxHeight: 180, overflowY: "auto", marginBottom: 10 }}>
-            {searchFood(planSearch).slice(0, 12).map(f => (<div key={f.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,.03)", cursor: "pointer" }}>
+            {searchFoods(planSearch).slice(0, 12).map((f, i) => (<div key={f.name + i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,.03)", cursor: "pointer" }}>
               <span style={{ fontSize: 13 }}>{f.emoji} {f.name} <span style={{ color: "#6b7280" }}>{f.cal}cal/100g</span></span>
               <div style={{ display: "flex", gap: 4 }}>{MEALS.map(m => <span key={m} onClick={() => addToPlan(f, m)} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 6, background: "rgba(16,185,129,.06)", color: "#10b981", cursor: "pointer", border: "1px solid rgba(16,185,129,.15)" }}>{m[0]}</span>)}</div>
             </div>))}

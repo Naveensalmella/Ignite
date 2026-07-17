@@ -12,7 +12,12 @@
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo.svg" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>IGNITE — Level Up Your Life</title>
-    <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}</script>
+    <script>
+    if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}
+    if('Notification' in window && Notification.permission === 'default'){
+      setTimeout(()=>Notification.requestPermission(),5000);
+    }
+  </script>
   </head>
   <body>
     <noscript>Enable JavaScript to run IGNITE.</noscript>

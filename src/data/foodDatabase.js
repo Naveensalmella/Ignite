@@ -1,253 +1,240 @@
-// ═══════════════════════════════════════
-// IGNITE — Food Database (Per 100g values)
-// 200+ items: Hyderabad specials, Indian dishes,
-// International items, Fruits, Vegetables, Snacks
-// ═══════════════════════════════════════
+// ══════════════════════════════════════════════════
+// IGNITE — Food Database + AI Nutrition Lookup
+// Local: 137 Indian foods (instant, offline)
+// AI: Groq estimates nutrition for ANY food worldwide
+// ══════════════════════════════════════════════════
 
-// All values are PER 100 GRAMS
-// { id, name, emoji, cal, protein, carbs, fat, fiber, category, region }
-
-let _id = 1;
-const f = (name, emoji, cal, protein, carbs, fat, fiber, category, region = "Indian") => ({ id: _id++, name, emoji, cal, protein, carbs, fat, fiber, category, region });
-
-export const FOOD_DB = [
-  // ══ HYDERABAD SPECIALS ══
-  f("Chicken Biryani", "🍗", 180, 12, 20, 6, 0.5, "Hyderabad", "Hyderabad"),
-  f("Mutton Biryani", "🍖", 190, 14, 18, 8, 0.4, "Hyderabad", "Hyderabad"),
-  f("Veg Biryani", "🍚", 150, 4, 22, 4, 1, "Hyderabad", "Hyderabad"),
-  f("Egg Biryani", "🥚", 170, 9, 20, 6, 0.5, "Hyderabad", "Hyderabad"),
-  f("Haleem", "🥘", 150, 12, 10, 7, 2, "Hyderabad", "Hyderabad"),
-  f("Irani Chai", "☕", 75, 2, 10, 3, 0, "Hyderabad", "Hyderabad"),
-  f("Osmania Biscuit", "🍪", 450, 6, 65, 18, 1, "Hyderabad", "Hyderabad"),
-  f("Double ka Meetha", "🍮", 250, 5, 35, 10, 0.5, "Hyderabad", "Hyderabad"),
-  f("Lukhmi", "🥟", 300, 8, 28, 18, 1, "Hyderabad", "Hyderabad"),
-  f("Keema", "🥩", 180, 16, 4, 12, 0.5, "Hyderabad", "Hyderabad"),
-  f("Nihari", "🍲", 120, 10, 4, 7, 0.5, "Hyderabad", "Hyderabad"),
-  f("Paya", "🦴", 100, 12, 2, 5, 0, "Hyderabad", "Hyderabad"),
-  f("Mirchi ka Salan", "🌶️", 90, 2, 8, 6, 1.5, "Hyderabad", "Hyderabad"),
-  f("Bagara Baingan", "🍆", 110, 2, 8, 8, 2, "Hyderabad", "Hyderabad"),
-  f("Qubani ka Meetha", "🍑", 200, 2, 40, 4, 1.5, "Hyderabad", "Hyderabad"),
-  f("Sheer Khurma", "🥛", 170, 4, 22, 7, 0.5, "Hyderabad", "Hyderabad"),
-  f("Hyderabadi Marag", "🍖", 80, 8, 2, 4, 0, "Hyderabad", "Hyderabad"),
-  f("Pathar ka Gosht", "🥩", 200, 18, 2, 14, 0, "Hyderabad", "Hyderabad"),
-  f("Kubani ka Meetha", "🍯", 190, 1, 38, 4, 1, "Hyderabad", "Hyderabad"),
-  f("Biryani Rice (plain)", "🍚", 160, 3, 28, 3, 0.5, "Hyderabad", "Hyderabad"),
-
-  // ══ SOUTH INDIAN ══
-  f("Plain Dosa", "🥞", 120, 3, 18, 4, 0.5, "South Indian"),
-  f("Masala Dosa", "🥞", 150, 4, 22, 5, 1, "South Indian"),
-  f("Set Dosa", "🥞", 130, 3, 20, 4, 0.5, "South Indian"),
-  f("Rava Dosa", "🥞", 140, 3, 20, 5, 0.5, "South Indian"),
-  f("Idli", "⚪", 130, 4, 24, 1, 0.5, "South Indian"),
-  f("Medu Vada", "🍩", 250, 7, 25, 14, 2, "South Indian"),
-  f("Upma", "🥣", 120, 3, 18, 4, 1, "South Indian"),
-  f("Pongal", "🍚", 130, 4, 20, 4, 0.5, "South Indian"),
-  f("Uttapam", "🥞", 160, 5, 22, 5, 1.5, "South Indian"),
-  f("Pesarattu", "🥞", 110, 7, 15, 3, 2, "South Indian"),
-  f("Sambar", "🥘", 60, 3, 8, 2, 2, "South Indian"),
-  f("Rasam", "🍵", 25, 1, 4, 0.5, 0.5, "South Indian"),
-  f("Coconut Chutney", "🥥", 140, 2, 6, 12, 2, "South Indian"),
-  f("Curd Rice", "🍚", 120, 4, 18, 3, 0.5, "South Indian"),
-  f("Lemon Rice", "🍋", 140, 3, 22, 4, 0.5, "South Indian"),
-  f("Tomato Rice", "🍅", 145, 3, 22, 4, 1, "South Indian"),
-  f("Pulihora (Tamarind Rice)", "🍚", 150, 3, 24, 4, 1, "South Indian"),
-
-  // ══ NORTH INDIAN ══
-  f("Butter Chicken", "🍗", 150, 12, 6, 9, 0.5, "North Indian"),
-  f("Paneer Butter Masala", "🧀", 200, 10, 8, 14, 1, "North Indian"),
-  f("Palak Paneer", "🥬", 140, 9, 6, 9, 2, "North Indian"),
-  f("Dal Makhani", "🥘", 120, 6, 12, 5, 3, "North Indian"),
-  f("Rajma", "🫘", 120, 7, 18, 2, 5, "North Indian"),
-  f("Chole", "🫘", 130, 7, 18, 4, 5, "North Indian"),
-  f("Aloo Gobi", "🥔", 80, 2, 10, 4, 2, "North Indian"),
-  f("Kadai Paneer", "🧀", 180, 10, 6, 13, 1, "North Indian"),
-  f("Malai Kofta", "🧆", 200, 6, 12, 15, 1, "North Indian"),
-  f("Dal Fry", "🥘", 90, 6, 12, 2, 3, "North Indian"),
-  f("Dal Tadka", "🥘", 100, 7, 13, 2, 3, "North Indian"),
-  f("Egg Curry", "🥚", 120, 8, 6, 7, 1, "North Indian"),
-  f("Fish Curry", "🐟", 100, 14, 4, 3, 0.5, "North Indian"),
-  f("Mutton Curry", "🍖", 140, 14, 4, 8, 0.5, "North Indian"),
-  f("Chicken Curry", "🍗", 130, 14, 4, 6, 0.5, "North Indian"),
-  f("Shahi Paneer", "🧀", 190, 9, 8, 14, 1, "North Indian"),
-  f("Baingan Bharta", "🍆", 80, 2, 8, 4, 3, "North Indian"),
-  f("Bhindi Fry", "🥒", 90, 2, 8, 6, 3, "North Indian"),
-  f("Aloo Paratha", "🫓", 230, 5, 30, 10, 2, "North Indian"),
-  f("Gobi Paratha", "🫓", 200, 5, 26, 8, 2, "North Indian"),
-  f("Methi Paratha", "🫓", 210, 6, 28, 8, 3, "North Indian"),
-
-  // ══ BREADS & RICE ══
-  f("Chapati / Roti", "🫓", 240, 8, 42, 4, 3, "Breads"),
-  f("Naan", "🫓", 290, 8, 48, 6, 2, "Breads"),
-  f("Tandoori Roti", "🫓", 260, 8, 45, 4, 3, "Breads"),
-  f("Butter Naan", "🫓", 320, 8, 46, 12, 2, "Breads"),
-  f("Garlic Naan", "🫓", 300, 8, 44, 10, 2, "Breads"),
-  f("Kulcha", "🫓", 300, 8, 44, 10, 2, "Breads"),
-  f("Puri", "🫓", 350, 6, 40, 18, 2, "Breads"),
-  f("Bhatura", "🫓", 320, 6, 38, 16, 1, "Breads"),
-  f("Paratha", "🫓", 260, 6, 35, 11, 2, "Breads"),
-  f("White Rice (cooked)", "🍚", 130, 2.7, 28, 0.3, 0.4, "Grains"),
-  f("Brown Rice (cooked)", "🍚", 112, 2.6, 24, 0.9, 1.8, "Grains"),
-  f("Jeera Rice", "🍚", 140, 3, 26, 3, 0.5, "Grains"),
-  f("Pulao", "🍚", 140, 3, 22, 4, 0.5, "Grains"),
-  f("Khichdi", "🍚", 100, 4, 16, 2, 1.5, "Grains"),
-  f("Poha", "🥣", 110, 3, 20, 2, 1, "Grains"),
-  f("Upma", "🥣", 120, 3, 18, 4, 1, "Grains"),
-
-  // ══ PROTEIN SOURCES ══
-  f("Chicken Breast", "🍗", 165, 31, 0, 3.6, 0, "Protein"),
-  f("Chicken Thigh", "🍗", 209, 26, 0, 11, 0, "Protein"),
-  f("Egg (boiled)", "🥚", 155, 13, 1, 11, 0, "Protein"),
-  f("Egg White", "🥚", 52, 11, 0.7, 0.2, 0, "Protein"),
-  f("Paneer", "🧀", 265, 18, 1, 21, 0, "Protein"),
-  f("Tofu", "🥬", 76, 8, 1.9, 4.8, 0.3, "Protein"),
-  f("Chicken Tikka", "🍗", 150, 25, 4, 4, 0, "Protein"),
-  f("Tandoori Chicken", "🍗", 140, 24, 4, 3, 0, "Protein"),
-  f("Fish (Rohu)", "🐟", 97, 17, 0, 3, 0, "Protein"),
-  f("Salmon", "🐟", 208, 20, 0, 13, 0, "Protein"),
-  f("Prawns", "🦐", 85, 20, 0, 0.5, 0, "Protein"),
-  f("Mutton (lean)", "🍖", 150, 20, 0, 7, 0, "Protein"),
-  f("Tuna (canned)", "🐟", 116, 26, 0, 1, 0, "Protein"),
-  f("Soya Chunks", "🫘", 345, 52, 33, 0.5, 13, "Protein"),
-  f("Whey Protein (scoop)", "🥛", 120, 24, 3, 1.5, 0, "Protein"),
-  f("Moong Dal", "🫘", 105, 7, 18, 0.4, 5, "Protein"),
-  f("Toor Dal", "🫘", 110, 7, 19, 0.5, 5, "Protein"),
-  f("Masoor Dal", "🫘", 108, 8, 18, 0.3, 5, "Protein"),
-  f("Chana Dal", "🫘", 115, 8, 20, 1, 5, "Protein"),
-  f("Greek Yogurt", "🥛", 59, 10, 3.6, 0.4, 0, "Protein"),
-
-  // ══ FRUITS ══
-  f("Apple", "🍎", 52, 0.3, 14, 0.2, 2.4, "Fruits"),
-  f("Banana", "🍌", 89, 1.1, 23, 0.3, 2.6, "Fruits"),
-  f("Mango", "🥭", 60, 0.8, 15, 0.4, 1.6, "Fruits"),
-  f("Papaya", "🍈", 43, 0.5, 11, 0.3, 1.7, "Fruits"),
-  f("Watermelon", "🍉", 30, 0.6, 8, 0.2, 0.4, "Fruits"),
-  f("Grapes", "🍇", 69, 0.7, 18, 0.2, 0.9, "Fruits"),
-  f("Orange", "🍊", 47, 0.9, 12, 0.1, 2.4, "Fruits"),
-  f("Pomegranate", "🫐", 83, 1.7, 19, 1.2, 4, "Fruits"),
-  f("Guava", "🍐", 68, 2.6, 14, 1, 5.4, "Fruits"),
-  f("Chikoo (Sapota)", "🥝", 83, 0.4, 20, 1.1, 5.3, "Fruits"),
-  f("Pineapple", "🍍", 50, 0.5, 13, 0.1, 1.4, "Fruits"),
-  f("Strawberry", "🍓", 32, 0.7, 8, 0.3, 2, "Fruits"),
-  f("Dates", "🌴", 277, 1.8, 75, 0.2, 7, "Fruits"),
-
-  // ══ VEGETABLES ══
-  f("Spinach (Palak)", "🥬", 23, 2.9, 3.6, 0.4, 2.2, "Vegetables"),
-  f("Tomato", "🍅", 18, 0.9, 3.9, 0.2, 1.2, "Vegetables"),
-  f("Onion", "🧅", 40, 1.1, 9.3, 0.1, 1.7, "Vegetables"),
-  f("Potato", "🥔", 77, 2, 17, 0.1, 2.2, "Vegetables"),
-  f("Carrot", "🥕", 41, 0.9, 10, 0.2, 2.8, "Vegetables"),
-  f("Cucumber", "🥒", 15, 0.7, 3.6, 0.1, 0.5, "Vegetables"),
-  f("Broccoli", "🥦", 34, 2.8, 7, 0.4, 2.6, "Vegetables"),
-  f("Cauliflower", "🥬", 25, 1.9, 5, 0.3, 2, "Vegetables"),
-  f("Capsicum", "🫑", 20, 0.9, 4.6, 0.2, 1.7, "Vegetables"),
-  f("Green Beans", "🫛", 31, 1.8, 7, 0.2, 2.7, "Vegetables"),
-  f("Beetroot", "🟣", 43, 1.6, 10, 0.2, 2.8, "Vegetables"),
-  f("Sweet Potato", "🍠", 86, 1.6, 20, 0.1, 3, "Vegetables"),
-  f("Mushroom", "🍄", 22, 3.1, 3.3, 0.3, 1, "Vegetables"),
-  f("Cabbage", "🥬", 25, 1.3, 6, 0.1, 2.5, "Vegetables"),
-  f("Drumstick", "🥒", 37, 2.1, 8.5, 0.2, 2, "Vegetables"),
-
-  // ══ DAIRY ══
-  f("Milk (Full Fat)", "🥛", 62, 3.2, 5, 3.3, 0, "Dairy"),
-  f("Milk (Toned)", "🥛", 46, 3.2, 5, 1.5, 0, "Dairy"),
-  f("Curd / Yogurt", "🥛", 60, 3.5, 5, 3.3, 0, "Dairy"),
-  f("Buttermilk", "🥛", 40, 3.3, 5, 1, 0, "Dairy"),
-  f("Lassi (Sweet)", "🥛", 80, 2.5, 14, 2, 0, "Dairy"),
-  f("Cheese", "🧀", 350, 25, 1.3, 28, 0, "Dairy"),
-  f("Ghee", "🧈", 900, 0, 0, 100, 0, "Dairy"),
-  f("Butter", "🧈", 717, 0.9, 0.1, 81, 0, "Dairy"),
-
-  // ══ NUTS & SEEDS ══
-  f("Almonds", "🥜", 579, 21, 22, 50, 12, "Nuts"),
-  f("Cashews", "🥜", 553, 18, 30, 44, 3, "Nuts"),
-  f("Peanuts", "🥜", 567, 26, 16, 49, 9, "Nuts"),
-  f("Walnuts", "🥜", 654, 15, 14, 65, 7, "Nuts"),
-  f("Pistachios", "🥜", 560, 20, 28, 45, 10, "Nuts"),
-  f("Chia Seeds", "🌱", 486, 17, 42, 31, 34, "Nuts"),
-  f("Flax Seeds", "🌱", 534, 18, 29, 42, 27, "Nuts"),
-  f("Pumpkin Seeds", "🌱", 559, 30, 11, 49, 6, "Nuts"),
-  f("Peanut Butter", "🥜", 588, 25, 20, 50, 6, "Nuts"),
-
-  // ══ SNACKS & STREET FOOD ══
-  f("Samosa", "🥟", 260, 5, 28, 14, 2, "Snacks"),
-  f("Vada Pav", "🍔", 290, 6, 35, 14, 2, "Snacks"),
-  f("Pav Bhaji", "🍛", 200, 5, 26, 8, 3, "Snacks"),
-  f("Pani Puri", "🫕", 180, 3, 28, 6, 2, "Snacks"),
-  f("Bhel Puri", "🥙", 160, 4, 26, 4, 2, "Snacks"),
-  f("Aloo Tikki", "🥔", 200, 3, 24, 10, 2, "Snacks"),
-  f("Pakora / Bhajji", "🧆", 250, 5, 22, 16, 2, "Snacks"),
-  f("Kachori", "🥟", 350, 6, 35, 20, 2, "Snacks"),
-  f("Egg Roll", "🌯", 250, 10, 28, 11, 1, "Snacks"),
-  f("Chicken Roll", "🌯", 270, 14, 26, 12, 1, "Snacks"),
-
-  // ══ SWEETS ══
-  f("Gulab Jamun", "🍩", 350, 4, 50, 15, 0.5, "Sweets"),
-  f("Jalebi", "🍩", 380, 3, 55, 16, 0.5, "Sweets"),
-  f("Rasgulla", "🍡", 185, 4, 35, 4, 0, "Sweets"),
-  f("Laddu (Besan)", "🟡", 400, 8, 45, 22, 2, "Sweets"),
-  f("Barfi", "🍬", 380, 7, 50, 17, 1, "Sweets"),
-  f("Kheer", "🍮", 120, 3, 18, 4, 0.5, "Sweets"),
-  f("Payasam", "🍮", 130, 3, 20, 4, 0.5, "Sweets"),
-  f("Halwa (Suji)", "🍮", 250, 3, 35, 12, 0.5, "Sweets"),
-
-  // ══ BEVERAGES ══
-  f("Chai (with milk)", "☕", 50, 1.5, 7, 1.5, 0, "Beverages"),
-  f("Coffee (with milk)", "☕", 45, 1.5, 5, 2, 0, "Beverages"),
-  f("Black Coffee", "☕", 2, 0.3, 0, 0, 0, "Beverages"),
-  f("Green Tea", "🍵", 1, 0, 0.3, 0, 0, "Beverages"),
-  f("Mango Lassi", "🥭", 100, 3, 18, 2, 0.5, "Beverages"),
-  f("Coconut Water", "🥥", 19, 0.7, 3.7, 0.2, 1.1, "Beverages"),
-  f("Fresh Orange Juice", "🍊", 45, 0.7, 10, 0.2, 0.2, "Beverages"),
-  f("Nimbu Pani", "🍋", 25, 0.1, 7, 0, 0.1, "Beverages"),
-  f("Badam Milk", "🥛", 90, 4, 12, 3, 1, "Beverages"),
-
-  // ══ OATS & CEREALS ══
-  f("Oats (dry)", "🥣", 389, 17, 66, 7, 11, "Grains"),
-  f("Cornflakes", "🥣", 357, 7, 84, 0.4, 3.3, "Grains"),
-  f("Muesli", "🥣", 340, 10, 60, 6, 8, "Grains"),
-  f("Ragi (Finger Millet)", "🌾", 328, 7, 72, 1.3, 11, "Grains"),
-  f("Jowar (Sorghum)", "🌾", 329, 10, 73, 1.7, 6, "Grains"),
-  f("Bajra (Pearl Millet)", "🌾", 378, 12, 67, 5, 1.2, "Grains"),
-  f("Wheat Flour (Atta)", "🌾", 340, 12, 72, 1.5, 11, "Grains"),
-
-  // ══ INTERNATIONAL ══
-  f("Pasta (cooked)", "🍝", 131, 5, 25, 1.1, 1.8, "International", "Global"),
-  f("Pizza (1 slice ~100g)", "🍕", 266, 11, 33, 10, 2, "International", "Global"),
-  f("Burger Patty", "🍔", 250, 15, 15, 15, 1, "International", "Global"),
-  f("French Fries", "🍟", 312, 3.4, 41, 15, 3.8, "International", "Global"),
-  f("Fried Rice", "🍚", 160, 4, 22, 6, 1, "International", "Global"),
-  f("Noodles (cooked)", "🍜", 138, 5, 25, 2, 1, "International", "Global"),
-  f("Sushi Roll", "🍣", 150, 6, 20, 5, 1, "International", "Global"),
-  f("Sandwich (veg)", "🥪", 230, 8, 28, 10, 2, "International", "Global"),
-  f("Wrap / Burrito", "🌯", 220, 10, 26, 8, 2, "International", "Global"),
-  f("Salad (mixed)", "🥗", 20, 1.5, 3.5, 0.2, 2, "International", "Global"),
-
-  // ══ COOKING OILS (per 100ml) ══
-  f("Sunflower Oil", "🫒", 884, 0, 0, 100, 0, "Oils"),
-  f("Olive Oil", "🫒", 884, 0, 0, 100, 0, "Oils"),
-  f("Mustard Oil", "🫒", 884, 0, 0, 100, 0, "Oils"),
-  f("Coconut Oil", "🥥", 862, 0, 0, 100, 0, "Oils"),
-
-  // ══ MISCELLANEOUS ══
-  f("Honey", "🍯", 304, 0.3, 82, 0, 0.2, "Other"),
-  f("Sugar", "🧂", 387, 0, 100, 0, 0, "Other"),
-  f("Jaggery (Gur)", "🟤", 383, 0.4, 98, 0.1, 0, "Other"),
-  f("Salt", "🧂", 0, 0, 0, 0, 0, "Other"),
-  f("Pickle (Achar)", "🫙", 150, 2, 10, 12, 2, "Other"),
-  f("Papad (roasted)", "🫓", 310, 20, 50, 3, 7, "Other"),
-  f("Raita", "🥛", 50, 2, 4, 3, 0.5, "Other"),
+// ── LOCAL DATABASE (per 100g) ──
+export const FOOD_DATABASE = [
+  // Rice
+  { name: "White Rice (Cooked)", emoji: "🍚", cal: 130, protein: 2.7, carbs: 28, fat: 0.3, fiber: 0.4, category: "Rice" },
+  { name: "Brown Rice (Cooked)", emoji: "🍚", cal: 112, protein: 2.6, carbs: 23, fat: 0.9, fiber: 1.8, category: "Rice" },
+  { name: "Jeera Rice", emoji: "🍚", cal: 160, protein: 3, carbs: 26, fat: 5, fiber: 0.5, category: "Rice" },
+  { name: "Lemon Rice", emoji: "🍋", cal: 170, protein: 3, carbs: 28, fat: 5.5, fiber: 0.6, category: "Rice" },
+  { name: "Curd Rice", emoji: "🍚", cal: 140, protein: 4, carbs: 22, fat: 3.5, fiber: 0.3, category: "Rice" },
+  { name: "Chicken Biryani", emoji: "🍗", cal: 180, protein: 12, carbs: 20, fat: 6, fiber: 0.5, category: "Rice" },
+  { name: "Mutton Biryani", emoji: "🍖", cal: 195, protein: 13, carbs: 18, fat: 8, fiber: 0.5, category: "Rice" },
+  { name: "Veg Biryani", emoji: "🥘", cal: 145, protein: 3.5, carbs: 22, fat: 4.5, fiber: 1.2, category: "Rice" },
+  { name: "Hyderabadi Biryani", emoji: "🍗", cal: 190, protein: 12, carbs: 20, fat: 7, fiber: 0.5, category: "Rice" },
+  { name: "Khichdi", emoji: "🍲", cal: 105, protein: 4, carbs: 18, fat: 1.5, fiber: 1.5, category: "Rice" },
+  { name: "Pulao (Veg)", emoji: "🍚", cal: 150, protein: 3.5, carbs: 23, fat: 5, fiber: 1.0, category: "Rice" },
+  // Bread
+  { name: "Wheat Roti", emoji: "🫓", cal: 264, protein: 8.7, carbs: 50, fat: 3.7, fiber: 4.0, category: "Bread" },
+  { name: "Paratha (Plain)", emoji: "🫓", cal: 320, protein: 8, carbs: 45, fat: 12, fiber: 3.5, category: "Bread" },
+  { name: "Aloo Paratha", emoji: "🥔", cal: 280, protein: 6, carbs: 40, fat: 10, fiber: 2.5, category: "Bread" },
+  { name: "Naan", emoji: "🫓", cal: 290, protein: 8, carbs: 48, fat: 7, fiber: 2.0, category: "Bread" },
+  { name: "Garlic Naan", emoji: "🧄", cal: 310, protein: 8, carbs: 48, fat: 9, fiber: 2.0, category: "Bread" },
+  { name: "Puri", emoji: "🫓", cal: 350, protein: 7, carbs: 40, fat: 18, fiber: 2.5, category: "Bread" },
+  { name: "Bhatura", emoji: "🫓", cal: 380, protein: 7, carbs: 42, fat: 20, fiber: 1.5, category: "Bread" },
+  { name: "Bajra Roti", emoji: "🫓", cal: 282, protein: 8.5, carbs: 52, fat: 4.5, fiber: 4.0, category: "Bread" },
+  { name: "Jowar Roti", emoji: "🫓", cal: 270, protein: 8, carbs: 53, fat: 3.5, fiber: 4.5, category: "Bread" },
+  { name: "Ragi Roti", emoji: "🫓", cal: 260, protein: 7, carbs: 50, fat: 3, fiber: 5.0, category: "Bread" },
+  // Dal
+  { name: "Toor Dal", emoji: "🍲", cal: 90, protein: 6.5, carbs: 14, fat: 0.5, fiber: 3.0, category: "Dal" },
+  { name: "Moong Dal", emoji: "🍲", cal: 85, protein: 7, carbs: 12, fat: 0.4, fiber: 2.5, category: "Dal" },
+  { name: "Chana Dal", emoji: "🍲", cal: 100, protein: 7, carbs: 15, fat: 1, fiber: 4.0, category: "Dal" },
+  { name: "Masoor Dal", emoji: "🍲", cal: 88, protein: 7, carbs: 13, fat: 0.3, fiber: 3.5, category: "Dal" },
+  { name: "Dal Tadka", emoji: "🍲", cal: 110, protein: 6, carbs: 14, fat: 3.5, fiber: 3.0, category: "Dal" },
+  { name: "Dal Makhani", emoji: "🍲", cal: 140, protein: 6, carbs: 14, fat: 7, fiber: 3.0, category: "Dal" },
+  { name: "Rajma", emoji: "🫘", cal: 105, protein: 7, carbs: 16, fat: 0.8, fiber: 5.0, category: "Dal" },
+  { name: "Chole", emoji: "🫘", cal: 115, protein: 7, carbs: 17, fat: 2.5, fiber: 5.5, category: "Dal" },
+  { name: "Sambar", emoji: "🍲", cal: 65, protein: 3.5, carbs: 9, fat: 1.5, fiber: 2.5, category: "Dal" },
+  // South Indian
+  { name: "Plain Dosa", emoji: "🫓", cal: 120, protein: 3, carbs: 18, fat: 3.5, fiber: 0.8, category: "South Indian" },
+  { name: "Masala Dosa", emoji: "🫓", cal: 165, protein: 4, carbs: 24, fat: 6, fiber: 1.5, category: "South Indian" },
+  { name: "Idli", emoji: "⚪", cal: 130, protein: 4, carbs: 24, fat: 0.5, fiber: 1.0, category: "South Indian" },
+  { name: "Medu Vada", emoji: "🍩", cal: 290, protein: 8, carbs: 28, fat: 16, fiber: 2.0, category: "South Indian" },
+  { name: "Uttapam", emoji: "🫓", cal: 155, protein: 4, carbs: 22, fat: 5, fiber: 1.5, category: "South Indian" },
+  { name: "Upma", emoji: "🍚", cal: 125, protein: 3.5, carbs: 18, fat: 4, fiber: 1.5, category: "South Indian" },
+  { name: "Pesarattu", emoji: "🫓", cal: 110, protein: 6, carbs: 14, fat: 3, fiber: 2.5, category: "South Indian" },
+  { name: "Pongal", emoji: "🍚", cal: 135, protein: 4, carbs: 18, fat: 5, fiber: 0.8, category: "South Indian" },
+  // Curry
+  { name: "Palak Paneer", emoji: "🧀", cal: 140, protein: 8, carbs: 5, fat: 10, fiber: 2.0, category: "Curry" },
+  { name: "Paneer Butter Masala", emoji: "🧀", cal: 200, protein: 10, carbs: 8, fat: 15, fiber: 1.0, category: "Curry" },
+  { name: "Butter Chicken", emoji: "🍗", cal: 175, protein: 14, carbs: 6, fat: 11, fiber: 0.8, category: "Curry" },
+  { name: "Chicken Curry", emoji: "🍗", cal: 155, protein: 16, carbs: 5, fat: 8, fiber: 1.0, category: "Curry" },
+  { name: "Mutton Curry", emoji: "🍖", cal: 190, protein: 18, carbs: 5, fat: 11, fiber: 0.8, category: "Curry" },
+  { name: "Fish Curry", emoji: "🐟", cal: 130, protein: 15, carbs: 4, fat: 6, fiber: 0.5, category: "Curry" },
+  { name: "Egg Curry", emoji: "🥚", cal: 140, protein: 10, carbs: 5, fat: 9, fiber: 0.8, category: "Curry" },
+  { name: "Aloo Gobi", emoji: "🥔", cal: 90, protein: 2.5, carbs: 12, fat: 3.5, fiber: 2.5, category: "Curry" },
+  { name: "Mixed Veg Curry", emoji: "🥕", cal: 80, protein: 2.5, carbs: 10, fat: 3, fiber: 3.0, category: "Curry" },
+  { name: "Malai Kofta", emoji: "🧀", cal: 225, protein: 7, carbs: 12, fat: 17, fiber: 1.5, category: "Curry" },
+  { name: "Matar Paneer", emoji: "🧀", cal: 165, protein: 9, carbs: 10, fat: 10, fiber: 2.5, category: "Curry" },
+  // Protein
+  { name: "Chicken Breast", emoji: "🍗", cal: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, category: "Protein" },
+  { name: "Tandoori Chicken", emoji: "🍗", cal: 148, protein: 25, carbs: 2, fat: 4, fiber: 0.5, category: "Protein" },
+  { name: "Egg (Boiled)", emoji: "🥚", cal: 155, protein: 13, carbs: 1, fat: 11, fiber: 0, category: "Protein" },
+  { name: "Egg Omelette", emoji: "🍳", cal: 175, protein: 12, carbs: 1.5, fat: 13, fiber: 0, category: "Protein" },
+  { name: "Paneer", emoji: "🧀", cal: 265, protein: 18, carbs: 1.2, fat: 20, fiber: 0, category: "Protein" },
+  { name: "Tofu", emoji: "🧊", cal: 76, protein: 8, carbs: 1.9, fat: 4.8, fiber: 0.3, category: "Protein" },
+  { name: "Fish (Rohu)", emoji: "🐟", cal: 97, protein: 17, carbs: 0, fat: 3, fiber: 0, category: "Protein" },
+  { name: "Prawns", emoji: "🦐", cal: 99, protein: 24, carbs: 0, fat: 0.3, fiber: 0, category: "Protein" },
+  { name: "Soya Chunks", emoji: "🫘", cal: 345, protein: 52, carbs: 33, fat: 0.5, fiber: 13, category: "Protein" },
+  { name: "Whey Protein", emoji: "🥤", cal: 120, protein: 24, carbs: 3, fat: 1.5, fiber: 0, category: "Protein" },
+  { name: "Grilled Chicken", emoji: "🍗", cal: 150, protein: 28, carbs: 0, fat: 4, fiber: 0, category: "Protein" },
+  // Vegetables
+  { name: "Spinach", emoji: "🥬", cal: 23, protein: 2.9, carbs: 3.6, fat: 0.4, fiber: 2.2, category: "Vegetables" },
+  { name: "Broccoli", emoji: "🥦", cal: 34, protein: 2.8, carbs: 7, fat: 0.4, fiber: 2.6, category: "Vegetables" },
+  { name: "Carrot", emoji: "🥕", cal: 41, protein: 0.9, carbs: 10, fat: 0.2, fiber: 2.8, category: "Vegetables" },
+  { name: "Tomato", emoji: "🍅", cal: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fiber: 1.2, category: "Vegetables" },
+  { name: "Potato (Boiled)", emoji: "🥔", cal: 87, protein: 1.9, carbs: 20, fat: 0.1, fiber: 1.8, category: "Vegetables" },
+  { name: "Sweet Potato", emoji: "🍠", cal: 86, protein: 1.6, carbs: 20, fat: 0.1, fiber: 3.0, category: "Vegetables" },
+  { name: "Cucumber", emoji: "🥒", cal: 15, protein: 0.7, carbs: 3.6, fat: 0.1, fiber: 0.5, category: "Vegetables" },
+  { name: "Beetroot", emoji: "🟣", cal: 43, protein: 1.6, carbs: 10, fat: 0.2, fiber: 2.8, category: "Vegetables" },
+  { name: "Cauliflower", emoji: "🥦", cal: 25, protein: 1.9, carbs: 5, fat: 0.3, fiber: 2.0, category: "Vegetables" },
+  { name: "Cabbage", emoji: "🥬", cal: 25, protein: 1.3, carbs: 6, fat: 0.1, fiber: 2.5, category: "Vegetables" },
+  // Fruits
+  { name: "Apple", emoji: "🍎", cal: 52, protein: 0.3, carbs: 14, fat: 0.2, fiber: 2.4, category: "Fruits" },
+  { name: "Banana", emoji: "🍌", cal: 89, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6, category: "Fruits" },
+  { name: "Mango", emoji: "🥭", cal: 60, protein: 0.8, carbs: 15, fat: 0.4, fiber: 1.6, category: "Fruits" },
+  { name: "Orange", emoji: "🍊", cal: 43, protein: 0.9, carbs: 9, fat: 0.1, fiber: 2.4, category: "Fruits" },
+  { name: "Watermelon", emoji: "🍉", cal: 30, protein: 0.6, carbs: 8, fat: 0.2, fiber: 0.4, category: "Fruits" },
+  { name: "Grapes", emoji: "🍇", cal: 69, protein: 0.7, carbs: 18, fat: 0.2, fiber: 0.9, category: "Fruits" },
+  { name: "Pomegranate", emoji: "🔴", cal: 83, protein: 1.7, carbs: 19, fat: 1.2, fiber: 4.0, category: "Fruits" },
+  { name: "Guava", emoji: "🟢", cal: 68, protein: 2.6, carbs: 14, fat: 1, fiber: 5.4, category: "Fruits" },
+  { name: "Papaya", emoji: "🟠", cal: 43, protein: 0.5, carbs: 11, fat: 0.3, fiber: 1.7, category: "Fruits" },
+  { name: "Avocado", emoji: "🥑", cal: 160, protein: 2, carbs: 9, fat: 15, fiber: 7, category: "Fruits" },
+  { name: "Dates (Khajur)", emoji: "🟤", cal: 277, protein: 1.8, carbs: 75, fat: 0.2, fiber: 7, category: "Fruits" },
+  // Dairy
+  { name: "Milk (Full Fat)", emoji: "🥛", cal: 62, protein: 3.2, carbs: 5, fat: 3.3, fiber: 0, category: "Dairy" },
+  { name: "Curd (Dahi)", emoji: "🫙", cal: 60, protein: 3.5, carbs: 5, fat: 3, fiber: 0, category: "Dairy" },
+  { name: "Buttermilk", emoji: "🥛", cal: 25, protein: 1.5, carbs: 3, fat: 0.8, fiber: 0, category: "Dairy" },
+  { name: "Lassi (Sweet)", emoji: "🥛", cal: 90, protein: 3, carbs: 14, fat: 2.5, fiber: 0, category: "Dairy" },
+  { name: "Ghee", emoji: "🧈", cal: 900, protein: 0, carbs: 0, fat: 100, fiber: 0, category: "Dairy" },
+  { name: "Cheese", emoji: "🧀", cal: 402, protein: 25, carbs: 1.3, fat: 33, fiber: 0, category: "Dairy" },
+  // Nuts
+  { name: "Almonds", emoji: "🥜", cal: 579, protein: 21, carbs: 22, fat: 50, fiber: 12.5, category: "Nuts" },
+  { name: "Cashews", emoji: "🥜", cal: 553, protein: 18, carbs: 30, fat: 44, fiber: 3.3, category: "Nuts" },
+  { name: "Walnuts", emoji: "🥜", cal: 654, protein: 15, carbs: 14, fat: 65, fiber: 6.7, category: "Nuts" },
+  { name: "Peanuts", emoji: "🥜", cal: 567, protein: 26, carbs: 16, fat: 49, fiber: 8.5, category: "Nuts" },
+  { name: "Peanut Butter", emoji: "🥜", cal: 588, protein: 25, carbs: 20, fat: 50, fiber: 6, category: "Nuts" },
+  { name: "Chia Seeds", emoji: "🌰", cal: 486, protein: 17, carbs: 42, fat: 31, fiber: 34, category: "Nuts" },
+  // Snacks
+  { name: "Samosa", emoji: "🔺", cal: 260, protein: 4, carbs: 28, fat: 14, fiber: 2.0, category: "Snacks" },
+  { name: "Vada Pav", emoji: "🍔", cal: 290, protein: 6, carbs: 36, fat: 13, fiber: 2.0, category: "Snacks" },
+  { name: "Pav Bhaji", emoji: "🍞", cal: 200, protein: 5, carbs: 28, fat: 8, fiber: 3.0, category: "Snacks" },
+  { name: "Pakora", emoji: "🍘", cal: 280, protein: 5, carbs: 24, fat: 18, fiber: 2.0, category: "Snacks" },
+  { name: "Poha", emoji: "🍚", cal: 130, protein: 2.5, carbs: 22, fat: 3.5, fiber: 1.0, category: "Snacks" },
+  // Drinks
+  { name: "Tea (With Milk)", emoji: "☕", cal: 38, protein: 1, carbs: 5, fat: 1.5, fiber: 0, category: "Drinks" },
+  { name: "Coffee (With Milk)", emoji: "☕", cal: 45, protein: 1.5, carbs: 5, fat: 2, fiber: 0, category: "Drinks" },
+  { name: "Green Tea", emoji: "🍵", cal: 2, protein: 0, carbs: 0.5, fat: 0, fiber: 0, category: "Drinks" },
+  { name: "Coconut Water", emoji: "🥥", cal: 19, protein: 0.7, carbs: 4, fat: 0.2, fiber: 1.1, category: "Drinks" },
+  { name: "Protein Shake", emoji: "🥤", cal: 120, protein: 24, carbs: 3, fat: 1.5, fiber: 0, category: "Drinks" },
+  // Sweets
+  { name: "Gulab Jamun", emoji: "🟤", cal: 380, protein: 5, carbs: 55, fat: 16, fiber: 0.5, category: "Sweets" },
+  { name: "Jalebi", emoji: "🟡", cal: 390, protein: 3, carbs: 60, fat: 15, fiber: 0, category: "Sweets" },
+  { name: "Kheer", emoji: "🍚", cal: 140, protein: 4, carbs: 22, fat: 4, fiber: 0.2, category: "Sweets" },
+  { name: "Halwa", emoji: "🟠", cal: 300, protein: 4, carbs: 40, fat: 14, fiber: 1, category: "Sweets" },
+  // Hyderabadi
+  { name: "Haleem", emoji: "🍲", cal: 150, protein: 10, carbs: 14, fat: 6, fiber: 2.5, category: "Hyderabadi" },
+  { name: "Irani Chai", emoji: "☕", cal: 80, protein: 2.5, carbs: 10, fat: 3, fiber: 0, category: "Hyderabadi" },
+  { name: "Kebab (Seekh)", emoji: "🍢", cal: 210, protein: 18, carbs: 5, fat: 13, fiber: 0.5, category: "Hyderabadi" },
+  { name: "Shawarma", emoji: "🌯", cal: 220, protein: 15, carbs: 18, fat: 10, fiber: 1.5, category: "Hyderabadi" },
+  { name: "Nihari", emoji: "🍲", cal: 180, protein: 15, carbs: 6, fat: 11, fiber: 0.5, category: "Hyderabadi" },
+  // Healthy
+  { name: "Oats Porridge", emoji: "🥣", cal: 68, protein: 2.4, carbs: 12, fat: 1.4, fiber: 1.7, category: "Healthy" },
+  { name: "Quinoa", emoji: "🍚", cal: 120, protein: 4.4, carbs: 21, fat: 1.9, fiber: 2.8, category: "Healthy" },
+  { name: "Greek Yogurt", emoji: "🫙", cal: 59, protein: 10, carbs: 3.6, fat: 0.4, fiber: 0, category: "Healthy" },
+  { name: "Muesli", emoji: "🥣", cal: 340, protein: 10, carbs: 56, fat: 8, fiber: 8, category: "Healthy" },
+  { name: "Honey", emoji: "🍯", cal: 304, protein: 0.3, carbs: 82, fat: 0, fiber: 0.2, category: "Healthy" },
+  { name: "Sprouts (Moong)", emoji: "🌱", cal: 30, protein: 3, carbs: 4, fat: 0.2, fiber: 1.8, category: "Healthy" },
 ];
 
-// Get all unique categories
-export const FOOD_CATEGORIES = [...new Set(FOOD_DB.map(f => f.category))];
+export const FOOD_CATEGORIES = [...new Set(FOOD_DATABASE.map(f => f.category))];
 
-// Quick search function
-export function searchFood(query) {
-  if (!query || query.length < 2) return FOOD_DB;
-  const q = query.toLowerCase();
-  return FOOD_DB.filter(f =>
-    f.name.toLowerCase().includes(q) ||
-    f.category.toLowerCase().includes(q) ||
-    (f.region && f.region.toLowerCase().includes(q))
-  );
+// ── LOCAL SEARCH (instant) ──
+export function searchFoods(query) {
+  if (!query || query.length < 2) return [];
+  const q = query.toLowerCase().trim();
+  return FOOD_DATABASE.filter(f =>
+    f.name.toLowerCase().includes(q) || f.category.toLowerCase().includes(q)
+  ).slice(0, 20);
+}
+
+// ── AI NUTRITION LOOKUP (uses Groq — already configured) ──
+let aiCache = {};
+
+export async function searchFoodsAI(query) {
+  if (!query || query.length < 3) return [];
+
+  const cacheKey = query.toLowerCase().trim();
+  if (aiCache[cacheKey]) return aiCache[cacheKey];
+
+  const groqKey = process.env.REACT_APP_GROQ_API_KEY;
+  const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
+
+  if (!groqKey && !geminiKey) return [];
+
+  try {
+    let text = "";
+
+    if (groqKey) {
+      const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: "You are a nutrition database. Return ONLY a JSON array of foods matching the query. Each item: {\"name\":\"Food Name\",\"cal\":number,\"protein\":number,\"carbs\":number,\"fat\":number,\"fiber\":number}. Values per 100g. Include Indian/regional variations if applicable. Return 3-5 items max. No markdown, no explanation, ONLY the JSON array." },
+            { role: "user", content: `Nutrition per 100g for: ${query}` }
+          ],
+          max_tokens: 500, temperature: 0.3,
+        }),
+      });
+      const d = await r.json();
+      text = d.choices?.[0]?.message?.content || "";
+    } else if (geminiKey) {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: `Return ONLY a JSON array of foods matching "${query}". Each item: {"name":"Food Name","cal":number,"protein":number,"carbs":number,"fat":number,"fiber":number}. Values per 100g. 3-5 items. No markdown.` }] }],
+          generationConfig: { maxOutputTokens: 500, temperature: 0.3 },
+        }),
+      });
+      const d = await r.json();
+      text = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    }
+
+    // Parse JSON from response
+    const clean = text.replace(/```json|```/g, "").trim();
+    const match = clean.match(/\[[\s\S]*\]/);
+    if (!match) return [];
+
+    const items = JSON.parse(match[0]);
+    const results = items.map(item => ({
+      name: item.name || query,
+      emoji: "🍽️",
+      cal: Math.round(item.cal || item.calories || 0),
+      protein: Math.round((item.protein || 0) * 10) / 10,
+      carbs: Math.round((item.carbs || item.carbohydrates || 0) * 10) / 10,
+      fat: Math.round((item.fat || 0) * 10) / 10,
+      fiber: Math.round((item.fiber || 0) * 10) / 10,
+      category: "AI Lookup",
+      source: "ai",
+    }));
+
+    aiCache[cacheKey] = results;
+    return results;
+  } catch (e) {
+    console.warn("AI nutrition lookup error:", e);
+    return [];
+  }
+}
+
+// ── COMBINED SEARCH ──
+export async function searchFoodsCombined(query) {
+  if (!query || query.length < 2) return { local: [], api: [] };
+  const local = searchFoods(query);
+  if (local.length >= 5 || query.length < 3) return { local, api: [] };
+
+  const api = await searchFoodsAI(query);
+  const localNames = new Set(local.map(f => f.name.toLowerCase()));
+  const uniqueApi = api.filter(f => !localNames.has(f.name.toLowerCase()));
+  return { local, api: uniqueApi };
+}
+
+export function getFoodsByCategory(category) {
+  return FOOD_DATABASE.filter(f => f.category === category);
 }

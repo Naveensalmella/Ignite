@@ -15,7 +15,7 @@ async function callGemini(apiKey, messages, system, mode, imageBase64) {
       }],
       generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
     };
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error?.message || 'Gemini failed');

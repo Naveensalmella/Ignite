@@ -15,13 +15,14 @@ import FocusTimer from './components/FocusTimer';
 import Wellness from './components/Wellness';
 import FinancePage from './components/FinancePage';
 import GrowthPage from './components/GrowthPage';
-import AIChat from './components/AIChat';
+import FlameOracle from './components/FlameOracle';
 import ProfilePage from './components/ProfilePage';
 import XPToast from './components/XPToast';
 import LevelUpOverlay from './components/LevelUpOverlay';
 import HeaderXPBar from './components/HeaderXPBar';
 import RoutinePage from './components/RoutinePage';
 import OnboardingPage from './components/OnboardingPage';
+import OnboardingTutorial from './components/OnboardingTutorial';
 import BodyTracker from './components/BodyTracker';
 import ChallengesPage from './components/ChallengesPage';
 import { ConfettiBlast, LevelUpCelebration } from './components/Confetti';
@@ -33,6 +34,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState("dashboard");
   const [sideOpen, setSideOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [foodLog, setFoodLog] = useState({});
   const [habits, setHabits] = useState(DEFAULT_HABITS);
   const [habitLog, setHabitLog] = useState({});
@@ -52,12 +54,14 @@ export default function App() {
   const [activityLog, setActivityLog] = useState([]);
   const [focusLog, setFocusLog] = useState({});
   const [routineData, setRoutineData] = useState(null);
-  const saveTimer = useRef(null);
   const [bodyData, setBodyData] = useState(null);
   const [challengeData, setChallengeData] = useState(null);
   const [confetti, setConfetti] = useState(0);
   const [levelUpShow, setLevelUpShow] = useState(null);
   const [programData, setProgramData] = useState(null);
+  const [masteryData, setMasteryData] = useState(null);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const saveTimer = useRef(null);
 
   const logActivity = (type, detail) => {
     const entry = { id: Date.now(), type, detail, date: today(), time: new Date().toLocaleTimeString(), timestamp: Date.now() };
@@ -71,7 +75,7 @@ export default function App() {
     return () => window.removeEventListener("resize", ck);
   }, []);
 
-  // Firebase Auth listener — detects login/logout/session
+  // Firebase Auth listener
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -108,23 +112,37 @@ export default function App() {
       d.activityLog && setActivityLog(d.activityLog);
       d.focusLog && setFocusLog(d.focusLog);
       d.routineData && setRoutineData(d.routineData);
+      d.masteryData && setMasteryData(d.masteryData);
+      d.bodyData && setBodyData(d.bodyData);
+      d.challengeData && setChallengeData(d.challengeData);
+      d.programData && setProgramData(d.programData);
       if (d.totalXP !== undefined) setTotalXP(d.totalXP);
       if (d.streak !== undefined) setStreak(d.streak);
       if (d.lastCheck) setLastCheck(d.lastCheck);
+      // Show tutorial for first-time users
+      if (!d.tutorialDone) setShowTutorial(true);
+    } else {
+      // Brand new user — show tutorial
+      setShowTutorial(true);
     }
   };
 
-  // Save to Firestore (debounced — waits 2s after last change)
+  // Save to Firestore (debounced)
   const saveData = useCallback(async () => {
     if (!user) return;
     await store.saveUserData(user.uid, {
       foodLog, habits, habitLog, tasks, journal, finances, profile,
-      chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg, activityLog, focusLog, routineData,
+      chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
+      activityLog, focusLog, routineData, masteryData, bodyData,
+      challengeData, programData,
       lastSaved: new Date().toISOString(),
     });
-  }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile, chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg, activityLog, focusLog, routineData]);
+  }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile,
+    chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
+    activityLog, focusLog, routineData, masteryData, bodyData,
+    challengeData, programData]);
 
-  // Debounced auto-save: saves 2 seconds after the last state change
+  // Debounced auto-save
   useEffect(() => {
     if (!user) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -161,16 +179,21 @@ export default function App() {
     setStreak(s); setLastCheck(d);
   }, [user, habitLog, lastCheck]);
 
-  // Add XP with streak multiplier
+  // Add XP with streak multiplier + confetti
   const addXP = useCallback((amount, reason) => {
     const mult = getStreakMult(streak);
     const actual = Math.floor(amount * mult);
-    setConfetti(c => c + 1); // triggers confetti
-    // If level changed:
-    if (newLevel > oldLevel) setLevelUpShow({ level: newLevel, rank: getRank(newLevel) });
+    setConfetti(c => c + 1);
     setTotalXP(prev => {
-      const oldLv = getLevel(prev); const nxp = prev + actual; const nLv = getLevel(nxp);
-      if (nLv > oldLv) setTimeout(() => setLevelUp({ level: nLv, rank: getRank(nLv) }), 300);
+      const oldLv = getLevel(prev);
+      const nxp = prev + actual;
+      const nLv = getLevel(nxp);
+      if (nLv > oldLv) {
+        setTimeout(() => {
+          setLevelUp({ level: nLv, rank: getRank(nLv) });
+          setLevelUpShow({ level: nLv, rank: getRank(nLv) });
+        }, 300);
+      }
       return nxp;
     });
     const id = Date.now() + Math.random();
@@ -179,15 +202,15 @@ export default function App() {
     logActivity("xp", `+${actual} XP: ${reason}`);
   }, [streak]);
 
-
-  // Logout via Firebase
+  // Logout
   const logout = async () => {
-    await saveData(); // Save before logging out
+    await saveData();
     await signOut(auth);
     setUser(null); setFoodLog({}); setHabits(DEFAULT_HABITS); setHabitLog({});
     setTasks([]); setJournal({}); setFinances([]); setProfile({});
     setChatHistory([]); setTotalXP(0); setWorkoutLog({}); setStreak(0);
     setPillarProg({}); setActivityLog([]); setFocusLog({}); setRoutineData(null);
+    setMasteryData(null); setBodyData(null); setChallengeData(null); setProgramData(null);
   };
 
   // AI action handler
@@ -201,27 +224,15 @@ export default function App() {
     } catch { }
   };
 
-
-  // Exit confirmation — works on mobile back button
+  // Exit confirmation
   const [showExitModal, setShowExitModal] = useState(false);
   useEffect(() => {
-    // Push a fake history state so back button triggers popstate
     window.history.pushState({ ignite: true }, "");
-    const handlePopState = (e) => {
-      setShowExitModal(true);
-      window.history.pushState({ ignite: true }, ""); // Keep pushing to stay on page
-    };
-    const handleBeforeUnload = (e) => {
-      e.preventDefault();
-      e.returnValue = "";
-      return "";
-    };
+    const handlePopState = () => { setShowExitModal(true); window.history.pushState({ ignite: true }, ""); };
+    const handleBeforeUnload = (e) => { e.preventDefault(); e.returnValue = ""; return ""; };
     window.addEventListener("popstate", handlePopState);
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
+    return () => { window.removeEventListener("popstate", handlePopState); window.removeEventListener("beforeunload", handleBeforeUnload); };
   }, []);
 
   // Loading screen
@@ -235,13 +246,11 @@ export default function App() {
     </div>
   );
 
-  // Auth screen (not logged in)
   if (!user) return <AuthPage />;
 
   // Onboarding for new users
   const handleOnboardingComplete = async (profileData) => {
     setProfile(p => ({ ...p, ...profileData }));
-    // Save immediately
     await store.saveUserData(user.uid, { profile: { ...profile, ...profileData } });
   };
 
@@ -249,10 +258,17 @@ export default function App() {
     return <OnboardingPage onComplete={handleOnboardingComplete} />;
   }
 
-  const appState = { foodLog, habits, habitLog, tasks, journal, finances, profile, user, pillarProg, focusLog };
+  // Tutorial overlay for first-time users
+  const handleTutorialComplete = async () => {
+    setShowTutorial(false);
+    await store.saveUserData(user.uid, { tutorialDone: true });
+  };
+
+  const appState = { foodLog, habits, habitLog, tasks, journal, finances, profile, user, pillarProg, focusLog, workoutLog, oracleChats: chatHistory };
+
   const pages = {
     dashboard: <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />,
-    training: <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} />,
+    training: <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} masteryData={masteryData} setMasteryData={setMasteryData} />,
     nutrition: <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} profile={profile} />,
     dailyquest: <DailyQuestPage habits={habits} setHabits={setHabits} habitLog={habitLog} setHabitLog={setHabitLog} addXP={addXP} workoutLog={workoutLog} />,
     missions: <MissionsPage tasks={tasks} setTasks={setTasks} addXP={addXP} />,
@@ -261,37 +277,88 @@ export default function App() {
     finance: <FinancePage finances={finances} setFinances={setFinances} addXP={addXP} />,
     routine: <RoutinePage profile={profile} routineData={routineData} setRoutineData={setRoutineData} />,
     growth: <GrowthPage pillarProg={pillarProg} setPillarProg={setPillarProg} />,
-    chat: <AIChat appState={appState} onAction={handleAI} chatHistory={chatHistory} setChatHistory={setChatHistory} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />,
-    profile: <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} />,
+    oracle: <FlameOracle appState={appState} addXP={addXP} setFoodLog={setFoodLog} setWorkoutLog={setWorkoutLog} setPage={setPage} profile={profile} routineData={routineData} setRoutineData={setRoutineData} />,
+    profile: <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} appState={appState} />,
     body: <BodyTracker bodyData={bodyData} setBodyData={setBodyData} />,
     challenges: <ChallengesPage challengeData={challengeData} setChallengeData={setChallengeData} addXP={addXP} />,
     share: <ShareCard totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} />,
     programs: <WorkoutPrograms programData={programData} setProgramData={setProgramData} addXP={addXP} />,
   };
 
+  // Get current page label for header
+  const allNavItems = [...navItems.filter(n => !n.submenu), ...(navItems.find(n => n.submenu)?.submenu || [])];
+  const currentLabel = allNavItems.find(n => n.key === page)?.label || "IGNITE";
+
   return (
     <>
       <XPToast xpEvents={xpEvents} />
       {levelUp && <LevelUpOverlay level={levelUp.level} rank={levelUp.rank} onClose={() => setLevelUp(null)} />}
+      {showTutorial && <OnboardingTutorial onComplete={handleTutorialComplete} />}
+
       <div style={{ display: "flex", height: "100vh", background: "#060a0c", overflow: "hidden", position: "relative" }}>
         <div style={{ position: "fixed", top: "-20%", right: "-10%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle,rgba(16,185,129,.025),transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
 
-        {sideOpen && <div onClick={() => setSideOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 45, backdropFilter: "blur(4px)" }} />}
+        {sideOpen && <div onClick={() => { setSideOpen(false); setMoreOpen(false); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 45, backdropFilter: "blur(4px)" }} />}
 
         {/* Sidebar */}
         <nav style={{ width: sideOpen ? 240 : 72, minWidth: sideOpen ? 240 : 72, background: "linear-gradient(180deg,rgba(10,10,18,.99),rgba(8,8,14,.99))", borderRight: "1px solid rgba(16,185,129,.06)", display: "flex", flexDirection: "column", transition: "all .3s", zIndex: 50, position: isMobile ? "fixed" : "relative", height: "100%", left: isMobile && !sideOpen ? -72 : 0 }}>
+          {/* Logo */}
           <div onClick={() => setSideOpen(!sideOpen)} style={{ padding: "20px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid rgba(255,255,255,.04)" }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0, fontFamily: "Rajdhani,sans-serif" }}>I</div>
             {sideOpen && <span style={{ fontSize: 18, fontWeight: 800, fontFamily: "Rajdhani,sans-serif", background: "linear-gradient(135deg,#10b981,#06b6d4,#22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: 4 }}>IGNITE</span>}
           </div>
+
+          {/* Nav Items */}
           <div style={{ flex: 1, overflowY: "auto", padding: "12px 0" }}>
-            {navItems.map(n => (
-              <div key={n.key} className={`ni ${page === n.key ? "act" : ""}`} onClick={() => { setPage(n.key); setSideOpen(false) }}>
-                <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>{n.icon}</span>
-                {sideOpen && <span>{n.label}</span>}
-              </div>
-            ))}
+            {navItems.map(n => {
+              if (n.submenu) {
+                // "More" button with expandable submenu
+                return (
+                  <div key={n.key}>
+                    <div className={`ni ${moreOpen ? "act" : ""}`} onClick={() => setMoreOpen(!moreOpen)}>
+                      <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>{n.icon}</span>
+                      {sideOpen && <span>{n.label}</span>}
+                      {sideOpen && <span style={{ marginLeft: "auto", fontSize: 10, color: "#4b5563" }}>{moreOpen ? "▾" : "▸"}</span>}
+                    </div>
+                    {moreOpen && sideOpen && (
+                      <div style={{ paddingLeft: 16, background: "rgba(255,255,255,.01)" }}>
+                        {n.submenu.map(sub => (
+                          <div key={sub.key} className={`ni ${page === sub.key ? "act" : ""}`}
+                            onClick={() => { setPage(sub.key); setSideOpen(false); setMoreOpen(false); }}
+                            style={{ padding: "8px 12px", fontSize: 13 }}>
+                            <span style={{ fontSize: 16, width: 22, textAlign: "center", flexShrink: 0 }}>{sub.icon}</span>
+                            <span>{sub.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {moreOpen && !sideOpen && (
+                      <div style={{ position: "absolute", left: 72, top: "auto", background: "#0d1117", border: "1px solid rgba(16,185,129,.08)", borderRadius: 12, padding: 8, zIndex: 60, minWidth: 180, boxShadow: "0 8px 30px rgba(0,0,0,.5)" }}>
+                        {n.submenu.map(sub => (
+                          <div key={sub.key} className={`ni ${page === sub.key ? "act" : ""}`}
+                            onClick={() => { setPage(sub.key); setMoreOpen(false); }}
+                            style={{ padding: "8px 12px", fontSize: 13, borderRadius: 8 }}>
+                            <span style={{ fontSize: 16, width: 22, textAlign: "center" }}>{sub.icon}</span>
+                            <span>{sub.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              // Regular nav item
+              return (
+                <div key={n.key} className={`ni ${page === n.key ? "act" : ""}`}
+                  onClick={() => { setPage(n.key); setSideOpen(false); setMoreOpen(false); }}>
+                  <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>{n.icon}</span>
+                  {sideOpen && <span>{n.label}</span>}
+                </div>
+              );
+            })}
           </div>
+
+          {/* Logout */}
           <div className="ni" onClick={logout} style={{ margin: "8px 8px 16px", color: "#ef4444" }}>
             <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>⏻</span>
             {sideOpen && <span>Log Out</span>}
@@ -303,7 +370,7 @@ export default function App() {
           <header style={{ padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(6,10,12,.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(16,185,129,.05)", position: "sticky", top: 0, zIndex: 30, gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
               {isMobile && <span onClick={() => setSideOpen(true)} style={{ cursor: "pointer", fontSize: 22, color: "#6b7280" }}>☰</span>}
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>{navItems.find(n => n.key === page)?.label}</h2>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>{currentLabel}</h2>
             </div>
             <HeaderXPBar totalXP={totalXP} streak={streak} />
             <div onClick={() => setPage("profile")} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "4px 10px 4px 14px", borderRadius: 100, background: "rgba(16,185,129,.04)", border: "1px solid rgba(16,185,129,.08)", flexShrink: 0 }}>
@@ -315,8 +382,25 @@ export default function App() {
             {pages[page]}
           </div>
         </main>
+
+        {/* Overlays */}
         <ConfettiBlast trigger={confetti} />
         {levelUpShow && <LevelUpCelebration level={levelUpShow.level} rank={levelUpShow.rank} onClose={() => setLevelUpShow(null)} />}
+
+        {/* Exit Modal */}
+        {showExitModal && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(3,4,7,.85)", backdropFilter: "blur(8px)" }}>
+            <div className="gs fade-in" style={{ maxWidth: 360, width: "90%", textAlign: "center", padding: 28, border: "1px solid rgba(16,185,129,.15)" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🔥</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>Leave IGNITE?</div>
+              <p style={{ color: "#6b7280", fontSize: 13, marginTop: 8, marginBottom: 24 }}>Your progress is saved, but your streak depends on you coming back.</p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => setShowExitModal(false)} className="bp" style={{ flex: 1, padding: 14 }}>Stay & Train</button>
+                <button onClick={() => { setShowExitModal(false); window.history.go(-2); }} className="bg" style={{ flex: 1, padding: 14, color: "#ef4444" }}>Leave</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
