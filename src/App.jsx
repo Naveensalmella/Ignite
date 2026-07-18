@@ -71,6 +71,7 @@ export default function App() {
   const [programData, setProgramData] = useState(null);
   const [masteryData, setMasteryData] = useState(null);
   const [freezeData, setFreezeData] = useState(null);
+  const [programState, setProgramState] = useState({});
   const [showTutorial, setShowTutorial] = useState(false);
   const saveTimer = useRef(null);
 
@@ -128,6 +129,7 @@ export default function App() {
       d.challengeData && setChallengeData(d.challengeData);
       d.programData && setProgramData(d.programData);
       d.freezeData && setFreezeData(d.freezeData);
+      d.programState && setProgramState(d.programState);
       if (d.totalXP !== undefined) setTotalXP(d.totalXP);
       if (d.streak !== undefined) setStreak(d.streak);
       if (d.lastCheck) setLastCheck(d.lastCheck);
@@ -146,14 +148,14 @@ export default function App() {
       foodLog, habits, habitLog, tasks, journal, finances, profile,
       chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
       activityLog, focusLog, routineData, masteryData, bodyData,
-      challengeData, programData, freezeData,
+      challengeData, programData, freezeData, programState,
       email: user.email,
       lastSaved: new Date().toISOString(),
     });
   }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile,
     chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
     activityLog, focusLog, routineData, masteryData, bodyData,
-    challengeData, programData, freezeData]);
+    challengeData, programData, freezeData, programState]);
 
   // Debounced auto-save
   useEffect(() => {
@@ -285,11 +287,11 @@ export default function App() {
     await store.saveUserData(user.uid, { tutorialDone: true });
   };
 
-  const appState = { foodLog, habits, habitLog, tasks, journal, finances, profile, user, pillarProg, focusLog, workoutLog, oracleChats: chatHistory, routineData, masteryData, bodyData, challengeData, freezeData };
+  const appState = { foodLog, habits, habitLog, tasks, journal, finances, profile, user, pillarProg, focusLog, workoutLog, oracleChats: chatHistory, routineData, masteryData, bodyData, challengeData, freezeData, programState };
 
   const pages = {
     dashboard: <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} foodLog={foodLog} focusLog={focusLog} habitLog={habitLog} freezeData={freezeData} setFreezeData={setFreezeData} addXP={addXP} />,
-    training: <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} masteryData={masteryData} setMasteryData={setMasteryData} />,
+    training: <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} masteryData={masteryData} setMasteryData={setMasteryData} programState={programState} setProgramState={setProgramState} />,
     nutrition: <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} profile={profile} />,
     dailyquest: <DailyQuestPage habits={habits} setHabits={setHabits} habitLog={habitLog} setHabitLog={setHabitLog} addXP={addXP} workoutLog={workoutLog} />,
     missions: <MissionsPage tasks={tasks} setTasks={setTasks} addXP={addXP} />,
