@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { getLevel, getLevelProg, getRank, xpToNext, getStreakMult, today } from '../utils';
 import { GATES, RANKS, XP, DAILY_PENALTY } from '../data';
 import { BADGES, checkBadges, getRarityColor } from '../data/badges';
+import StreakFreeze from './StreakFreeze';
+import WeeklyReport from './WeeklyReport';
 
 const SECTIONS = [
   { key: "training", label: "Training", icon: "⚔️", color: "#10b981", page: "training" },
@@ -14,35 +16,31 @@ const SECTIONS = [
 
 function Ring({ pct, color, size = 52, stroke = 5, children }) { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
-export default function Dashboard({ appState, setPage, totalXP, streak, workoutLog }) {
-  const { habitLog, tasks, habits, user, profile, foodLog, journal, pillarProg, finances, focusLog, routineData } = appState;
+export default function Dashboard({ appState, setPage, totalXP, streak, workoutLog, foodLog, focusLog, habitLog, freezeData, setFreezeData, addXP }) {
+  const { habits, tasks, user, profile, journal, pillarProg, finances, routineData } = appState;
+  const hLog = habitLog || appState.habitLog || {};
+  const fLog = foodLog || appState.foodLog || {};
+  const fcLog = focusLog || appState.focusLog || {};
   const d = today();
   const lv = getLevel(totalXP), rank = getRank(lv), prog = getLevelProg(totalXP), remain = xpToNext(totalXP), mult = getStreakMult(streak);
   const nextRank = RANKS.find(r => r.min > lv);
-  const todayW = workoutLog[d], todayHabits = habitLog[d] || [], todayFood = foodLog[d] || [], todayWater = foodLog[`water_${d}`] || 0, todayJournal = journal[d];
+  const todayW = workoutLog[d], todayHabits = hLog[d] || [], todayFood = fLog[d] || [], todayWater = fLog[`water_${d}`] || 0, todayJournal = journal[d];
   const [showAllBadges, setShowAllBadges] = useState(false);
 
-  // Badges
-  const earnedIds = useMemo(() => checkBadges({ totalXP, level: lv, streak, workoutLog, foodLog, journal, focusLog: focusLog || {}, pillarProg }), [totalXP, lv, streak, workoutLog, foodLog, journal, focusLog, pillarProg]);
+  const earnedIds = useMemo(() => checkBadges({ totalXP, level: lv, streak, workoutLog, foodLog: fLog, journal, focusLog: fcLog, pillarProg }), [totalXP, lv, streak, workoutLog, fLog, journal, fcLog, pillarProg]);
   const earnedBadges = BADGES.filter(b => earnedIds.includes(b.id));
 
-  // ── DAILY SECTION PERCENTAGES (refreshes each day) ──
   const sectionScores = useMemo(() => {
-    // Calculate calorie target
     const w = parseFloat(profile.weight) || 70, h = parseFloat(profile.height) || 170, age = parseInt(profile.age) || 25;
     const bmr = profile.gender === "female" ? 10 * w + 6.25 * h - 5 * age - 161 : 10 * w + 6.25 * h - 5 * age + 5;
     const target = Math.round(bmr * (profile.fitnessLevel === "beginner" ? 1.375 : profile.fitnessLevel === "advanced" ? 1.725 : 1.55));
-
     const todayCal = todayFood.reduce((s, f) => s + (f.cal || 0), 0);
-    const focusSessions = (focusLog || {})[d] || [];
-    const focusMin = focusSessions.reduce((s, sess) => s + (sess.duration || 0), 0);
+    const focusSessions = fcLog[d] || [];
+    const focusMin = Array.isArray(focusSessions) ? focusSessions.reduce((s, sess) => s + (sess.duration || 0), 0) : 0;
     const focusGoal = parseInt(profile.dailyFocusGoal) || 120;
-
     const routineBlocks = (routineData?.routine || []);
     const routineDone = (routineData?.daily?.[d]?.done || []).length;
-
     const wellnessDone = (todayJournal?.mood ? 1 : 0) + (todayJournal?.entry?.length > 10 ? 1 : 0) + ((todayJournal?.gratitude || []).filter(g => g?.trim()).length >= 3 ? 1 : 0);
-
     return {
       training: todayW ? 100 : 0,
       nutrition: target > 0 ? Math.min(100, Math.round((todayCal / target) * 100)) : 0,
@@ -51,11 +49,10 @@ export default function Dashboard({ appState, setPage, totalXP, streak, workoutL
       wellness: Math.round((wellnessDone / 3) * 100),
       routine: routineBlocks.length > 0 ? Math.round((routineDone / routineBlocks.length) * 100) : 0,
     };
-  }, [todayW, todayFood, todayHabits, habits, focusLog, d, profile, todayJournal, routineData]);
+  }, [todayW, todayFood, todayHabits, habits, fcLog, d, profile, todayJournal, routineData]);
 
   const overallScore = Math.round(Object.values(sectionScores).reduce((a, b) => a + b, 0) / 6);
 
-  // Weekly activity
   const weekData = useMemo(() => { const days = []; for (let i = 6; i >= 0; i--) { const dt = new Date(); dt.setDate(dt.getDate() - i); const ds = dt.toISOString().split("T")[0]; days.push({ date: ds, label: dt.toLocaleDateString('en', { weekday: 'narrow' }), worked: !!workoutLog[ds], isToday: ds === d }) } return days }, [workoutLog, d]);
 
   const greet = () => { const h = new Date().getHours(); if (h < 5) return "Night owl"; if (h < 12) return "Good morning"; if (h < 17) return "Good afternoon"; if (h < 21) return "Good evening"; return "Night warrior" };
@@ -96,14 +93,17 @@ export default function Dashboard({ appState, setPage, totalXP, streak, workoutL
     {/* Penalty */}
     {!todayW && <div className="gs" style={{ marginBottom: 16, border: "1px solid rgba(239,68,68,.2)", background: "rgba(239,68,68,.04)", padding: 14 }}><div style={{ display: "flex", gap: 10, alignItems: "center" }}><span style={{ fontSize: 22 }}>⚠️</span><div><div style={{ fontWeight: 700, color: "#ef4444", fontFamily: "Rajdhani,sans-serif", fontSize: 13 }}>TRAINING REQUIRED</div><div style={{ fontSize: 12, color: "#6b7280" }}>Complete your <span style={{ color: "#ef4444", fontWeight: 700 }}>daily training</span> or lose <span style={{ color: "#ef4444" }}>-{DAILY_PENALTY} XP</span> at midnight</div></div></div></div>}
 
-    {/* ══ TODAY'S ACTIVITY — Section Percentages ══ */}
+    {/* 🧊 Streak Freeze */}
+    <div style={{ marginBottom: 16 }}>
+      <StreakFreeze streak={streak} totalXP={totalXP} freezeData={freezeData} setFreezeData={setFreezeData} addXP={addXP} />
+    </div>
+
+    {/* Today's Activity */}
     <div className="gs" style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <div className="sl" style={{ margin: 0 }}>Today's Activity</div>
         <span style={{ fontSize: 12, color: overallScore >= 70 ? "#22c55e" : overallScore >= 40 ? "#f59e0b" : "#ef4444", fontWeight: 700 }}>{overallScore}% overall</span>
       </div>
-
-      {/* Section rings */}
       <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 14 }}>
         {SECTIONS.map(s => {
           const score = sectionScores[s.key] || 0; return (
@@ -115,8 +115,6 @@ export default function Dashboard({ appState, setPage, totalXP, streak, workoutL
           )
         })}
       </div>
-
-      {/* Section bars */}
       {SECTIONS.map(s => {
         const score = sectionScores[s.key] || 0; return (
           <div key={s.key} onClick={() => setPage(s.page)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, cursor: "pointer" }}>
@@ -127,6 +125,11 @@ export default function Dashboard({ appState, setPage, totalXP, streak, workoutL
           </div>
         )
       })}
+    </div>
+
+    {/* 📈 Weekly Report */}
+    <div style={{ marginBottom: 16 }}>
+      <WeeklyReport totalXP={totalXP} streak={streak} workoutLog={workoutLog} foodLog={fLog} habitLog={hLog} focusLog={fcLog} />
     </div>
 
     {/* Badges */}

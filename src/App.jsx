@@ -28,6 +28,13 @@ import ChallengesPage from './components/ChallengesPage';
 import { ConfettiBlast, LevelUpCelebration } from './components/Confetti';
 import ShareCard from './components/ShareCard';
 import WorkoutPrograms from './components/WorkoutPrograms';
+import StreakFreeze, { isDayFrozen } from './components/StreakFreeze';
+import YearHeatmap from './components/YearHeatmap';
+import WeeklyReport from './components/WeeklyReport';
+import { SkeletonPage } from './components/Loading';
+import ErrorBoundary from './components/ErrorBoundary';
+import { playXP, playLevelUp, playWorkoutComplete } from './sounds';
+import './transitions.css';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -60,6 +67,7 @@ export default function App() {
   const [levelUpShow, setLevelUpShow] = useState(null);
   const [programData, setProgramData] = useState(null);
   const [masteryData, setMasteryData] = useState(null);
+  const [freezeData, setFreezeData] = useState(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const saveTimer = useRef(null);
 
@@ -116,6 +124,7 @@ export default function App() {
       d.bodyData && setBodyData(d.bodyData);
       d.challengeData && setChallengeData(d.challengeData);
       d.programData && setProgramData(d.programData);
+      d.freezeData && setFreezeData(d.freezeData);
       if (d.totalXP !== undefined) setTotalXP(d.totalXP);
       if (d.streak !== undefined) setStreak(d.streak);
       if (d.lastCheck) setLastCheck(d.lastCheck);
@@ -134,13 +143,13 @@ export default function App() {
       foodLog, habits, habitLog, tasks, journal, finances, profile,
       chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
       activityLog, focusLog, routineData, masteryData, bodyData,
-      challengeData, programData,
+      challengeData, programData, freezeData,
       lastSaved: new Date().toISOString(),
     });
   }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile,
     chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
     activityLog, focusLog, routineData, masteryData, bodyData,
-    challengeData, programData]);
+    challengeData, programData, freezeData]);
 
   // Debounced auto-save
   useEffect(() => {
@@ -164,7 +173,13 @@ export default function App() {
         dt.setDate(dt.getDate() + 1);
       }
       if (missed > 0) {
-        const pen = missed * DAILY_PENALTY;
+        // Don't penalize frozen days
+        const actualMissed = missed - (freezeData?.freezesUsed || []).filter(fd => {
+          const fDate = new Date(fd);
+          return fDate > ck && fDate < td;
+        }).length;
+        const pen = Math.max(0, actualMissed) * DAILY_PENALTY;
+        if (pen <= 0) { setLastCheck(d); return; }
         setTotalXP(p => Math.max(0, p - pen));
         const id = Date.now();
         setXpEvents(p => [...p, { id, amount: -pen, reason: `${missed} day${missed > 1 ? "s" : ""} missed!` }]);
@@ -174,7 +189,7 @@ export default function App() {
     let s = 0; const dt2 = new Date(); dt2.setDate(dt2.getDate() - 1);
     for (let i = 0; i < 365; i++) {
       const ds = dt2.toISOString().split("T")[0];
-      if (workoutLog[ds]) { s++; dt2.setDate(dt2.getDate() - 1); } else break;
+      if (workoutLog[ds] || isDayFrozen(freezeData, ds)) { s++; dt2.setDate(dt2.getDate() - 1); } else break;
     }
     setStreak(s); setLastCheck(d);
   }, [user, habitLog, lastCheck]);
@@ -192,6 +207,7 @@ export default function App() {
         setTimeout(() => {
           setLevelUp({ level: nLv, rank: getRank(nLv) });
           setLevelUpShow({ level: nLv, rank: getRank(nLv) });
+          playLevelUp();
         }, 300);
       }
       return nxp;
@@ -200,6 +216,7 @@ export default function App() {
     setXpEvents(p => [...p, { id, amount: actual, reason: reason + (mult > 1 ? ` (×${mult})` : "") }]);
     setTimeout(() => setXpEvents(p => p.filter(e => e.id !== id)), 1600);
     logActivity("xp", `+${actual} XP: ${reason}`);
+    playXP();
   }, [streak]);
 
   // Logout
@@ -210,7 +227,7 @@ export default function App() {
     setTasks([]); setJournal({}); setFinances([]); setProfile({});
     setChatHistory([]); setTotalXP(0); setWorkoutLog({}); setStreak(0);
     setPillarProg({}); setActivityLog([]); setFocusLog({}); setRoutineData(null);
-    setMasteryData(null); setBodyData(null); setChallengeData(null); setProgramData(null);
+    setMasteryData(null); setBodyData(null); setChallengeData(null); setProgramData(null); setFreezeData(null);
   };
 
   // AI action handler
@@ -264,10 +281,10 @@ export default function App() {
     await store.saveUserData(user.uid, { tutorialDone: true });
   };
 
-  const appState = { foodLog, habits, habitLog, tasks, journal, finances, profile, user, pillarProg, focusLog, workoutLog, oracleChats: chatHistory };
+  const appState = { foodLog, habits, habitLog, tasks, journal, finances, profile, user, pillarProg, focusLog, workoutLog, oracleChats: chatHistory, routineData, masteryData, bodyData, challengeData, freezeData };
 
   const pages = {
-    dashboard: <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />,
+    dashboard: <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} foodLog={foodLog} focusLog={focusLog} habitLog={habitLog} freezeData={freezeData} setFreezeData={setFreezeData} addXP={addXP} />,
     training: <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} masteryData={masteryData} setMasteryData={setMasteryData} />,
     nutrition: <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} profile={profile} />,
     dailyquest: <DailyQuestPage habits={habits} setHabits={setHabits} habitLog={habitLog} setHabitLog={setHabitLog} addXP={addXP} workoutLog={workoutLog} />,
@@ -278,7 +295,7 @@ export default function App() {
     routine: <RoutinePage profile={profile} routineData={routineData} setRoutineData={setRoutineData} />,
     growth: <GrowthPage pillarProg={pillarProg} setPillarProg={setPillarProg} />,
     oracle: <FlameOracle appState={appState} addXP={addXP} setFoodLog={setFoodLog} setWorkoutLog={setWorkoutLog} setPage={setPage} profile={profile} routineData={routineData} setRoutineData={setRoutineData} />,
-    profile: <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} appState={appState} />,
+    profile: <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} appState={appState} freezeData={freezeData} />,
     body: <BodyTracker bodyData={bodyData} setBodyData={setBodyData} />,
     challenges: <ChallengesPage challengeData={challengeData} setChallengeData={setChallengeData} addXP={addXP} />,
     share: <ShareCard totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} />,
@@ -290,7 +307,7 @@ export default function App() {
   const currentLabel = allNavItems.find(n => n.key === page)?.label || "IGNITE";
 
   return (
-    <>
+    <ErrorBoundary>
       <XPToast xpEvents={xpEvents} />
       {levelUp && <LevelUpOverlay level={levelUp.level} rank={levelUp.rank} onClose={() => setLevelUp(null)} />}
       {showTutorial && <OnboardingTutorial onComplete={handleTutorialComplete} />}
@@ -378,7 +395,7 @@ export default function App() {
               <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff" }}>{user.name?.[0]?.toUpperCase() || "U"}</div>
             </div>
           </header>
-          <div className="fade-in" key={page} style={{ padding: 24, maxWidth: 1120, margin: "0 auto" }}>
+          <div className="page-enter" key={page} style={{ padding: 24, maxWidth: 1120, margin: "0 auto" }}>
             {pages[page]}
           </div>
         </main>
@@ -402,6 +419,6 @@ export default function App() {
           </div>
         )}
       </div>
-    </>
+    </ErrorBoundary>
   );
 }

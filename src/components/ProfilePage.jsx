@@ -2,23 +2,24 @@ import { useState, useMemo } from 'react';
 import { getLevel, getLevelProg, getRank, xpToNext, calcBMI, bmiCat, bmiCol, today } from '../utils';
 import { RANKS, XP } from '../data';
 import { BADGES, checkBadges, getRarityColor } from '../data/badges';
+import YearHeatmap from './YearHeatmap';
+import DataExport from './DataExport';
+import ThemeToggle from './ThemeToggle';
 
-export default function ProfilePage({ profile, setProfile, totalXP, streak, workoutLog, appState }) {
+export default function ProfilePage({ profile, setProfile, totalXP, streak, workoutLog, appState, freezeData }) {
   const lv = getLevel(totalXP), rank = getRank(lv), prog = getLevelProg(totalXP), remain = xpToNext(totalXP);
   const nextRank = RANKS.find(r => r.min > lv);
   const bmi = calcBMI(parseFloat(profile.weight), parseFloat(profile.height));
   const [editing, setEditing] = useState(false);
-  const [tab, setTab] = useState("overview"); // overview | badges | ranks | stats
+  const [tab, setTab] = useState("overview");
   const { journal, foodLog, focusLog, pillarProg, finances } = appState || {};
 
   const totalWorkouts = Object.keys(workoutLog || {}).length;
   const totalCal = Object.values(workoutLog || {}).reduce((s, w) => s + (w.calBurned || 0), 0);
 
-  // Badges
   const earnedIds = useMemo(() => checkBadges({ totalXP, level: lv, streak, workoutLog: workoutLog || {}, foodLog: foodLog || {}, journal: journal || {}, focusLog: focusLog || {}, pillarProg: pillarProg || {} }), [totalXP, lv, streak, workoutLog, foodLog, journal, focusLog, pillarProg]);
 
   const categories = [...new Set(BADGES.map(b => b.category))];
-
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
 
   return (<div>
@@ -44,6 +45,9 @@ export default function ProfilePage({ profile, setProfile, totalXP, streak, work
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 4, color: "#6b7280" }}><span>{totalXP.toLocaleString()} XP</span><span>{remain.toLocaleString()} to Lv.{lv + 1}</span></div>
       </div>
 
+      <div style={{ marginTop: 16 }}><ThemeToggle /></div>
+      <div style={{ marginTop: 12 }}><DataExport appState={appState} totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} /></div>
+
       {/* Quick Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
         {[["🏋️", totalWorkouts, "Workouts"], ["🔥", `${streak}d`, "Streak"], ["🏅", earnedIds.length, "Badges"], ["💪", totalCal.toLocaleString(), "Cal Burned"], ["📊", bmi || "—", bmiCat(bmi) || "BMI"], ["⚔️", `${RANKS.findIndex(r => r.name === rank.name) + 1}/${RANKS.length}`, "Rank"]].map(([icon, val, label]) => (
@@ -53,6 +57,11 @@ export default function ProfilePage({ profile, setProfile, totalXP, streak, work
             <div style={{ fontSize: 10, color: "#6b7280" }}>{label}</div>
           </div>
         ))}
+      </div>
+
+      {/* 📊 Year Heatmap */}
+      <div style={{ marginBottom: 16 }}>
+        <YearHeatmap workoutLog={workoutLog || {}} title="365-Day Activity" />
       </div>
 
       {/* Body Stats */}
