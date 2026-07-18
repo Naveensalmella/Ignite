@@ -138,7 +138,7 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
 
   // ══ SCAN TAB ══
   if (tab === "scan") {
-    return (<div>
+    return (<div style={{ maxWidth: "100%", overflowX: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div><div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>📸 Food Scanner</div><div style={{ fontSize: 12, color: "#6b7280" }}>Point camera at your food</div></div>
         <button className="bg" onClick={() => { stopCam(); setTab("log"); setScanResults(null); setScanPhoto(null); setScanError(null) }} style={{ padding: "8px 14px" }}>← Back</button>
@@ -152,7 +152,7 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
     </div>);
   }
 
-  return (<div>
+  return (<div style={{ maxWidth: "100%", overflowX: "hidden" }}>
     {/* Tabs */}
     <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 16, flexWrap: "wrap" }}>
       {[["log", "🍎 Log"], ["scan", "📸 Scan"], ["plan", "📋 Plans"], ["history", "📅 History"]].map(([k, l]) => (
@@ -203,7 +203,7 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
           </div>
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>{GRAM_PRESETS.map(g => <span key={g} className={`chip ${grams === g ? "chip-a" : "chip-i"}`} onClick={() => setGrams(g)} style={{ flex: 1, justifyContent: "center", padding: "6px 0" }}>{g}g</span>)}</div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 6, marginBottom: 12, textAlign: "center", padding: 10, background: "rgba(255,255,255,.02)", borderRadius: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(55px,1fr))", gap: 6, marginBottom: 12, textAlign: "center", padding: 10, background: "rgba(255,255,255,.02)", borderRadius: 8 }}>
           {[["Cal", Math.round(selFood.cal * grams / 100), "#f59e0b"], ["Protein", Math.round(selFood.protein * grams / 100 * 10) / 10, "#ef4444"], ["Carbs", Math.round(selFood.carbs * grams / 100 * 10) / 10, "#f59e0b"], ["Fat", Math.round(selFood.fat * grams / 100 * 10) / 10, "#06b6d4"], ["Fiber", Math.round(selFood.fiber * grams / 100 * 10) / 10, "#22c55e"]].map(([l, v, c]) => (
             <div key={l}><div style={{ fontSize: 16, fontWeight: 700, color: c }}>{v}{l === "Cal" ? "" : "g"}</div><div style={{ fontSize: 9, color: "#6b7280" }}>{l}</div></div>
           ))}
@@ -218,17 +218,17 @@ export default function Nutrition({ foodLog, setFoodLog, addXP, profile }) {
           <span className={`chip ${selCat === "All" ? "chip-a" : "chip-i"}`} onClick={() => setSelCat("All")} style={{ flexShrink: 0 }}>All</span>
           {FOOD_CATEGORIES.map(c => <span key={c} className={`chip ${selCat === c ? "chip-a" : "chip-i"}`} onClick={() => setSelCat(c)} style={{ flexShrink: 0, fontSize: 11 }}>{c}</span>)}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(105px,1fr))", gap: 8, marginBottom: 12, maxHeight: 300, overflowY: "auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(90px,1fr))", gap: 8, marginBottom: 12, maxHeight: 300, overflowY: "auto" }}>
           {filtered.slice(0, 36).map((f, i) => (<div key={f.name + i} className="fc" onClick={() => { setSelFood(f); setGrams(100) }}><div style={{ fontSize: 20 }}>{f.emoji}</div><div style={{ fontSize: 11, fontWeight: 500, color: "#e5e7eb", marginTop: 3 }}>{f.name}</div><div style={{ fontSize: 9, color: "#6b7280" }}>{f.cal}cal/100g</div></div>))}
         </div>
         {filtered.length === 0 && search && !apiSearching && apiResults.length === 0 && <div style={{ textAlign: "center", color: "#6b7280", padding: "12px 0", fontSize: 13 }}>No food found for "{search}"</div>}
         {apiSearching && <div style={{ textAlign: "center", padding: "8px 0", fontSize: 12, color: "#06b6d4" }}>Searching global database...</div>}
-        {apiResults.length > 0 && (<div style={{ marginTop: 12 }}><div style={{ fontSize: 12, color: "#06b6d4", fontWeight: 600, marginBottom: 8 }}>More from global database ({apiResults.length})</div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(105px,1fr))", gap: 8, maxHeight: 200, overflowY: "auto" }}>{apiResults.map((f, i) => (<div key={"api" + i} className="fc" onClick={() => { setSelFood(f); setGrams(100); }} style={{ borderColor: "rgba(6,182,212,.15)" }}><div style={{ fontSize: 20 }}>{f.emoji}</div><div style={{ fontSize: 11, fontWeight: 500, color: "#e5e7eb", marginTop: 3 }}>{f.name}</div><div style={{ fontSize: 9, color: "#06b6d4" }}>{f.cal}cal</div></div>))}</div></div>)}
+        {apiResults.length > 0 && (<div style={{ marginTop: 12 }}><div style={{ fontSize: 12, color: "#06b6d4", fontWeight: 600, marginBottom: 8 }}>More from global database ({apiResults.length})</div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(90px,1fr))", gap: 8, maxHeight: 200, overflowY: "auto" }}>{apiResults.map((f, i) => (<div key={"api" + i} className="fc" onClick={() => { setSelFood(f); setGrams(100); }} style={{ borderColor: "rgba(6,182,212,.15)" }}><div style={{ fontSize: 20 }}>{f.emoji}</div><div style={{ fontSize: 11, fontWeight: 500, color: "#e5e7eb", marginTop: 3 }}>{f.name}</div><div style={{ fontSize: 9, color: "#06b6d4" }}>{f.cal}cal</div></div>))}</div></div>)}
         <span onClick={() => setShowCustom(!showCustom)} style={{ fontSize: 12, color: "#10b981", cursor: "pointer", fontWeight: 600 }}>{showCustom ? "Cancel" : "+ Add Custom Food"}</span>
         {showCustom && (<div className="gs fade-in" style={{ marginTop: 10, border: "1px solid rgba(16,185,129,.15)" }}>
           <input className="inp" placeholder="Food name" value={custom.name} onChange={e => setCustom(p => ({ ...p, name: e.target.value }))} style={{ marginBottom: 8 }} />
           <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 4 }}>Nutrition per 100g</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(80px,1fr))", gap: 6, marginBottom: 8 }}>
             {[["Calories*", "cal"], ["Protein(g)", "protein"], ["Carbs(g)", "carbs"], ["Fat(g)", "fat"], ["Fiber(g)", "fiber"]].map(([l, k]) => (<div key={k}><label style={{ fontSize: 10, color: "#6b7280" }}>{l}</label><input className="inp" type="number" placeholder="0" value={custom[k]} onChange={e => setCustom(p => ({ ...p, [k]: e.target.value }))} style={{ padding: 8, textAlign: "center" }} /></div>))}
           </div>
           <button className="bp" onClick={addCustomFood} disabled={!custom.name.trim() || !custom.cal} style={{ width: "100%", padding: 10 }}>+ Add</button>

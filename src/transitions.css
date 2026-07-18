@@ -52,6 +52,7 @@ html {
 
 * {
     -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
 }
 
 .bp:active,
@@ -63,51 +64,15 @@ html {
     transition: transform 0.1s;
 }
 
-/* ══ Better Mobile ══ */
-@media (max-width: 480px) {
-    .chip {
-        min-height: 36px !important;
-        padding: 8px 14px !important;
-    }
-
-    .bp,
-    .bg {
-        min-height: 44px !important;
-    }
-
-    .inp {
-        min-height: 44px !important;
-        font-size: 16px !important;
-    }
-
-    .gc,
-    .fc {
-        min-height: 48px;
-    }
-
-    .gs {
-        padding: 14px !important;
-    }
-
-    .sl {
-        font-size: 12px !important;
-    }
-
-    body {
-        overflow-x: hidden;
-    }
-}
-
-/* ══════════════════════════════════════ */
-/* LIGHT THEME — comprehensive overrides */
-/* ══════════════════════════════════════ */
+/* ══════════════════════════════════════════════ */
+/* LIGHT THEME                                   */
+/* ══════════════════════════════════════════════ */
 [data-theme="light"] body,
 [data-theme="light"] {
     background: #f0f2f5 !important;
     color: #1a1a2e !important;
 }
 
-/* Main layout backgrounds */
 [data-theme="light"] main {
     background: #f0f2f5 !important;
 }
@@ -122,14 +87,12 @@ html {
     border-right-color: rgba(0, 0, 0, .06) !important;
 }
 
-/* Cards (.gs = glass surface) */
 [data-theme="light"] .gs {
     background: #ffffff !important;
     border: 1px solid rgba(0, 0, 0, .06) !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, .04);
 }
 
-/* Clickable cards (.gc) */
 [data-theme="light"] .gc {
     background: #ffffff !important;
     border: 1px solid rgba(0, 0, 0, .06) !important;
@@ -139,13 +102,11 @@ html {
     background: #f8fafc !important;
 }
 
-/* Food cards (.fc) */
 [data-theme="light"] .fc {
     background: #ffffff !important;
     border: 1px solid rgba(0, 0, 0, .06) !important;
 }
 
-/* Inputs */
 [data-theme="light"] .inp {
     background: #f8fafc !important;
     border: 1px solid rgba(0, 0, 0, .1) !important;
@@ -156,20 +117,17 @@ html {
     color: #94a3b8 !important;
 }
 
-/* Primary button */
 [data-theme="light"] .bp {
     background: linear-gradient(135deg, #10b981, #06b6d4) !important;
     color: #fff !important;
 }
 
-/* Ghost button */
 [data-theme="light"] .bg {
     background: #f1f5f9 !important;
     border: 1px solid rgba(0, 0, 0, .08) !important;
     color: #334155 !important;
 }
 
-/* Chips */
 [data-theme="light"] .chip-i {
     background: #f1f5f9 !important;
     border: 1px solid rgba(0, 0, 0, .06) !important;
@@ -182,12 +140,10 @@ html {
     color: #059669 !important;
 }
 
-/* Section labels */
 [data-theme="light"] .sl {
     color: #334155 !important;
 }
 
-/* Nav items */
 [data-theme="light"] .ni {
     color: #475569 !important;
 }
@@ -201,108 +157,53 @@ html {
     background: rgba(0, 0, 0, .03) !important;
 }
 
-/* XP bar */
 [data-theme="light"] .xp-bar-bg {
     background: rgba(0, 0, 0, .06) !important;
 }
 
-/* Rank badge */
 [data-theme="light"] .rank-badge {
     background: rgba(16, 185, 129, .08) !important;
 }
 
-/* Streak fire */
 [data-theme="light"] .streak-fire {
     background: rgba(249, 115, 22, .08) !important;
 }
 
-/* Exercise cards */
-[data-theme="light"] .ex-card {
-    background: #ffffff !important;
-    border: 1px solid rgba(0, 0, 0, .06) !important;
-}
-
-/* Text color overrides */
-[data-theme="light"] h1,
-[data-theme="light"] h2,
-[data-theme="light"] h3 {
+[data-theme="light"] [style*="color: #f3f4f6"],
+[data-theme="light"] [style*="color:#f3f4f6"] {
     color: #1a1a2e !important;
 }
 
-/* Override common inline text colors */
-[data-theme="light"] [style*="color: rgb(243, 244, 246)"],
-[data-theme="light"] [style*="color:#f3f4f6"],
-[data-theme="light"] [style*="color: #f3f4f6"] {
-    color: #1a1a2e !important;
-}
-
-[data-theme="light"] [style*="color: rgb(209, 213, 219)"],
-[data-theme="light"] [style*="color:#d1d5db"],
-[data-theme="light"] [style*="color: #d1d5db"] {
+[data-theme="light"] [style*="color: #d1d5db"],
+[data-theme="light"] [style*="color:#d1d5db"] {
     color: #334155 !important;
 }
 
-[data-theme="light"] [style*="color: rgb(229, 231, 235)"],
-[data-theme="light"] [style*="color:#e5e7eb"],
-[data-theme="light"] [style*="color: #e5e7eb"] {
+[data-theme="light"] [style*="color: #e5e7eb"],
+[data-theme="light"] [style*="color:#e5e7eb"] {
     color: #334155 !important;
 }
 
-[data-theme="light"] [style*="color: rgb(107, 114, 128)"],
-[data-theme="light"] [style*="color:#6b7280"],
-[data-theme="light"] [style*="color: #6b7280"] {
+[data-theme="light"] [style*="color: #6b7280"],
+[data-theme="light"] [style*="color:#6b7280"] {
     color: #64748b !important;
 }
 
-[data-theme="light"] [style*="color: rgb(75, 85, 99)"],
-[data-theme="light"] [style*="color:#4b5563"],
-[data-theme="light"] [style*="color: #4b5563"] {
+[data-theme="light"] [style*="color: #4b5563"],
+[data-theme="light"] [style*="color:#4b5563"] {
     color: #94a3b8 !important;
 }
 
-/* Override dark backgrounds in inline styles */
-[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.02)"],
-[data-theme="light"] [style*="background:rgba(255,255,255,.02)"],
-[data-theme="light"] [style*="background: rgba(255,255,255,.02)"] {
+[data-theme="light"] [style*="background: rgba(255,255,255,.02)"],
+[data-theme="light"] [style*="background:rgba(255,255,255,.02)"] {
     background: #f8fafc !important;
 }
 
-[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.03)"],
-[data-theme="light"] [style*="background:rgba(255,255,255,.03)"],
-[data-theme="light"] [style*="background: rgba(255,255,255,.03)"] {
-    background: #f1f5f9 !important;
-}
-
-[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.04)"],
-[data-theme="light"] [style*="background:rgba(255,255,255,.04)"],
-[data-theme="light"] [style*="background: rgba(255,255,255,.04)"] {
+[data-theme="light"] [style*="background: rgba(255,255,255,.04)"],
+[data-theme="light"] [style*="background:rgba(255,255,255,.04)"] {
     background: rgba(0, 0, 0, .04) !important;
 }
 
-/* Border overrides */
-[data-theme="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.04)"],
-[data-theme="light"] [style*="border:1px solid rgba(255,255,255,.04)"] {
-    border-color: rgba(0, 0, 0, .06) !important;
-}
-
-[data-theme="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.06)"],
-[data-theme="light"] [style*="border:1px solid rgba(255,255,255,.06)"] {
-    border-color: rgba(0, 0, 0, .08) !important;
-}
-
-/* Overlay/modal backgrounds */
-[data-theme="light"] [style*="background: rgba(3, 4, 7"],
-[data-theme="light"] [style*="background:rgba(3,4,7"] {
-    background: rgba(0, 0, 0, .4) !important;
-}
-
-/* Sidebar/nav specific */
-[data-theme="light"] [style*="background: linear-gradient(180deg, rgba(10, 10, 18"],
-[data-theme="light"] [style*="background:linear-gradient(180deg,rgba(10,10,18"] {
-    background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
-}
-
-/* Rest timer, exercise animation backgrounds */
 [data-theme="light"] [style*="background: #0d1117"],
 [data-theme="light"] [style*="background:#0d1117"] {
     background: #ffffff !important;
@@ -318,7 +219,6 @@ html {
     background: #f1f5f9 !important;
 }
 
-/* Scrollbar for light mode */
 [data-theme="light"] ::-webkit-scrollbar {
     width: 6px;
 }
@@ -330,9 +230,4 @@ html {
 [data-theme="light"] ::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 3px;
-}
-
-/* Loading screen */
-[data-theme="light"] [style*="height: 100vh"][style*="background"] {
-    background: #f0f2f5 !important;
 }

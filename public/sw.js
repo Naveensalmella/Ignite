@@ -27,3 +27,22 @@ self.addEventListener("fetch", (e) => {
       .catch(() => caches.match(e.request))
   );
 });
+
+// ── Push Notifications ──
+self.addEventListener("push", (e) => {
+  const data = e.data ? e.data.json() : {};
+  e.waitUntil(
+    self.registration.showNotification(data.title || "🔥 IGNITE", {
+      body: data.body || "Time to level up!",
+      icon: "/logo192.png",
+      badge: "/logo192.png",
+      vibrate: [100, 50, 100],
+      data: { url: data.url || "/" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(clients.openWindow(e.notification.data.url || "/"));
+});

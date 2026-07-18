@@ -3,8 +3,10 @@ import { getLevel, getLevelProg, getRank, xpToNext, calcBMI, bmiCat, bmiCol, tod
 import { RANKS, XP } from '../data';
 import { BADGES, checkBadges, getRarityColor } from '../data/badges';
 import YearHeatmap from './YearHeatmap';
-import DataExport from './DataExport';
 import ThemeToggle from './ThemeToggle';
+import DataExport from './DataExport';
+import AccentPicker from './AccentPicker';
+import NotificationSettings from './NotificationSettings';
 
 export default function ProfilePage({ profile, setProfile, totalXP, streak, workoutLog, appState, freezeData }) {
   const lv = getLevel(totalXP), rank = getRank(lv), prog = getLevelProg(totalXP), remain = xpToNext(totalXP);
@@ -22,7 +24,7 @@ export default function ProfilePage({ profile, setProfile, totalXP, streak, work
   const categories = [...new Set(BADGES.map(b => b.category))];
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
 
-  return (<div>
+  return (<div style={{ maxWidth: "100%", overflowX: "hidden" }}>
     {/* Tab Selector */}
     <div style={{ display: "flex", gap: 6, marginBottom: 20, justifyContent: "center", flexWrap: "wrap" }}>
       {[["overview", "👤 Profile"], ["badges", `🏅 Badges (${earnedIds.length})`], ["ranks", "⚔️ Ranks"], ["stats", "📊 Stats"]].map(([k, l]) => (
@@ -44,9 +46,6 @@ export default function ProfilePage({ profile, setProfile, totalXP, streak, work
         <div className="xp-bar-bg" style={{ height: 8, borderRadius: 4, marginTop: 12 }}><div className="xp-bar-fill" style={{ width: `${prog * 100}%`, background: `linear-gradient(90deg,${rank.color},#10b981)`, height: 8, borderRadius: 4 }} /></div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 4, color: "#6b7280" }}><span>{totalXP.toLocaleString()} XP</span><span>{remain.toLocaleString()} to Lv.{lv + 1}</span></div>
       </div>
-
-      <div style={{ marginTop: 16 }}><ThemeToggle /></div>
-      <div style={{ marginTop: 12 }}><DataExport appState={appState} totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} /></div>
 
       {/* Quick Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
@@ -89,6 +88,12 @@ export default function ProfilePage({ profile, setProfile, totalXP, streak, work
           ))}
         </div>
       </div>
+
+      {/* Settings */}
+      <div style={{ marginTop: 16 }}><ThemeToggle /></div>
+      <div style={{ marginTop: 12 }}><AccentPicker /></div>
+      <div style={{ marginTop: 12 }}><NotificationSettings /></div>
+      <div style={{ marginTop: 12 }}><DataExport appState={appState} totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} /></div>
     </div>)}
 
     {/* ══ BADGES ══ */}

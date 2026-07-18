@@ -28,12 +28,15 @@ import ChallengesPage from './components/ChallengesPage';
 import { ConfettiBlast, LevelUpCelebration } from './components/Confetti';
 import ShareCard from './components/ShareCard';
 import WorkoutPrograms from './components/WorkoutPrograms';
+import SocialPage from './components/SocialPage';
 import StreakFreeze, { isDayFrozen } from './components/StreakFreeze';
 import YearHeatmap from './components/YearHeatmap';
 import WeeklyReport from './components/WeeklyReport';
 import { SkeletonPage } from './components/Loading';
 import ErrorBoundary from './components/ErrorBoundary';
 import { playXP, playLevelUp, playWorkoutComplete } from './sounds';
+import { registerSW, startNotifScheduler } from './notifications';
+import { applyAccent } from './components/AccentPicker';
 import './transitions.css';
 
 export default function App() {
@@ -144,6 +147,7 @@ export default function App() {
       chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
       activityLog, focusLog, routineData, masteryData, bodyData,
       challengeData, programData, freezeData,
+      email: user.email,
       lastSaved: new Date().toISOString(),
     });
   }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile,
@@ -299,6 +303,7 @@ export default function App() {
     body: <BodyTracker bodyData={bodyData} setBodyData={setBodyData} />,
     challenges: <ChallengesPage challengeData={challengeData} setChallengeData={setChallengeData} addXP={addXP} />,
     share: <ShareCard totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} />,
+    social: <SocialPage user={user} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />,
     programs: <WorkoutPrograms programData={programData} setProgramData={setProgramData} addXP={addXP} />,
   };
 
@@ -395,7 +400,7 @@ export default function App() {
               <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff" }}>{user.name?.[0]?.toUpperCase() || "U"}</div>
             </div>
           </header>
-          <div className="page-enter" key={page} style={{ padding: 24, maxWidth: 1120, margin: "0 auto" }}>
+          <div className="page-enter" key={page} style={{ padding: "14px min(24px, 4vw)", maxWidth: 1120, margin: "0 auto", overflowX: "hidden" }}>
             {pages[page]}
           </div>
         </main>

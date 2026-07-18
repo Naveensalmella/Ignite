@@ -66,7 +66,7 @@ export default function Dashboard({ appState, setPage, totalXP, streak, workoutL
     return "Every journey starts with one step. Make today count.";
   }, [streak, todayW, overallScore]);
 
-  return (<div>
+  return (<div style={{ maxWidth: "100%", overflowX: "hidden" }}>
     {/* Hero */}
     <div style={{ marginBottom: 20 }}><div style={{ fontSize: 14, color: "#6b7280" }}>{greet()},</div><h1 style={{ fontSize: 28, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1, marginTop: 2 }}><span style={{ background: "linear-gradient(135deg,#10b981,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{profile.name || "Warrior"}</span></h1><p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>{insight}</p></div>
 
@@ -135,14 +135,14 @@ export default function Dashboard({ appState, setPage, totalXP, streak, workoutL
     {/* Badges */}
     <div className="gs" style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div className="sl" style={{ margin: 0 }}>Achievements · {earnedBadges.length}/{BADGES.length}</div>{earnedBadges.length > 6 && <span onClick={() => setShowAllBadges(!showAllBadges)} style={{ fontSize: 11, color: "#10b981", cursor: "pointer" }}>{showAllBadges ? "Less" : "All"}</span>}</div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>{(showAllBadges ? earnedBadges : earnedBadges.slice(0, 8)).map(b => (<div key={b.id} style={{ padding: "8px 10px", borderRadius: 10, background: `${getRarityColor(b.rarity)}08`, border: `1px solid ${getRarityColor(b.rarity)}20`, textAlign: "center", minWidth: 68 }}><div style={{ fontSize: 22 }}>{b.icon}</div><div style={{ fontSize: 10, fontWeight: 600, color: getRarityColor(b.rarity), marginTop: 2 }}>{b.name}</div></div>))}{earnedBadges.length === 0 && <div style={{ fontSize: 13, color: "#4b5563" }}>Complete tasks to earn badges!</div>}</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>{(showAllBadges ? earnedBadges : earnedBadges.slice(0, 8)).map(b => (<div key={b.id} style={{ padding: "8px 10px", borderRadius: 10, background: `${getRarityColor(b.rarity)}08`, border: `1px solid ${getRarityColor(b.rarity)}20`, textAlign: "center", minWidth: 60 }}><div style={{ fontSize: 22 }}>{b.icon}</div><div style={{ fontSize: 10, fontWeight: 600, color: getRarityColor(b.rarity), marginTop: 2 }}>{b.name}</div></div>))}{earnedBadges.length === 0 && <div style={{ fontSize: 13, color: "#4b5563" }}>Complete tasks to earn badges!</div>}</div>
     </div>
 
     {/* Weekly Activity */}
     <div className="gs" style={{ marginBottom: 16 }}><div className="sl">This Week</div><div style={{ display: "flex", gap: 6, justifyContent: "space-between" }}>{weekData.map(day => (<div key={day.date} style={{ flex: 1, textAlign: "center" }}><div style={{ fontSize: 10, color: day.isToday ? "#10b981" : "#6b7280", fontWeight: day.isToday ? 700 : 400, marginBottom: 6 }}>{day.label}</div><div style={{ width: 36, height: 36, borderRadius: 8, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", background: day.worked ? "rgba(16,185,129,.15)" : day.isToday ? "rgba(16,185,129,.05)" : "rgba(255,255,255,.02)", border: day.isToday ? "1px solid rgba(16,185,129,.2)" : "1px solid rgba(255,255,255,.04)", fontSize: day.worked ? 16 : 12, color: day.worked ? "#22c55e" : "#4b5563" }}>{day.worked ? "✓" : "·"}</div></div>))}</div></div>
 
     {/* Quick Actions */}
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))", gap: 10 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
       {[{ label: "Start Training", icon: "⚔️", color: "#10b981", page: "training" }, { label: "Log Food", icon: "🍎", color: "#f59e0b", page: "nutrition" }, { label: "Daily Quests", icon: "🎯", color: "#ef4444", page: "dailyquest" }, { label: "My Day", icon: "📅", color: "#f97316", page: "routine" }, { label: "Profile", icon: "👤", color: "#a78bfa", page: "profile" }, { label: "Growth", icon: "🌱", color: "#06b6d4", page: "growth" }].map(a => (<div key={a.label} className="gc" onClick={() => setPage(a.page)} style={{ cursor: "pointer", textAlign: "center", padding: 16 }}><div style={{ fontSize: 28, marginBottom: 6 }}>{a.icon}</div><div style={{ fontSize: 13, fontWeight: 600, color: a.color }}>{a.label}</div></div>))}
     </div>
   </div>);
