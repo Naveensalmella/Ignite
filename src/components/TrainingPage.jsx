@@ -26,6 +26,18 @@ const BODY_PARTS = [
   { id: "full", name: "Full Body", icon: "⚡" },
 ];
 
+
+const PROGRAMS = [
+  { name: "Push Day", icon: "🔥", parts: ["chest", "shoulders", "arms"], desc: "Chest, Shoulders, Triceps", color: "#ef4444" },
+  { name: "Pull Day", icon: "💪", parts: ["back", "arms"], desc: "Back, Biceps, Forearms", color: "#3b82f6" },
+  { name: "Leg Day", icon: "🦵", parts: ["legs"], desc: "Quads, Hamstrings, Glutes, Calves", color: "#8b5cf6" },
+  { name: "Upper Body", icon: "🏋️", parts: ["chest", "back", "shoulders", "arms"], desc: "Complete upper body blast", color: "#f59e0b" },
+  { name: "Lower Body", icon: "🦿", parts: ["legs", "abs"], desc: "Legs + Core strength", color: "#ec4899" },
+  { name: "Full Body", icon: "⚡", parts: ["full"], desc: "Hit every muscle group", color: "#10b981" },
+  { name: "Core Crusher", icon: "🎯", parts: ["abs"], desc: "Abs, Obliques, Lower Back", color: "#06b6d4" },
+  { name: "Arm Blaster", icon: "💥", parts: ["arms"], desc: "Biceps + Triceps isolation", color: "#f97316" },
+];
+
 const EXERCISES = {
   chest: ["Push Ups", "Wide Push Ups", "Diamond Push Ups", "Decline Push Ups", "Incline Push Ups", "Chest Dips", "Bench Press", "Dumbbell Press", "Chest Fly", "Cable Crossover"],
   back: ["Pull Ups", "Chin Ups", "Bent Over Row", "Dumbbell Row", "Seated Row", "Lat Pulldown", "Superman", "Back Extension", "Deadlift", "T-Bar Row"],
@@ -103,7 +115,13 @@ export default function TrainingPage({ totalXP, addXP, workoutLog, setWorkoutLog
   const [saveName, setSaveName] = useState("");
   const [prRecords, setPrRecords] = useState(() => JSON.parse(localStorage.getItem("ignite-prs") || "{}"));
   const [newPRs, setNewPRs] = useState([]);
-  const [tab, setTab] = useState("train"); // train | history | heatmap | saved
+  const [tab, setTab] = useState("train");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [difficultyRating, setDifficultyRating] = useState(0);
+  const [timedActive, setTimedActive] = useState(false);
+  const [timedSeconds, setTimedSeconds] = useState(0);
+  const [timedTotal, setTimedTotal] = useState(0);
+  const timedRef = useRef(null); // train | history | heatmap | saved
   const timerRef = useRef(null);
   const phaseTimerRef = useRef(null);
   const d = today();
@@ -255,7 +273,7 @@ export default function TrainingPage({ totalXP, addXP, workoutLog, setWorkoutLog
     };
 
     setWorkoutDone(summary);
-    setWorkoutLog(prev => ({ ...prev, [d]: { ...summary, calBurned, splitName: summary.splitName, duration } }));
+    setWorkoutLog(prev => ({ ...prev, [d]: { ...summary, calBurned, splitName: summary.splitName, duration, difficulty: difficultyRating } }));
     addXP(xpEarned, "Workout Complete");
 
     // Update mastery
@@ -314,6 +332,47 @@ export default function TrainingPage({ totalXP, addXP, workoutLog, setWorkoutLog
       }
     }
     return null;
+  };
+
+  // ── Timed Exercise Timer (Plank, Wall Sit, etc.) ──
+  useEffect(() => {
+    if (!timedActive) return;
+    if (timedRef.current) clearInterval(timedRef.current);
+    timedRef.current = setInterval(() => {
+      setTimedSeconds(prev => {
+        if (prev <= 1) {
+          clearInterval(timedRef.current);
+          setTimedActive(false);
+          beep(880, 0.2); setTimeout(() => beep(1100, 0.3), 200);
+          // Auto-log the set
+          logSet(timedTotal, 0);
+          return 0;
+        }
+        if (prev <= 4) beep(600, 0.08);
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timedRef.current);
+  }, [timedActive]);
+
+  const startTimedExercise = (secs) => {
+    setTimedTotal(secs);
+    setTimedSeconds(secs);
+    setTimedActive(true);
+  };
+
+  const isTimedExercise = (ex) => {
+    if (!ex) return false;
+    const name = ex.name.toLowerCase();
+    const reps = (ex.reps || "").toString();
+    return reps.includes("s") || name.includes("plank") || name.includes("wall sit") || name.includes("hold") || name.includes("stretch");
+  };
+
+  const getTimedDuration = (ex) => {
+    if (!ex) return 30;
+    const reps = (ex.reps || "").toString();
+    const match = reps.match(/(\d+)/);
+    return match ? parseInt(match[1]) : 30;
   };
 
   const curEx = exercises[exIdx];
@@ -383,6 +442,35 @@ export default function TrainingPage({ totalXP, addXP, workoutLog, setWorkoutLog
                     ))}
                   </div>
                 </>
+              )}
+
+              {/* Quick Programs */}
+              <div className="sl">Quick Programs</div>
+              <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 16 }}>
+                {PROGRAMS.map(p => (
+                  <div key={p.name} onClick={() => { setSelParts(p.parts); setActivity("gym"); startWorkout(generateWorkout(p.parts, "gym")); }}
+                    className="gc" style={{ flexShrink: 0, padding: "12px 16px", minWidth: 130, cursor: "pointer", borderColor: p.color + "20" }}>
+                    <div style={{ fontSize: 22, marginBottom: 4 }}>{p.icon}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: p.color, fontFamily: "Rajdhani,sans-serif" }}>{p.name}</div>
+                    <div style={{ fontSize: 10, color: "#6b7280" }}>{p.desc}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Exercise Search */}
+              <div className="sl">Search Exercises</div>
+              <input className="inp" placeholder="🔍 Search any exercise..." value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)} style={{ marginBottom: 10 }} />
+              {searchQuery.trim().length > 1 && (
+                <div style={{ maxHeight: 200, overflowY: "auto", marginBottom: 16 }}>
+                  {Object.values(EXERCISES).flat().filter((e, i, arr) => arr.indexOf(e) === i && e.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 10).map(exName => (
+                    <div key={exName} className="gc" onClick={() => { setSearchQuery(""); const ex = { name: exName, reps: exName.includes("Plank") || exName.includes("Wall Sit") ? "30s" : "12", sets: 3, rest: 30 }; startWorkout([ex]); }}
+                      style={{ padding: "10px 14px", marginBottom: 4, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#f3f4f6" }}>{exName}</span>
+                      <span style={{ fontSize: 10, color: "#6b7280", marginLeft: "auto" }}>{getMusclesForExercise(exName).slice(0, 2).join(", ")}</span>
+                    </div>
+                  ))}
+                </div>
               )}
 
               {/* Start button */}
@@ -557,9 +645,26 @@ export default function TrainingPage({ totalXP, addXP, workoutLog, setWorkoutLog
                 </div>
               ))}
 
-              {curSets.length < (curEx.sets || 3) && (
+              {/* Timed exercise timer */}
+              {isTimedExercise(curEx) && (
+                <div style={{ marginBottom: 10 }}>
+                  {timedActive ? (
+                    <div style={{ textAlign: "center" }}>
+                      <TimerRing seconds={timedSeconds} total={timedTotal} size={100} color="#f59e0b" />
+                      <button className="bg" onClick={() => { clearInterval(timedRef.current); setTimedActive(false); }} style={{ marginTop: 8, padding: "6px 16px", fontSize: 11 }}>Stop</button>
+                    </div>
+                  ) : (
+                    <button className="bp" onClick={() => startTimedExercise(getTimedDuration(curEx))} style={{ width: "100%", padding: 12, fontSize: 14 }}>
+                      ⏱ Start {getTimedDuration(curEx)}s Timer
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {curSets.length < (curEx.sets || 3) && !isTimedExercise(curEx) && (
                 <SetLogger onLog={logSet} setNum={curSets.length + 1} targetReps={curEx.reps} prevWeight={prevSets?.[curSets.length]?.weight || curSets[curSets.length - 1]?.weight || 0} />
               )}
+
 
               {curSets.length >= (curEx.sets || 3) && (
                 <div style={{ textAlign: "center", padding: 8, color: "#22c55e", fontSize: 13, fontWeight: 600 }}>✅ All sets complete!</div>
@@ -655,6 +760,7 @@ export default function TrainingPage({ totalXP, addXP, workoutLog, setWorkoutLog
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 16 }}>
             {[
               ["⏱", `${Math.floor(workoutDone.duration / 60)}m ${workoutDone.duration % 60}s`, "Duration"],
+
               ["🔥", `${workoutDone.calBurned}`, "Calories"],
               ["💪", `${workoutDone.totalSets}`, "Total Sets"],
               ["🔄", `${workoutDone.totalReps}`, "Total Reps"],
@@ -685,6 +791,31 @@ export default function TrainingPage({ totalXP, addXP, workoutLog, setWorkoutLog
           <div className="gs" style={{ marginBottom: 16, padding: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", marginBottom: 10, fontFamily: "Rajdhani,sans-serif" }}>MUSCLES WORKED</div>
             <MuscleMap muscles={workoutDone.musclesWorked} size={180} showLabels={true} />
+          </div>
+
+          {/* Difficulty Rating */}
+          <div className="gs" style={{ marginBottom: 16, padding: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", marginBottom: 10, fontFamily: "Rajdhani,sans-serif" }}>HOW HARD WAS THAT?</div>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+              {[
+                { val: 1, label: "Easy", emoji: "😌", color: "#22c55e" },
+                { val: 2, label: "Moderate", emoji: "😊", color: "#06b6d4" },
+                { val: 3, label: "Challenging", emoji: "😤", color: "#f59e0b" },
+                { val: 4, label: "Hard", emoji: "🥵", color: "#f97316" },
+                { val: 5, label: "Brutal", emoji: "💀", color: "#ef4444" },
+              ].map(d => (
+                <div key={d.val} onClick={() => setDifficultyRating(d.val)}
+                  style={{
+                    flex: 1, textAlign: "center", padding: "10px 4px", borderRadius: 10, cursor: "pointer",
+                    background: difficultyRating === d.val ? d.color + "15" : "rgba(255,255,255,.02)",
+                    border: difficultyRating === d.val ? `1px solid ${d.color}30` : "1px solid rgba(255,255,255,.04)",
+                    transition: "all .2s",
+                  }}>
+                  <div style={{ fontSize: 22 }}>{d.emoji}</div>
+                  <div style={{ fontSize: 9, color: difficultyRating === d.val ? d.color : "#6b7280", fontWeight: 600, marginTop: 2 }}>{d.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Actions */}
