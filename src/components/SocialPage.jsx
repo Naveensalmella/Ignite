@@ -40,6 +40,12 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
         loadFriendsData();
     }, [user]);
 
+    // Auto-refresh when tab changes
+    useEffect(() => {
+        if (!user?.uid) return;
+        if (tab === "requests") loadFriendsData();
+    }, [tab]);
+
     const loadFriendsData = async () => {
         setLoading(true);
         try {
@@ -101,13 +107,15 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
 
     // Search user by email
     const searchUser = async () => {
-        if (!searchEmail.trim()) return;
+        const term = searchEmail.trim().toLowerCase();
+        if (!term) return;
         setSearching(true);
         setSearchResult(null);
         setSentMsg("");
 
         try {
-            const q = query(collection(db, "users"), where("email", "==", searchEmail.trim().toLowerCase()));
+            // Search by email
+            const q = query(collection(db, "users"), where("email", "==", term));
             const snap = await getDocs(q);
 
             if (!snap.empty) {
@@ -127,10 +135,11 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
                     });
                 }
             } else {
-                setSearchResult({ error: "No user found with that email" });
+                setSearchResult({ error: "No user found with that email. Make sure they've signed up for IGNITE." });
             }
         } catch (e) {
-            setSearchResult({ error: "Search failed. Try again." });
+            console.error("Search error:", e);
+            setSearchResult({ error: "Search failed. Check your internet connection." });
         }
         setSearching(false);
     };
@@ -138,6 +147,21 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
     // Send friend request
     const sendRequest = async (targetUid) => {
         try {
+            // Check if already sent
+            const targetDoc = await getDoc(doc(db, "users", targetUid));
+            if (targetDoc.exists()) {
+                const targetData = targetDoc.data();
+                if ((targetData.pendingRequests || []).includes(user.uid)) {
+                    setSentMsg("Request already sent! ⏳");
+                    setSearchResult(null);
+                    return;
+                }
+                if ((targetData.friends || []).includes(user.uid)) {
+                    setSentMsg("Already friends! ✅");
+                    setSearchResult(null);
+                    return;
+                }
+            }
             await updateDoc(doc(db, "users", targetUid), {
                 pendingRequests: arrayUnion(user.uid),
             });
@@ -145,7 +169,7 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
             setSearchResult(null);
             setSearchEmail("");
         } catch (e) {
-            setSentMsg("Failed to send request");
+            setSentMsg("Failed to send. Check your internet and try again.");
         }
     };
 
@@ -178,8 +202,10 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
         } catch { }
     };
 
-    // Remove friend
+    // Remove friend (with confirmation)
     const removeFriend = async (friendUid) => {
+        const friendName = friendProfiles.find(f => f.uid === friendUid)?.name || "this friend";
+        if (!window.confirm(`Remove ${friendName} from your friends?`)) return;
         try {
             await updateDoc(doc(db, "users", user.uid), {
                 friends: arrayRemove(friendUid),
@@ -189,7 +215,9 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
             });
             setFriends(p => p.filter(id => id !== friendUid));
             setFriendProfiles(p => p.filter(f => f.uid !== friendUid));
-        } catch { }
+        } catch (e) {
+            console.error("Remove friend error:", e);
+        }
     };
 
     // Build leaderboard (you + friends sorted by XP)
@@ -204,9 +232,12 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
     return (
         <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
             {/* Tabs */}
-            <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 20 }}>
-                {[["leaderboard", `🏆 Leaderboard`], ["friends", `👥 Friends (${friends.length})`], ["requests", `📩 Requests${pendingRequests.length > 0 ? ` (${pendingRequests.length})` : ""}`]].map(([k, l]) => (
-                    <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => setTab(k)} style={{ padding: "8px 14px" }}>{l}</span>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 20, flexWrap: "wrap" }}>
+                {[["leaderboard", "🏆 Leaderboard", 0], ["friends", `👥 Friends (${friends.length})`, 0], ["requests", "📩 Requests", pendingRequests.length]].map(([k, l, badge]) => (
+                    <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => setTab(k)} style={{ padding: "8px 14px", position: "relative" }}>
+                        {l}
+                        {badge > 0 && <span style={{ position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: "50%", background: "#ef4444", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{badge}</span>}
+                    </span>
                 ))}
             </div>
 
@@ -217,10 +248,16 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
                         <div style={{ fontSize: 36 }}>🏆</div>
                         <div style={{ fontSize: 22, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Leaderboard</div>
                         <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Compete with friends for the top spot</div>
+                        <button className="bg" onClick={loadFriendsData} style={{ marginTop: 8, padding: "6px 16px", fontSize: 11 }}>🔄 Refresh</button>
                     </div>
 
                     {loading ? (
-                        <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading...</div>
+                        <div style={{ textAlign: "center", padding: 40 }}>
+                            <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 12 }}>
+                                {[0, 1, 2].map(i => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981", animation: `dotPulse 1.2s ${i * .2}s infinite` }} />)}
+                            </div>
+                            <div style={{ color: "#6b7280", fontSize: 13 }}>Loading leaderboard...</div>
+                        </div>
                     ) : leaderboard.length <= 1 ? (
                         <div className="gs" style={{ textAlign: "center", padding: 30 }}>
                             <div style={{ fontSize: 40, marginBottom: 12 }}>👥</div>
@@ -285,6 +322,21 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
             {/* ══ FRIENDS ══ */}
             {tab === "friends" && (
                 <div>
+                    {/* Share invite */}
+                    <div className="gs" style={{ marginBottom: 12, padding: 14 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>📤 Invite Friends</div>
+                                <div style={{ fontSize: 11, color: "#6b7280" }}>Share IGNITE with friends</div>
+                            </div>
+                            <button className="bp" onClick={() => {
+                                const text = `Join me on IGNITE! 🔥 Track workouts, nutrition, and level up your life. Add me: ${user.email || ""}`;
+                                if (navigator.share) navigator.share({ title: "Join IGNITE", text }).catch(() => { });
+                                else { navigator.clipboard.writeText(text); setSentMsg("Invite copied to clipboard! 📋"); setTimeout(() => setSentMsg(""), 2000); }
+                            }} style={{ padding: "8px 16px", fontSize: 12 }}>Share</button>
+                        </div>
+                    </div>
+
                     {/* Add Friend */}
                     <div className="gs" style={{ marginBottom: 16 }}>
                         <div className="sl">Add Friend by Email</div>

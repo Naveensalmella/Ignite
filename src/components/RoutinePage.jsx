@@ -57,6 +57,64 @@ const TEMPLATES = {
       { time: "20:45", activity: "Relax + Sleep", icon: "😴", duration: 30, cat: "spirit" },
     ]
   },
+  weekend: {
+    name: "Weekend Warrior", icon: "🌤️", desc: "Sleep in, train hard, enjoy life", blocks: [
+      { time: "08:00", activity: "Wake Up + Stretch", icon: "🌅", duration: 20, cat: "spirit" },
+      { time: "08:20", activity: "Big Breakfast", icon: "🍳", duration: 40, cat: "power" },
+      { time: "09:00", activity: "Intense Training", icon: "⚔️", duration: 90, cat: "power" },
+      { time: "10:30", activity: "Shower + Get Ready", icon: "🧖", duration: 30, cat: "life" },
+      { time: "11:00", activity: "Skill / Side Project", icon: "🧠", duration: 120, cat: "mind" },
+      { time: "13:00", activity: "Lunch", icon: "🍽️", duration: 45, cat: "power" },
+      { time: "13:45", activity: "Free Time / Hobbies", icon: "🎮", duration: 120, cat: "heart" },
+      { time: "15:45", activity: "Light Walk / Outdoor", icon: "🚶", duration: 30, cat: "spirit" },
+      { time: "16:15", activity: "Reading / Learning", icon: "📖", duration: 45, cat: "mind" },
+      { time: "17:00", activity: "Social Time / Friends", icon: "👫", duration: 120, cat: "heart" },
+      { time: "19:00", activity: "Dinner", icon: "🍽️", duration: 60, cat: "power" },
+      { time: "20:00", activity: "Movie / Relax", icon: "🎬", duration: 90, cat: "heart" },
+      { time: "21:30", activity: "Journal + Sleep", icon: "😴", duration: 30, cat: "spirit" },
+    ]
+  },
+  earlybird: {
+    name: "Early Bird", icon: "🐦", desc: "4:30 AM start, maximize your morning", blocks: [
+      { time: "04:30", activity: "Wake Up + Hydrate", icon: "💧", duration: 10, cat: "spirit" },
+      { time: "04:40", activity: "Meditation", icon: "🧘", duration: 20, cat: "spirit" },
+      { time: "05:00", activity: "Training", icon: "⚔️", duration: 60, cat: "power" },
+      { time: "06:00", activity: "Cold Shower", icon: "🚿", duration: 15, cat: "power" },
+      { time: "06:15", activity: "Breakfast + Journal", icon: "📝", duration: 30, cat: "heart" },
+      { time: "06:45", activity: "Deep Work (Golden Hour)", icon: "💻", duration: 120, cat: "mind" },
+      { time: "08:45", activity: "Break", icon: "☕", duration: 15, cat: "life" },
+      { time: "09:00", activity: "Work / Study", icon: "📊", duration: 180, cat: "mind" },
+      { time: "12:00", activity: "Lunch", icon: "🍽️", duration: 45, cat: "power" },
+      { time: "12:45", activity: "Walk + Podcast", icon: "🎧", duration: 30, cat: "mind" },
+      { time: "13:15", activity: "Afternoon Work", icon: "💼", duration: 165, cat: "mind" },
+      { time: "16:00", activity: "Snack + Walk", icon: "🍎", duration: 20, cat: "power" },
+      { time: "16:20", activity: "Skill Practice", icon: "🧠", duration: 40, cat: "mind" },
+      { time: "17:00", activity: "Free Time", icon: "🎮", duration: 60, cat: "heart" },
+      { time: "18:00", activity: "Dinner + Family", icon: "👨‍👩‍👧", duration: 90, cat: "heart" },
+      { time: "19:30", activity: "Reading", icon: "📖", duration: 30, cat: "mind" },
+      { time: "20:00", activity: "Wind Down + Sleep", icon: "😴", duration: 30, cat: "spirit" },
+    ]
+  },
+  wfh: {
+    name: "Work From Home", icon: "🏠", desc: "Stay productive while working remotely", blocks: [
+      { time: "07:00", activity: "Wake Up + Morning Routine", icon: "🌅", duration: 30, cat: "spirit" },
+      { time: "07:30", activity: "Quick Workout", icon: "💪", duration: 30, cat: "power" },
+      { time: "08:00", activity: "Breakfast", icon: "🍳", duration: 30, cat: "power" },
+      { time: "08:30", activity: "Deep Work (No Meetings)", icon: "💻", duration: 120, cat: "mind" },
+      { time: "10:30", activity: "Stand Up + Stretch", icon: "🤸", duration: 10, cat: "power" },
+      { time: "10:40", activity: "Meetings / Calls", icon: "📞", duration: 80, cat: "mind" },
+      { time: "12:00", activity: "Lunch Away From Desk", icon: "🍽️", duration: 45, cat: "power" },
+      { time: "12:45", activity: "Short Walk Outside", icon: "🚶", duration: 15, cat: "spirit" },
+      { time: "13:00", activity: "Afternoon Work", icon: "📊", duration: 120, cat: "mind" },
+      { time: "15:00", activity: "Tea Break + Stretch", icon: "☕", duration: 15, cat: "life" },
+      { time: "15:15", activity: "Focus Sprint", icon: "🎯", duration: 105, cat: "mind" },
+      { time: "17:00", activity: "Exercise / Training", icon: "⚔️", duration: 60, cat: "power" },
+      { time: "18:00", activity: "Dinner + Decompress", icon: "🍽️", duration: 60, cat: "heart" },
+      { time: "19:00", activity: "Hobby / Social", icon: "🎮", duration: 90, cat: "heart" },
+      { time: "20:30", activity: "Reading + Journal", icon: "📖", duration: 30, cat: "mind" },
+      { time: "21:00", activity: "Sleep Routine", icon: "😴", duration: 30, cat: "spirit" },
+    ]
+  },
   student: {
     name: "Student Mode", icon: "📚", desc: "Optimized for learning, exams, and growth", blocks: [
       { time: "06:00", activity: "Wake Up + Quick Workout", icon: "💪", duration: 45, cat: "power" },
@@ -81,7 +139,7 @@ const TEMPLATES = {
 
 function Ring({ pct, color, size = 70, stroke = 5, children }) { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
-export default function RoutinePage({ routineData, setRoutineData }) {
+export default function RoutinePage({ routineData = null, setRoutineData = () => { } }) {
   const d = today();
   const [mode, setMode] = useState("daily"); // daily | setup | edit | history
   const [addTime, setAddTime] = useState("08:00");
@@ -302,7 +360,36 @@ export default function RoutinePage({ routineData, setRoutineData }) {
   }
 
   // ══ DAILY VIEW ══
-  return (<div>
+  return (<div style={{ maxWidth: "100%", overflowX: "hidden" }}>
+
+    {/* Current Activity Spotlight */}
+    {currentBlockIdx >= 0 && routine[currentBlockIdx] && (() => {
+      const cur = routine[currentBlockIdx];
+      const [ch, cm] = cur.time.split(":").map(Number);
+      const endMin = ch * 60 + cm + (cur.duration || 30);
+      const remaining = endMin - nowMinutes;
+      const elapsed = nowMinutes - (ch * 60 + cm);
+      const pctDone = Math.round((elapsed / (cur.duration || 30)) * 100);
+      const status = getStatus(cur.id);
+      if (status !== "pending") return null;
+      return (
+        <div className="gs" style={{ marginBottom: 14, padding: 14, border: "1px solid rgba(16,185,129,.2)", background: "rgba(16,185,129,.04)", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", bottom: 0, left: 0, height: 3, width: `${pctDone}%`, background: "#10b981", transition: "width 60s linear" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ fontSize: 28 }}>{cur.icon}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, color: "#10b981", fontWeight: 600, letterSpacing: 1 }}>NOW</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{cur.activity}</div>
+              <div style={{ fontSize: 12, color: "#6b7280" }}>{remaining > 0 ? `${remaining} min remaining` : "Wrapping up..."}</div>
+            </div>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button onClick={() => markDone(cur.id)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(34,197,94,.3)", background: "rgba(34,197,94,.1)", color: "#22c55e", fontSize: 13, cursor: "pointer" }}>Done ✓</button>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
+
     {/* Header */}
     <div className="gs" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
       <Ring pct={progress} color={progress >= 80 ? "#22c55e" : progress >= 50 ? "#f59e0b" : "#ef4444"} size={75} stroke={6}>
@@ -316,6 +403,29 @@ export default function RoutinePage({ routineData, setRoutineData }) {
         <div style={{ fontSize: 11, color: "#4b5563", marginTop: 2 }}>{Math.floor(totalMin / 60)}h {totalMin % 60}m planned</div>
       </div>
     </div>
+
+    {/* Category breakdown */}
+    <div style={{ display: "flex", gap: 4, marginBottom: 12, overflowX: "auto" }}>
+      {CATEGORIES.map(cat => {
+        const catMin = routine.filter(b => b.cat === cat.id).reduce((s, b) => s + (b.duration || 30), 0);
+        const catDone = routine.filter(b => b.cat === cat.id && getStatus(b.id) === "done").length;
+        const catTotal = routine.filter(b => b.cat === cat.id).length;
+        if (catTotal === 0) return null;
+        return (
+          <div key={cat.id} style={{ flex: "1 1 0", minWidth: 56, padding: "6px 4px", borderRadius: 8, background: `${cat.color}08`, textAlign: "center" }}>
+            <div style={{ fontSize: 14 }}>{cat.icon}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: cat.color }}>{catDone}/{catTotal}</div>
+            <div style={{ fontSize: 8, color: "#6b7280" }}>{Math.floor(catMin / 60)}h{catMin % 60 > 0 ? `${catMin % 60}m` : ""}</div>
+          </div>
+        );
+      })}
+    </div>
+
+    {/* Mark All Done */}
+    {totalBlocks > 0 && doneCount < totalBlocks && (
+      <button className="bg" onClick={() => { routine.forEach(b => { if (getStatus(b.id) === "pending") markDone(b.id); }); }}
+        style={{ width: "100%", padding: 10, marginBottom: 12, fontSize: 12 }}>✅ Mark All Remaining as Done</button>
+    )}
 
     {/* Action buttons */}
     <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
@@ -366,6 +476,29 @@ export default function RoutinePage({ routineData, setRoutineData }) {
                   </div>
                 </div>
               </div>
+
+              {/* Category breakdown */}
+              <div style={{ display: "flex", gap: 4, marginBottom: 12, overflowX: "auto" }}>
+                {CATEGORIES.map(cat => {
+                  const catMin = routine.filter(b => b.cat === cat.id).reduce((s, b) => s + (b.duration || 30), 0);
+                  const catDone = routine.filter(b => b.cat === cat.id && getStatus(b.id) === "done").length;
+                  const catTotal = routine.filter(b => b.cat === cat.id).length;
+                  if (catTotal === 0) return null;
+                  return (
+                    <div key={cat.id} style={{ flex: "1 1 0", minWidth: 56, padding: "6px 4px", borderRadius: 8, background: `${cat.color}08`, textAlign: "center" }}>
+                      <div style={{ fontSize: 14 }}>{cat.icon}</div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: cat.color }}>{catDone}/{catTotal}</div>
+                      <div style={{ fontSize: 8, color: "#6b7280" }}>{Math.floor(catMin / 60)}h{catMin % 60 > 0 ? `${catMin % 60}m` : ""}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Mark All Done */}
+              {totalBlocks > 0 && doneCount < totalBlocks && (
+                <button className="bg" onClick={() => { routine.forEach(b => { if (getStatus(b.id) === "pending") markDone(b.id); }); }}
+                  style={{ width: "100%", padding: 10, marginBottom: 12, fontSize: 12 }}>✅ Mark All Remaining as Done</button>
+              )}
 
               {/* Action buttons */}
               <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>

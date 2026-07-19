@@ -4,6 +4,7 @@ import { GATES, RANKS, XP, DAILY_PENALTY } from '../data';
 import { BADGES, checkBadges, getRarityColor } from '../data/badges';
 import StreakFreeze from './StreakFreeze';
 import WeeklyReport from './WeeklyReport';
+import { getDailyXPProgress, getXPBreakdown, XP_SOURCES, getComboStatus, getLoginBonus, claimLoginBonus } from '../data/gamingSystem';
 
 const SECTIONS = [
   { key: "training", label: "Training", icon: "⚔️", color: "#10b981", page: "training" },
@@ -16,7 +17,7 @@ const SECTIONS = [
 
 function Ring({ pct, color, size = 52, stroke = 5, children }) { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
-export default function Dashboard({ appState = {}, setPage = () => { }, totalXP = 0, streak = 0, workoutLog = {}, foodLog = {}, focusLog = {}, habitLog = {}, freezeData = null, setFreezeData = () => { }, addXP = () => { } }) {
+export default function Dashboard({ appState = {}, setPage = () => { }, totalXP = 0, streak = 0, workoutLog = {}, foodLog = {}, focusLog = {}, habitLog = {}, freezeData = null, setFreezeData = () => { }, addXP = () => { }, xpLog = {}, loginData = {}, setLoginData = () => { } }) {
   const { habits, tasks, user, profile, journal, pillarProg, finances, routineData } = appState;
   const hLog = habitLog || appState.habitLog || {};
   const fLog = foodLog || appState.foodLog || {};
@@ -52,6 +53,20 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
   }, [todayW, todayFood, todayHabits, habits, fcLog, d, profile, todayJournal, routineData]);
 
   const overallScore = Math.round(Object.values(sectionScores).reduce((a, b) => a + b, 0) / 6);
+
+  // Gaming widgets data
+  const xpProgress = getDailyXPProgress(xpLog || {}, 100);
+  const xpBreakdown = getXPBreakdown(xpLog || {});
+  const combo = getComboStatus(appState, workoutLog);
+  const loginBonus = getLoginBonus(loginData || {});
+  const [bonusClaimed, setBonusClaimed] = useState(loginBonus.claimed);
+
+  const claimBonus = () => {
+    if (bonusClaimed) return;
+    addXP(loginBonus.reward, "Login");
+    setLoginData(claimLoginBonus(loginData || {}));
+    setBonusClaimed(true);
+  };
 
   const weekData = useMemo(() => { const days = []; for (let i = 6; i >= 0; i--) { const dt = new Date(); dt.setDate(dt.getDate() - i); const ds = dt.toISOString().split("T")[0]; days.push({ date: ds, label: dt.toLocaleDateString('en', { weekday: 'narrow' }), worked: !!workoutLog[ds], isToday: ds === d }) } return days }, [workoutLog, d]);
 
@@ -89,6 +104,53 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
         <div style={{ fontSize: 10, color: "#6b7280", marginTop: 6, fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>TODAY</div>
       </div>
     </div>
+
+    {/* Gaming Widgets */}
+    <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+      {/* Daily XP Goal */}
+      <div className="gs" style={{ flex: "1 1 140px", padding: 12, display: "flex", alignItems: "center", gap: 10 }}>
+        <Ring pct={xpProgress.pct} color={xpProgress.pct >= 100 ? "#22c55e" : "#10b981"} size={48} stroke={5}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{xpProgress.earned}</span>
+        </Ring>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Daily XP</div>
+          <div style={{ fontSize: 10, color: xpProgress.pct >= 100 ? "#22c55e" : "#6b7280" }}>{xpProgress.pct >= 100 ? "✅ Done!" : `${xpProgress.goal - xpProgress.earned} to go`}</div>
+          {Object.keys(xpBreakdown).length > 0 && (
+            <div style={{ display: "flex", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
+              {Object.entries(xpBreakdown).slice(0, 3).map(([cat, amt]) => (
+                <span key={cat} style={{ fontSize: 8, padding: "1px 5px", borderRadius: 100, background: `${(XP_SOURCES[cat] || XP_SOURCES.Other).color}10`, color: (XP_SOURCES[cat] || XP_SOURCES.Other).color }}>{(XP_SOURCES[cat] || XP_SOURCES.Other).icon}+{amt}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Combo */}
+      {combo.count >= 2 && (
+        <div className="gs" style={{ flex: "1 1 120px", padding: 12, textAlign: "center", border: "1px solid rgba(236,72,153,.12)", background: "rgba(236,72,153,.03)" }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#ec4899", fontFamily: "Rajdhani,sans-serif" }}>{combo.label}</div>
+          <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{combo.count} activities · +{combo.bonusXP} XP</div>
+        </div>
+      )}
+    </div>
+
+    {/* Login Bonus */}
+    {!bonusClaimed && (
+      <div className="gs slide-up" onClick={claimBonus} style={{ marginBottom: 16, padding: 12, cursor: "pointer", border: "1px solid rgba(59,130,246,.15)", background: "rgba(59,130,246,.03)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#3b82f6", fontFamily: "Rajdhani,sans-serif" }}>📅 Daily Login Bonus — Day {loginBonus.streak}</div>
+            <div style={{ fontSize: 11, color: "#6b7280" }}>Tap to claim!</div>
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: "#3b82f6", fontFamily: "Rajdhani,sans-serif" }}>+{loginBonus.reward}</div>
+        </div>
+        <div style={{ display: "flex", gap: 3, marginTop: 6 }}>
+          {[5, 10, 15, 20, 25, 35, 50].map((r, i) => (
+            <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i < loginBonus.dayIdx ? "#3b82f6" : i === loginBonus.dayIdx ? "#60a5fa" : "rgba(255,255,255,.06)" }} />
+          ))}
+        </div>
+      </div>
+    )}
 
     {/* Penalty */}
     {!todayW && <div className="gs" style={{ marginBottom: 16, border: "1px solid rgba(239,68,68,.2)", background: "rgba(239,68,68,.04)", padding: 14 }}><div style={{ display: "flex", gap: 10, alignItems: "center" }}><span style={{ fontSize: 22 }}>⚠️</span><div><div style={{ fontWeight: 700, color: "#ef4444", fontFamily: "Rajdhani,sans-serif", fontSize: 13 }}>TRAINING REQUIRED</div><div style={{ fontSize: 12, color: "#6b7280" }}>Complete your <span style={{ color: "#ef4444", fontWeight: 700 }}>daily training</span> or lose <span style={{ color: "#ef4444" }}>-{DAILY_PENALTY} XP</span> at midnight</div></div></div></div>}

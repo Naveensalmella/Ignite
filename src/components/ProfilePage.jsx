@@ -8,7 +8,7 @@ import DataExport from './DataExport';
 import AccentPicker from './AccentPicker';
 import NotificationSettings from './NotificationSettings';
 
-export default function ProfilePage({ profile = {}, setProfile = () => { }, totalXP = 0, streak = 0, workoutLog = {}, appState = {}, freezeData = null }) {
+export default function ProfilePage({ profile = {}, setProfile = () => { }, totalXP = 0, streak = 0, workoutLog = {}, appState = {}, freezeData = null, setPage = () => { } }) {
   const lv = getLevel(totalXP), rank = getRank(lv), prog = getLevelProg(totalXP), remain = xpToNext(totalXP);
   const nextRank = RANKS.find(r => r.min > lv);
   const bmi = calcBMI(parseFloat(profile.weight), parseFloat(profile.height));
@@ -27,7 +27,7 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
   return (<div style={{ maxWidth: "100%", overflowX: "hidden" }}>
     {/* Tab Selector */}
     <div style={{ display: "flex", gap: 6, marginBottom: 20, justifyContent: "center", flexWrap: "wrap" }}>
-      {[["overview", "👤 Profile"], ["badges", `🏅 Badges (${earnedIds.length})`], ["ranks", "⚔️ Ranks"], ["stats", "📊 Stats"]].map(([k, l]) => (
+      {[["overview", "👤 Profile"], ["photos", "📸 Progress"], ["badges", `🏅 Badges (${earnedIds.length})`], ["ranks", "⚔️ Ranks"], ["stats", "📊 Stats"]].map(([k, l]) => (
         <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => setTab(k)} style={{ padding: "8px 16px" }}>{l}</span>
       ))}
     </div>
@@ -94,6 +94,18 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
       <div style={{ marginTop: 12 }}><AccentPicker /></div>
       <div style={{ marginTop: 12 }}><NotificationSettings /></div>
       <div style={{ marginTop: 12 }}><DataExport appState={appState} totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} /></div>
+    </div>)}
+
+    {/* ══ PHOTOS ══ */}
+    {tab === "photos" && (<div>
+      <div style={{ textAlign: "center", marginBottom: 16 }}>
+        <div style={{ fontSize: 36 }}>📸</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Body Progress</div>
+        <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Track your transformation with monthly photos</p>
+      </div>
+      <div style={{ textAlign: "center" }}>
+        <button className="bp" onClick={() => typeof setPage === "function" && setPage("bodyphotos")} style={{ padding: "12px 24px" }}>📸 Open Progress Photos</button>
+      </div>
     </div>)}
 
     {/* ══ BADGES ══ */}

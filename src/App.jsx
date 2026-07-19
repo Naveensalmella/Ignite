@@ -29,6 +29,7 @@ import { ConfettiBlast, LevelUpCelebration } from './components/Confetti';
 import ShareCard from './components/ShareCard';
 import WorkoutPrograms from './components/WorkoutPrograms';
 import SocialPage from './components/SocialPage';
+import BodyProgress from './components/BodyProgress';
 import GamingHub, { MilestoneOverlay } from './components/GamingHub';
 import { checkMilestone } from './data/gamingSystem';
 import StreakFreeze, { isDayFrozen } from './components/StreakFreeze';
@@ -84,6 +85,7 @@ export default function App() {
   const [loginData, setLoginData] = useState({});
   const [activeTitle, setActiveTitle] = useState(null);
   const [questChainData, setQuestChainData] = useState({});
+  const [bodyPhotos, setBodyPhotos] = useState({});
   const [milestone, setMilestone] = useState(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const saveTimer = useRef(null);
@@ -164,6 +166,7 @@ export default function App() {
         d.loginData && setLoginData(d.loginData);
         d.activeTitle && setActiveTitle(d.activeTitle);
         d.questChainData && setQuestChainData(d.questChainData);
+        d.bodyPhotos && setBodyPhotos(d.bodyPhotos);
         if (d.totalXP !== undefined) setTotalXP(d.totalXP);
         if (d.streak !== undefined) setStreak(d.streak);
         if (d.lastCheck) setLastCheck(d.lastCheck);
@@ -185,7 +188,7 @@ export default function App() {
         chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
         activityLog, focusLog, routineData, masteryData, bodyData,
         challengeData, programData, freezeData, programState,
-        xpLog, loginData, activeTitle, questChainData,
+        xpLog, loginData, activeTitle, questChainData, bodyPhotos,
         email: user.email,
         lastSaved: new Date().toISOString(),
       });
@@ -194,7 +197,7 @@ export default function App() {
     chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
     activityLog, focusLog, routineData, masteryData, bodyData,
     challengeData, programData, freezeData, programState,
-    xpLog, loginData, activeTitle, questChainData]);
+    xpLog, loginData, activeTitle, questChainData, bodyPhotos]);
 
   // Debounced auto-save
   useEffect(() => {
@@ -340,7 +343,7 @@ export default function App() {
   const appState = { foodLog: foodLog || {}, habits: habits || [], habitLog: habitLog || {}, tasks: tasks || [], journal: journal || {}, finances: finances || [], profile: profile || {}, user, pillarProg: pillarProg || {}, focusLog: focusLog || {}, workoutLog: workoutLog || {}, oracleChats: chatHistory || [], routineData, masteryData, bodyData, challengeData, freezeData, programState: programState || {}, xpLog: xpLog || {}, loginData: loginData || {}, activeTitle, questChainData: questChainData || {} };
 
   const pages = {
-    dashboard: <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} foodLog={foodLog} focusLog={focusLog} habitLog={habitLog} freezeData={freezeData} setFreezeData={setFreezeData} addXP={addXP} />,
+    dashboard: <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} foodLog={foodLog} focusLog={focusLog} habitLog={habitLog} freezeData={freezeData} setFreezeData={setFreezeData} addXP={addXP} xpLog={xpLog} loginData={loginData} setLoginData={setLoginData} />,
     training: <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} masteryData={masteryData} setMasteryData={setMasteryData} programState={programState} setProgramState={setProgramState} />,
     nutrition: <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} profile={profile} />,
     dailyquest: <DailyQuestPage habits={habits} setHabits={setHabits} habitLog={habitLog} setHabitLog={setHabitLog} addXP={addXP} workoutLog={workoutLog} />,
@@ -351,10 +354,11 @@ export default function App() {
     routine: <RoutinePage profile={profile} routineData={routineData} setRoutineData={setRoutineData} />,
     growth: <GrowthPage pillarProg={pillarProg} setPillarProg={setPillarProg} />,
     oracle: <FlameOracle appState={appState} addXP={addXP} setFoodLog={setFoodLog} setWorkoutLog={setWorkoutLog} setPage={setPage} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} routineData={routineData} setRoutineData={setRoutineData} />,
-    profile: <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} appState={appState} freezeData={freezeData} />,
+    profile: <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} appState={appState} freezeData={freezeData} setPage={setPage} />,
     body: <BodyTracker bodyData={bodyData} setBodyData={setBodyData} />,
     challenges: <ChallengesPage challengeData={challengeData} setChallengeData={setChallengeData} addXP={addXP} />,
     share: <ShareCard totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} />,
+    bodyphotos: <BodyProgress bodyPhotos={bodyPhotos} setBodyPhotos={setBodyPhotos} />,
     social: <SocialPage user={user} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />,
     gaming: <GamingHub appState={appState} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} profile={profile} loginData={loginData} setLoginData={setLoginData} xpLog={xpLog} activeTitle={activeTitle} setActiveTitle={setActiveTitle} questChainData={questChainData} setQuestChainData={setQuestChainData} />,
     programs: <WorkoutPrograms programData={programData} setProgramData={setProgramData} addXP={addXP} />,
