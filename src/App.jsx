@@ -300,7 +300,7 @@ export default function App() {
     finance: <FinancePage finances={finances} setFinances={setFinances} addXP={addXP} />,
     routine: <RoutinePage profile={profile} routineData={routineData} setRoutineData={setRoutineData} />,
     growth: <GrowthPage pillarProg={pillarProg} setPillarProg={setPillarProg} />,
-    oracle: <FlameOracle appState={appState} addXP={addXP} setFoodLog={setFoodLog} setWorkoutLog={setWorkoutLog} setPage={setPage} profile={profile} routineData={routineData} setRoutineData={setRoutineData} />,
+    oracle: <FlameOracle appState={appState} addXP={addXP} setFoodLog={setFoodLog} setWorkoutLog={setWorkoutLog} setPage={setPage} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} routineData={routineData} setRoutineData={setRoutineData} />,
     profile: <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} appState={appState} freezeData={freezeData} />,
     body: <BodyTracker bodyData={bodyData} setBodyData={setBodyData} />,
     challenges: <ChallengesPage challengeData={challengeData} setChallengeData={setChallengeData} addXP={addXP} />,
