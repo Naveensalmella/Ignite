@@ -40,7 +40,7 @@ function SetLogger({ onLog, setNum, targetReps, prevWeight }) {
 // ══════════════════════════════════════
 // MAIN TRAINING PAGE
 // ══════════════════════════════════════
-export default function TrainingPage({ totalXP, addXP, workoutLog, setWorkoutLog, profile, masteryData, setMasteryData, programState, setProgramState }) {
+export default function TrainingPage({ totalXP = 0, addXP = () => { }, workoutLog = {}, setWorkoutLog = () => { }, profile = {}, masteryData = {}, setMasteryData = () => { }, programState = {}, setProgramState = () => { } }) {
   const d = today();
   const todayW = workoutLog[d];
   // Program state (persisted)

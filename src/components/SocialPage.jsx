@@ -18,7 +18,7 @@ function Ring({ pct, color, size = 44, stroke = 4, children }) {
     );
 }
 
-export default function SocialPage({ user, profile, totalXP, streak, workoutLog }) {
+export default function SocialPage({ user = {}, profile = {}, totalXP = 0, streak = 0, workoutLog = {} }) {
     const [tab, setTab] = useState("leaderboard"); // leaderboard | friends | requests
     const [friends, setFriends] = useState([]);
     const [friendProfiles, setFriendProfiles] = useState([]);

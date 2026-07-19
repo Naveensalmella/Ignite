@@ -50,6 +50,7 @@ export const navItems = [
   { key: "nutrition", label: "Nutrition", icon: "🍎" },
   { key: "oracle", label: "Flame Oracle", icon: "🔮" },
   { key: "social", label: "Social", icon: "👥" },
+  { key: "gaming", label: "Gaming", icon: "🎮" },
   { key: "more", label: "More", icon: "☰", submenu: [
     { key: "dailyquest", label: "Daily Quests", icon: "🎯" },
     { key: "missions", label: "Missions", icon: "📋" },

@@ -8,7 +8,7 @@ import DataExport from './DataExport';
 import AccentPicker from './AccentPicker';
 import NotificationSettings from './NotificationSettings';
 
-export default function ProfilePage({ profile, setProfile, totalXP, streak, workoutLog, appState, freezeData }) {
+export default function ProfilePage({ profile = {}, setProfile = () => { }, totalXP = 0, streak = 0, workoutLog = {}, appState = {}, freezeData = null }) {
   const lv = getLevel(totalXP), rank = getRank(lv), prog = getLevelProg(totalXP), remain = xpToNext(totalXP);
   const nextRank = RANKS.find(r => r.min > lv);
   const bmi = calcBMI(parseFloat(profile.weight), parseFloat(profile.height));

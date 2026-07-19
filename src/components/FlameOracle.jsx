@@ -38,7 +38,7 @@ const MODES = [
 
 const PAGE_NAMES = { training: "⚔️ Training", nutrition: "🍎 Nutrition", dailyquest: "🎯 Daily Quests", focus: "⏱ Focus", wellness: "💛 Wellness", routine: "📅 My Day", growth: "🌱 Growth", profile: "👤 Profile", social: "👥 Social" };
 
-export default function FlameOracle({ appState, addXP, setFoodLog, setWorkoutLog, setPage, profile, totalXP, streak, workoutLog }) {
+export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodLog = () => { }, setWorkoutLog = () => { }, setPage = () => { }, profile = {}, totalXP = 0, streak = 0, workoutLog = {} }) {
   const d = today();
 
   // ── Load chats: localStorage first (survives page switches), then Firestore ──

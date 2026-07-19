@@ -29,6 +29,8 @@ import { ConfettiBlast, LevelUpCelebration } from './components/Confetti';
 import ShareCard from './components/ShareCard';
 import WorkoutPrograms from './components/WorkoutPrograms';
 import SocialPage from './components/SocialPage';
+import GamingHub, { MilestoneOverlay } from './components/GamingHub';
+import { checkMilestone } from './data/gamingSystem';
 import StreakFreeze, { isDayFrozen } from './components/StreakFreeze';
 import YearHeatmap from './components/YearHeatmap';
 import WeeklyReport from './components/WeeklyReport';
@@ -38,6 +40,12 @@ import { playXP, playLevelUp, playWorkoutComplete } from './sounds';
 import { registerSW, startNotifScheduler } from './notifications';
 import { applyAccent } from './components/AccentPicker';
 import './transitions.css';
+
+// Global error handler — prevents white screen crashes
+if (typeof window !== 'undefined') {
+  window.onerror = (msg, src, line, col, err) => { console.error("Global error:", msg, err); return false; };
+  window.onunhandledrejection = (e) => { console.error("Unhandled promise:", e.reason); };
+}
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -72,6 +80,11 @@ export default function App() {
   const [masteryData, setMasteryData] = useState(null);
   const [freezeData, setFreezeData] = useState(null);
   const [programState, setProgramState] = useState({});
+  const [xpLog, setXpLog] = useState({});
+  const [loginData, setLoginData] = useState({});
+  const [activeTitle, setActiveTitle] = useState(null);
+  const [questChainData, setQuestChainData] = useState({});
+  const [milestone, setMilestone] = useState(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const saveTimer = useRef(null);
 
@@ -79,6 +92,22 @@ export default function App() {
     const entry = { id: Date.now(), type, detail, date: today(), time: new Date().toLocaleTimeString(), timestamp: Date.now() };
     setActivityLog(p => [entry, ...p].slice(0, 200));
   };
+
+  // Apply saved accent color + register service worker
+  useEffect(() => {
+    applyAccent(localStorage.getItem('ignite-accent') || 'emerald');
+    registerSW();
+  }, []);
+
+  // Start notification scheduler when user is logged in
+  useEffect(() => {
+    if (!user) return;
+    const d = today();
+    startNotifScheduler(() => ({
+      todayWorkout: !!workoutLog[d],
+      streak,
+    }));
+  }, [user, workoutLog, streak]);
 
   // Responsive check
   useEffect(() => {
@@ -109,53 +138,63 @@ export default function App() {
 
   // Load all data from Firestore
   const loadUserData = async (uid) => {
-    const d = await store.getUserData(uid);
-    if (d) {
-      d.foodLog && setFoodLog(d.foodLog);
-      d.habits && setHabits(d.habits);
-      d.habitLog && setHabitLog(d.habitLog);
-      d.tasks && setTasks(d.tasks);
-      d.journal && setJournal(d.journal);
-      d.finances && setFinances(d.finances);
-      d.profile && setProfile(d.profile);
-      d.chatHistory && setChatHistory(d.chatHistory);
-      d.workoutLog && setWorkoutLog(d.workoutLog);
-      d.pillarProg && setPillarProg(d.pillarProg);
-      d.activityLog && setActivityLog(d.activityLog);
-      d.focusLog && setFocusLog(d.focusLog);
-      d.routineData && setRoutineData(d.routineData);
-      d.masteryData && setMasteryData(d.masteryData);
-      d.bodyData && setBodyData(d.bodyData);
-      d.challengeData && setChallengeData(d.challengeData);
-      d.programData && setProgramData(d.programData);
-      d.freezeData && setFreezeData(d.freezeData);
-      d.programState && setProgramState(d.programState);
-      if (d.totalXP !== undefined) setTotalXP(d.totalXP);
-      if (d.streak !== undefined) setStreak(d.streak);
-      if (d.lastCheck) setLastCheck(d.lastCheck);
-      // Show tutorial for first-time users
-      if (!d.tutorialDone) setShowTutorial(true);
-    } else {
-      // Brand new user — show tutorial
-      setShowTutorial(true);
-    }
+    try {
+      const d = await store.getUserData(uid);
+      if (d) {
+        d.foodLog && setFoodLog(d.foodLog);
+        d.habits && setHabits(d.habits);
+        d.habitLog && setHabitLog(d.habitLog);
+        d.tasks && setTasks(d.tasks);
+        d.journal && setJournal(d.journal);
+        d.finances && setFinances(d.finances);
+        d.profile && setProfile(d.profile);
+        d.chatHistory && setChatHistory(d.chatHistory);
+        d.workoutLog && setWorkoutLog(d.workoutLog);
+        d.pillarProg && setPillarProg(d.pillarProg);
+        d.activityLog && setActivityLog(d.activityLog);
+        d.focusLog && setFocusLog(d.focusLog);
+        d.routineData && setRoutineData(d.routineData);
+        d.masteryData && setMasteryData(d.masteryData);
+        d.bodyData && setBodyData(d.bodyData);
+        d.challengeData && setChallengeData(d.challengeData);
+        d.programData && setProgramData(d.programData);
+        d.freezeData && setFreezeData(d.freezeData);
+        d.programState && setProgramState(d.programState);
+        d.xpLog && setXpLog(d.xpLog);
+        d.loginData && setLoginData(d.loginData);
+        d.activeTitle && setActiveTitle(d.activeTitle);
+        d.questChainData && setQuestChainData(d.questChainData);
+        if (d.totalXP !== undefined) setTotalXP(d.totalXP);
+        if (d.streak !== undefined) setStreak(d.streak);
+        if (d.lastCheck) setLastCheck(d.lastCheck);
+        // Show tutorial for first-time users
+        if (!d.tutorialDone) setShowTutorial(true);
+      } else {
+        // Brand new user — show tutorial
+        setShowTutorial(true);
+      }
+    } catch (e) { console.error("Load error:", e); setShowTutorial(true); }
   };
 
   // Save to Firestore (debounced)
   const saveData = useCallback(async () => {
     if (!user) return;
-    await store.saveUserData(user.uid, {
-      foodLog, habits, habitLog, tasks, journal, finances, profile,
-      chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
-      activityLog, focusLog, routineData, masteryData, bodyData,
-      challengeData, programData, freezeData, programState,
-      email: user.email,
-      lastSaved: new Date().toISOString(),
-    });
+    try {
+      await store.saveUserData(user.uid, {
+        foodLog, habits, habitLog, tasks, journal, finances, profile,
+        chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
+        activityLog, focusLog, routineData, masteryData, bodyData,
+        challengeData, programData, freezeData, programState,
+        xpLog, loginData, activeTitle, questChainData,
+        email: user.email,
+        lastSaved: new Date().toISOString(),
+      });
+    } catch (e) { console.error("Save error:", e); }
   }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile,
     chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
     activityLog, focusLog, routineData, masteryData, bodyData,
-    challengeData, programData, freezeData, programState]);
+    challengeData, programData, freezeData, programState,
+    xpLog, loginData, activeTitle, questChainData]);
 
   // Debounced auto-save
   useEffect(() => {
@@ -192,12 +231,15 @@ export default function App() {
         setTimeout(() => setXpEvents(p => p.filter(e => e.id !== id)), 2500);
       }
     }
-    let s = 0; const dt2 = new Date(); dt2.setDate(dt2.getDate() - 1);
-    for (let i = 0; i < 365; i++) {
-      const ds = dt2.toISOString().split("T")[0];
-      if (workoutLog[ds] || isDayFrozen(freezeData, ds)) { s++; dt2.setDate(dt2.getDate() - 1); } else break;
-    }
-    setStreak(s); setLastCheck(d);
+    try {
+      let s = 0; const dt2 = new Date(); dt2.setDate(dt2.getDate() - 1);
+      for (let i = 0; i < 365; i++) {
+        const ds = dt2.toISOString().split("T")[0];
+        if ((workoutLog || {})[ds] || isDayFrozen(freezeData, ds)) { s++; dt2.setDate(dt2.getDate() - 1); } else break;
+      }
+      setStreak(s);
+    } catch (e) { console.error("Streak calc error:", e); }
+    setLastCheck(d);
   }, [user, habitLog, lastCheck]);
 
   // Add XP with streak multiplier + confetti
@@ -216,6 +258,8 @@ export default function App() {
           playLevelUp();
         }, 300);
       }
+      // Check milestones
+      try { const ms = checkMilestone(prev, nxp); if (ms) setTimeout(() => setMilestone(ms), 800); } catch { }
       return nxp;
     });
     const id = Date.now() + Math.random();
@@ -223,23 +267,29 @@ export default function App() {
     setTimeout(() => setXpEvents(p => p.filter(e => e.id !== id)), 1600);
     logActivity("xp", `+${actual} XP: ${reason}`);
     playXP();
+    // Log XP source for breakdown
+    try {
+      const xpDate = today();
+      const xpCat = (reason || "").includes("Workout") || (reason || "").includes("Training") ? "Training" : (reason || "").includes("Food") || (reason || "").includes("Nutrition") ? "Nutrition" : (reason || "").includes("Quest") || (reason || "").includes("Habit") ? "Quest" : (reason || "").includes("Focus") ? "Focus" : (reason || "").includes("Journal") || (reason || "").includes("Mood") ? "Wellness" : (reason || "").includes("Login") ? "Login" : (reason || "").includes("Combo") ? "Combo" : (reason || "").includes("Challenge") ? "Challenge" : "Other";
+      setXpLog(prev => ({ ...(prev || {}), [xpDate]: [...((prev || {})[xpDate] || []), { amount: actual, category: xpCat, reason: reason || "", time: Date.now() }] }));
+    } catch (e) { console.error("XP log error:", e); }
   }, [streak]);
 
   // Logout
   const logout = async () => {
-    await saveData();
-    await signOut(auth);
+    try { await saveData(); } catch { }
+    try { await signOut(auth); } catch { }
     setUser(null); setFoodLog({}); setHabits(DEFAULT_HABITS); setHabitLog({});
     setTasks([]); setJournal({}); setFinances([]); setProfile({});
     setChatHistory([]); setTotalXP(0); setWorkoutLog({}); setStreak(0);
     setPillarProg({}); setActivityLog([]); setFocusLog({}); setRoutineData(null);
-    setMasteryData(null); setBodyData(null); setChallengeData(null); setProgramData(null); setFreezeData(null);
+    setMasteryData(null); setBodyData(null); setXpLog({}); setLoginData({}); setActiveTitle(null); setQuestChainData({}); setChallengeData(null); setProgramData(null); setFreezeData(null);
   };
 
   // AI action handler
   const handleAI = (a) => {
     if (!a) return;
-    try {
+    try { /* safe parse */
       const x = typeof a === "string" ? JSON.parse(a) : a;
       if (x.type === "add_task") setTasks(p => [...p, { id: Date.now(), text: x.text, done: false, priority: x.priority || "medium", created: today() }]);
       if (x.type === "add_habit") setHabits(p => [...p, { id: `h${Date.now()}`, name: x.name, icon: x.icon || "⭐", pillar: x.pillar || "power" }]);
@@ -287,7 +337,7 @@ export default function App() {
     await store.saveUserData(user.uid, { tutorialDone: true });
   };
 
-  const appState = { foodLog, habits, habitLog, tasks, journal, finances, profile, user, pillarProg, focusLog, workoutLog, oracleChats: chatHistory, routineData, masteryData, bodyData, challengeData, freezeData, programState };
+  const appState = { foodLog: foodLog || {}, habits: habits || [], habitLog: habitLog || {}, tasks: tasks || [], journal: journal || {}, finances: finances || [], profile: profile || {}, user, pillarProg: pillarProg || {}, focusLog: focusLog || {}, workoutLog: workoutLog || {}, oracleChats: chatHistory || [], routineData, masteryData, bodyData, challengeData, freezeData, programState: programState || {}, xpLog: xpLog || {}, loginData: loginData || {}, activeTitle, questChainData: questChainData || {} };
 
   const pages = {
     dashboard: <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} foodLog={foodLog} focusLog={focusLog} habitLog={habitLog} freezeData={freezeData} setFreezeData={setFreezeData} addXP={addXP} />,
@@ -306,6 +356,7 @@ export default function App() {
     challenges: <ChallengesPage challengeData={challengeData} setChallengeData={setChallengeData} addXP={addXP} />,
     share: <ShareCard totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} />,
     social: <SocialPage user={user} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />,
+    gaming: <GamingHub appState={appState} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} profile={profile} loginData={loginData} setLoginData={setLoginData} xpLog={xpLog} activeTitle={activeTitle} setActiveTitle={setActiveTitle} questChainData={questChainData} setQuestChainData={setQuestChainData} />,
     programs: <WorkoutPrograms programData={programData} setProgramData={setProgramData} addXP={addXP} />,
   };
 
@@ -316,6 +367,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <XPToast xpEvents={xpEvents} />
+      <MilestoneOverlay milestone={milestone} onClose={() => setMilestone(null)} />
       {levelUp && <LevelUpOverlay level={levelUp.level} rank={levelUp.rank} onClose={() => setLevelUp(null)} />}
       {showTutorial && <OnboardingTutorial onComplete={handleTutorialComplete} />}
 
