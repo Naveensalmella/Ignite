@@ -1,246 +1,315 @@
-import { useState, useMemo } from 'react';
-import { XP } from '../data';
+import { useState, useEffect, useMemo } from 'react';
 import { today } from '../utils';
-import HistoryPanel from './HistoryPanel';
-import { formatWellnessHistory } from '../historyFormatters';
 
 const MOODS = [
-  { val: 1, emoji: "😫", label: "Burned Out", color: "#ef4444" },
-  { val: 2, emoji: "😔", label: "Low Flame", color: "#f97316" },
-  { val: 3, emoji: "😐", label: "Steady", color: "#f59e0b" },
-  { val: 4, emoji: "🙂", label: "Blazing", color: "#22c55e" },
-  { val: 5, emoji: "😄", label: "On Fire", color: "#10b981" },
+  { emoji: "😄", label: "Great", color: "#22c55e", value: 5 },
+  { emoji: "🙂", label: "Good", color: "#10b981", value: 4 },
+  { emoji: "😐", label: "Okay", color: "#f59e0b", value: 3 },
+  { emoji: "😔", label: "Low", color: "#f97316", value: 2 },
+  { emoji: "😢", label: "Bad", color: "#ef4444", value: 1 },
 ];
 
-const PROMPTS = [
-  "What challenged you today and how did you handle it?",
-  "What are you most proud of right now?",
-  "What would make tomorrow even better?",
-  "What lesson did today teach you?",
-  "Describe a moment today that made you feel alive.",
-  "What fear are you ready to face?",
-  "What habit is serving you well? What isn't?",
-  "Write about someone who inspires you and why.",
-  "What would you tell your past self from 1 year ago?",
-  "What does your ideal day look like?",
-];
+const SLEEP_QUALITY = ["😴 Deep", "🙂 Good", "😐 Fair", "😟 Poor", "😩 Awful"];
 
-function MiniRing({ pct, color, size = 52, stroke = 5, children }) {
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  return (
-    <div style={{ position: "relative", width: size, height: size }}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
-          strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))}
-          strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} />
-      </svg>
-      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div>
-    </div>
-  );
-}
+function Ring({ pct, color, size = 56, stroke = 5, children }) { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
-export default function Wellness({ journal, setJournal, addXP }) {
+export default function Wellness({ journal = {}, setJournal = () => { }, addXP = () => { } }) {
   const d = today();
-  const entry = journal[d] || { mood: 0, entry: "", gratitude: ["", "", ""], mL: false, jL: false, gL: false };
-  const [showHistory, setShowHistory] = useState(false);
-  const [showPrompts, setShowPrompts] = useState(false);
-  const [historyDate, setHistoryDate] = useState(null);
+  const [tab, setTab] = useState("today");
+  const todayData = journal[d] || {};
 
-  const todayPrompt = useMemo(() => {
-    const idx = new Date().getDate() % PROMPTS.length;
-    return PROMPTS[idx];
-  }, []);
+  // Sleep state
+  const [sleepHours, setSleepHours] = useState(todayData.sleepHours || "");
+  const [sleepQuality, setSleepQuality] = useState(todayData.sleepQuality || "");
+  const [bedTime, setBedTime] = useState(todayData.bedTime || "");
+  const [wakeTime, setWakeTime] = useState(todayData.wakeTime || "");
 
-  const update = (field, value) => {
-    const prev = entry;
-    const next = { ...entry, [field]: value };
-    if (field === "mood" && !prev.mL) { next.mL = true; addXP(XP.mood, "Mood check-in"); }
-    if (field === "entry" && value.length > 20 && !prev.jL) { next.jL = true; addXP(XP.journal, "Journal entry"); }
-    if (field === "gratitude") {
-      const filled = value.filter(g => g.trim().length > 0).length;
-      if (filled >= 3 && !prev.gL) { next.gL = true; addXP(XP.gratitude, "Gratitude practice"); }
-    }
-    setJournal(p => ({ ...p, [d]: next }));
+  // Mood
+  const [mood, setMood] = useState(todayData.mood || "");
+
+  // Journal
+  const [entry, setEntry] = useState(todayData.entry || "");
+  const [gratitude, setGratitude] = useState(todayData.gratitude || ["", "", ""]);
+
+  // Meditation
+  const [medActive, setMedActive] = useState(false);
+  const [medTime, setMedTime] = useState(0);
+  const [medTarget, setMedTarget] = useState(300);
+  const [breathPhase, setBreathPhase] = useState("Inhale");
+
+  // Auto-save
+  const save = (updates = {}) => {
+    const data = { ...todayData, sleepHours: parseFloat(sleepHours) || 0, sleepQuality, bedTime, wakeTime, mood, entry, gratitude, ...updates };
+    setJournal(prev => ({ ...prev, [d]: data }));
   };
 
-  const updateGratitude = (idx, val) => {
-    const g = [...(entry.gratitude || ["", "", ""])];
-    g[idx] = val;
-    update("gratitude", g);
-  };
+  // Meditation timer
+  useEffect(() => {
+    if (!medActive) return;
+    const interval = setInterval(() => {
+      setMedTime(prev => {
+        if (prev + 1 >= medTarget) { setMedActive(false); addXP(15, "Meditation session"); save({ meditationMin: Math.round(medTarget / 60) }); return 0; }
+        return prev + 1;
+      });
+    }, 1000);
+    // Breathing cycle (4-7-8)
+    const breathInterval = setInterval(() => {
+      setBreathPhase(prev => prev === "Inhale" ? "Hold" : prev === "Hold" ? "Exhale" : "Inhale");
+    }, 4000);
+    return () => { clearInterval(interval); clearInterval(breathInterval); };
+  }, [medActive, medTarget]);
 
-  // Mood chart data (last 14 days)
-  const moodData = useMemo(() => {
+  // Wellness score
+  const wellnessScore = useMemo(() => {
+    let score = 0, max = 0;
+    if (todayData.mood) { score += MOODS.find(m => m.emoji === todayData.mood)?.value || 0; max += 5; }
+    if (todayData.sleepHours) { const h = parseFloat(todayData.sleepHours); score += h >= 7 ? 5 : h >= 6 ? 3 : 1; max += 5; }
+    if (todayData.entry?.length > 10) { score += 3; max += 3; }
+    if (todayData.gratitude?.filter(g => g.length > 0).length >= 2) { score += 2; max += 2; }
+    if (todayData.meditationMin) { score += 3; max += 3; }
+    return max > 0 ? Math.round((score / max) * 100) : 0;
+  }, [todayData]);
+
+  // 14-day mood history
+  const moodHistory = useMemo(() => {
     const days = [];
     for (let i = 13; i >= 0; i--) {
       const dt = new Date(); dt.setDate(dt.getDate() - i);
       const ds = dt.toISOString().split("T")[0];
-      const e = journal[ds];
-      const label = dt.toLocaleDateString('en', { weekday: 'narrow' });
-      const dayNum = dt.getDate();
-      days.push({ date: ds, mood: e?.mood || 0, label, dayNum, isToday: ds === d });
+      const jd = journal[ds] || {};
+      const moodVal = MOODS.find(m => m.emoji === jd.mood)?.value || 0;
+      days.push({ date: ds, label: dt.toLocaleDateString("en", { weekday: "narrow" }), day: dt.getDate(), mood: jd.mood, value: moodVal, sleep: jd.sleepHours || 0, isToday: ds === d });
     }
     return days;
   }, [journal, d]);
 
-  const avgMood = useMemo(() => {
-    const withMood = moodData.filter(d => d.mood > 0);
-    if (withMood.length === 0) return 0;
-    return Math.round(withMood.reduce((s, d) => s + d.mood, 0) / withMood.length * 10) / 10;
-  }, [moodData]);
-
-  // Journal streak
-  const journalStreak = useMemo(() => {
-    let s = 0;
-    const dt = new Date(); dt.setDate(dt.getDate() - 1);
-    for (let i = 0; i < 365; i++) {
+  // 7-day sleep history
+  const sleepHistory = useMemo(() => {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const dt = new Date(); dt.setDate(dt.getDate() - i);
       const ds = dt.toISOString().split("T")[0];
-      if (journal[ds]?.entry?.length > 10) { s++; dt.setDate(dt.getDate() - 1); }
-      else break;
+      const jd = journal[ds] || {};
+      days.push({ date: ds, label: dt.toLocaleDateString("en", { weekday: "narrow" }), hours: parseFloat(jd.sleepHours) || 0, quality: jd.sleepQuality || "", isToday: ds === d });
     }
-    if (entry.entry?.length > 10) s++;
-    return s;
-  }, [journal, entry]);
+    return days;
+  }, [journal, d]);
 
-  // History dates
-  const historyDates = Object.keys(journal)
-    .filter(k => k !== d && journal[k]?.mood > 0)
-    .sort((a, b) => b.localeCompare(a));
-
-  // Daily wellness score
-  const wellnessScore = useMemo(() => {
-    let score = 0;
-    if (entry.mood > 0) score += 33;
-    if (entry.entry?.length > 20) score += 34;
-    if (entry.gratitude?.filter(g => g.trim()).length >= 3) score += 33;
-    return score;
-  }, [entry]);
+  const fmtMedTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
-    <div>
-      {/* ══ DAILY WELLNESS STATUS ══ */}
-      <div className="gs" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-        <MiniRing pct={wellnessScore} color={wellnessScore >= 80 ? "#22c55e" : wellnessScore >= 40 ? "#f59e0b" : "#6b7280"} size={80} stroke={6}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 22, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", lineHeight: 1 }}>{wellnessScore}%</div>
-          </div>
-        </MiniRing>
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Wellness Check-in</div>
-          <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 100, background: entry.mood > 0 ? "rgba(34,197,94,.1)" : "rgba(255,255,255,.03)", color: entry.mood > 0 ? "#22c55e" : "#6b7280" }}>
-              {entry.mood > 0 ? "✓" : "○"} Mood
-            </span>
-            <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 100, background: entry.entry?.length > 20 ? "rgba(34,197,94,.1)" : "rgba(255,255,255,.03)", color: entry.entry?.length > 20 ? "#22c55e" : "#6b7280" }}>
-              {entry.entry?.length > 20 ? "✓" : "○"} Journal
-            </span>
-            <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 100, background: entry.gratitude?.filter(g => g.trim()).length >= 3 ? "rgba(34,197,94,.1)" : "rgba(255,255,255,.03)", color: entry.gratitude?.filter(g => g.trim()).length >= 3 ? "#22c55e" : "#6b7280" }}>
-              {entry.gratitude?.filter(g => g.trim()).length >= 3 ? "✓" : "○"} Gratitude
-            </span>
-          </div>
-          {journalStreak > 0 && <div style={{ fontSize: 11, color: "#f97316", marginTop: 4 }}>🔥 {journalStreak} day journal streak</div>}
-        </div>
-      </div>
-
-      {/* ══ MOOD PICKER ══ */}
-      <div className="gs" style={{ marginBottom: 16 }}>
-        <div className="sl">How are you feeling?</div>
-        <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 12 }}>
-          {MOODS.map(m => (
-            <div key={m.val} onClick={() => update("mood", m.val)}
-              style={{
-                textAlign: "center", cursor: "pointer", padding: "8px 12px", borderRadius: 10, transition: "all .25s",
-                background: entry.mood === m.val ? `${m.color}15` : "transparent",
-                border: entry.mood === m.val ? `1px solid ${m.color}40` : "1px solid transparent",
-                transform: entry.mood === m.val ? "scale(1.1)" : "scale(1)",
-              }}>
-              <div style={{ fontSize: entry.mood === m.val ? 36 : 28, transition: "font-size .2s", filter: entry.mood === m.val ? "none" : "grayscale(.5) opacity(.4)" }}>{m.emoji}</div>
-              <div style={{ fontSize: 10, color: entry.mood === m.val ? m.color : "#4b5563", marginTop: 4, fontWeight: entry.mood === m.val ? 600 : 400 }}>{m.label}</div>
-            </div>
-          ))}
-        </div>
-        {entry.mood > 0 && (
-          <div style={{ textAlign: "center", fontSize: 13, color: MOODS[entry.mood - 1].color, fontWeight: 600 }}>
-            {MOODS[entry.mood - 1].label} {entry.mL ? "" : `· +${XP.mood} XP`}
-          </div>
-        )}
-      </div>
-
-      {/* ══ MOOD CHART (14 days) ══ */}
-      <div className="gs" style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <div className="sl" style={{ margin: 0 }}>Mood Trend · 14 Days</div>
-          {avgMood > 0 && <span style={{ fontSize: 12, color: MOODS[Math.round(avgMood) - 1]?.color || "#6b7280", fontWeight: 600 }}>Avg: {avgMood}</span>}
-        </div>
-        <div style={{ display: "flex", alignItems: "end", gap: 3, height: 80 }}>
-          {moodData.map((day, i) => (
-            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <div style={{
-                width: "100%", maxWidth: 24, borderRadius: 4,
-                height: day.mood > 0 ? `${(day.mood / 5) * 60}px` : 4,
-                background: day.mood > 0 ? MOODS[day.mood - 1].color : "rgba(255,255,255,.06)",
-                transition: "height .5s",
-                opacity: day.isToday ? 1 : 0.7,
-              }} />
-              <div style={{ fontSize: 8, color: day.isToday ? "#10b981" : "#4b5563", fontWeight: day.isToday ? 700 : 400 }}>
-                {day.dayNum}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: "#4b5563" }}>
-          <span>2 weeks ago</span>
-          <span>Today</span>
-        </div>
-      </div>
-
-      {/* ══ GRATITUDE ══ */}
-      <div className="gs" style={{ marginBottom: 16 }}>
-        <div className="sl">🙏 Gratitude · 3 Things <span style={{ color: "#fbbf24", fontWeight: 400 }}>+{XP.gratitude} XP</span></div>
-        {[0, 1, 2].map(i => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-            <span style={{
-              width: 24, height: 24, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 12, fontWeight: 700, fontFamily: "Rajdhani,sans-serif", flexShrink: 0,
-              background: (entry.gratitude?.[i] || "").trim() ? "rgba(16,185,129,.1)" : "rgba(255,255,255,.03)",
-              color: (entry.gratitude?.[i] || "").trim() ? "#10b981" : "#4b5563",
-            }}>{i + 1}</span>
-            <input className="inp" placeholder={["I'm grateful for...", "Something good today...", "A person, moment, or thing..."][i]}
-              value={entry.gratitude?.[i] || ""}
-              onChange={e => updateGratitude(i, e.target.value)}
-              style={{ flex: 1 }} />
-          </div>
+    <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto" }}>
+        {[["today", "💛 Today"], ["sleep", "😴 Sleep"], ["meditate", "🧘 Meditate"], ["trends", "📊 Trends"]].map(([k, l]) => (
+          <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => setTab(k)} style={{ flexShrink: 0, fontSize: 12 }}>{l}</span>
         ))}
       </div>
 
-      {/* ══ JOURNAL ══ */}
-      <div className="gs" style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <div className="sl" style={{ margin: 0 }}>📝 Battle Journal <span style={{ color: "#fbbf24", fontWeight: 400 }}>+{XP.journal} XP</span></div>
-          <span onClick={() => setShowPrompts(!showPrompts)}
-            style={{ fontSize: 11, color: "#10b981", cursor: "pointer" }}>
-            {showPrompts ? "Hide prompts" : "Need a prompt?"}
-          </span>
-        </div>
-        {showPrompts && (
-          <div className="fade-in" style={{ marginBottom: 10, padding: 10, background: "rgba(16,185,129,.04)", borderRadius: 8, border: "1px solid rgba(16,185,129,.1)" }}>
-            <div style={{ fontSize: 13, color: "#10b981", fontWeight: 600, marginBottom: 4 }}>Today's prompt:</div>
-            <div style={{ fontSize: 14, color: "#d1d5db", fontStyle: "italic" }}>{todayPrompt}</div>
+      {/* ══ TODAY TAB ══ */}
+      {tab === "today" && (
+        <div>
+          {/* Wellness Score */}
+          <div className="gs" style={{ marginBottom: 14, padding: 14, display: "flex", alignItems: "center", gap: 14 }}>
+            <Ring pct={wellnessScore} color={wellnessScore >= 70 ? "#22c55e" : wellnessScore >= 40 ? "#f59e0b" : "#ef4444"} size={64} stroke={6}>
+              <span style={{ fontSize: 18, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{wellnessScore}</span>
+            </Ring>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Wellness Score</div>
+              <div style={{ fontSize: 11, color: "#6b7280" }}>{wellnessScore >= 70 ? "You're doing great today!" : wellnessScore >= 40 ? "Log more to boost your score" : "Start by tracking your mood"}</div>
+            </div>
           </div>
-        )}
-        <textarea className="inp" placeholder="Write about your day, battles, victories, thoughts..."
-          value={entry.entry || ""} onChange={e => update("entry", e.target.value)}
-          style={{ minHeight: 140, resize: "vertical", lineHeight: 1.7 }} />
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 11, color: "#4b5563" }}>
-          <span>{(entry.entry || "").length} characters</span>
-          <span>{(entry.entry || "").split(/\s+/).filter(w => w).length} words</span>
-        </div>
-      </div>
 
-      {/* ══ HISTORY ══ */}
-      <HistoryPanel entries={formatWellnessHistory(journal)} title="Wellness History" emptyText="Log your mood or write in your journal to see history" />
+          {/* Mood */}
+          <div className="gs" style={{ marginBottom: 12, padding: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 10 }}>How are you feeling?</div>
+            <div style={{ display: "flex", justifyContent: "space-around" }}>
+              {MOODS.map(m => (
+                <div key={m.emoji} onClick={() => { setMood(m.emoji); save({ mood: m.emoji }); if (!todayData.mood) addXP(5, "Mood logged"); }}
+                  style={{ textAlign: "center", cursor: "pointer", padding: "8px 6px", borderRadius: 12, background: mood === m.emoji ? `${m.color}15` : "transparent", border: mood === m.emoji ? `1px solid ${m.color}30` : "1px solid transparent", transition: "all .2s" }}>
+                  <div style={{ fontSize: 28 }}>{m.emoji}</div>
+                  <div style={{ fontSize: 10, color: mood === m.emoji ? m.color : "#6b7280", marginTop: 4 }}>{m.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Sleep Log */}
+          <div className="gs" style={{ marginBottom: 12, padding: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>😴 Last night's sleep</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input className="inp" type="number" step="0.5" min="0" max="14" placeholder="Hours" value={sleepHours} onChange={e => setSleepHours(e.target.value)} onBlur={() => { save(); if (!todayData.sleepHours && sleepHours) addXP(5, "Sleep logged"); }} style={{ flex: 1 }} />
+              <select className="inp" value={sleepQuality} onChange={e => { setSleepQuality(e.target.value); save({ sleepQuality: e.target.value }); }} style={{ flex: 1 }}>
+                <option value="">Quality</option>
+                {SLEEP_QUALITY.map(q => <option key={q} value={q}>{q}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Journal */}
+          <div className="gs" style={{ marginBottom: 12, padding: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>📝 Journal</div>
+            <textarea className="inp" rows={3} placeholder="How was your day? What's on your mind?" value={entry} onChange={e => setEntry(e.target.value)} onBlur={() => { save(); if (!todayData.entry && entry.length > 10) addXP(10, "Journal entry"); }} style={{ width: "100%", resize: "none" }} />
+          </div>
+
+          {/* Gratitude */}
+          <div className="gs" style={{ padding: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>🙏 3 Things I'm Grateful For</div>
+            {[0, 1, 2].map(i => (
+              <input key={i} className="inp" placeholder={`${i + 1}. I'm grateful for...`} value={gratitude[i]} onChange={e => { const g = [...gratitude]; g[i] = e.target.value; setGratitude(g); }} onBlur={() => save()} style={{ marginBottom: 6, width: "100%" }} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ══ SLEEP TAB ══ */}
+      {tab === "sleep" && (
+        <div>
+          <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>😴 Sleep Tracker</div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Bed Time</div>
+                <input className="inp" type="time" value={bedTime} onChange={e => setBedTime(e.target.value)} onBlur={() => save()} style={{ width: "100%" }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Wake Time</div>
+                <input className="inp" type="time" value={wakeTime} onChange={e => setWakeTime(e.target.value)} onBlur={() => save()} style={{ width: "100%" }} />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Hours Slept</div>
+                <input className="inp" type="number" step="0.5" min="0" max="14" value={sleepHours} onChange={e => setSleepHours(e.target.value)} onBlur={() => save()} style={{ width: "100%" }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Quality</div>
+                <select className="inp" value={sleepQuality} onChange={e => { setSleepQuality(e.target.value); save({ sleepQuality: e.target.value }); }} style={{ width: "100%" }}>
+                  <option value="">Select</option>
+                  {SLEEP_QUALITY.map(q => <option key={q} value={q}>{q}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* 7-day sleep chart */}
+          <div className="gs" style={{ padding: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>📊 Sleep This Week</div>
+            <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 80, marginBottom: 8 }}>
+              {sleepHistory.map((day, i) => (
+                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div style={{ fontSize: 9, color: day.hours >= 7 ? "#22c55e" : day.hours >= 5 ? "#f59e0b" : "#ef4444", fontWeight: 600, marginBottom: 2 }}>{day.hours > 0 ? `${day.hours}h` : ""}</div>
+                  <div style={{ width: "100%", background: day.hours >= 7 ? "#22c55e" : day.hours >= 5 ? "rgba(245,158,11,.4)" : day.hours > 0 ? "rgba(239,68,68,.3)" : "rgba(255,255,255,.03)", borderRadius: "4px 4px 0 0", height: `${Math.max(4, (day.hours / 10) * 65)}px`, transition: "height .5s" }} />
+                  <div style={{ fontSize: 10, color: day.isToday ? "#10b981" : "#6b7280", marginTop: 4, fontWeight: day.isToday ? 700 : 400 }}>{day.label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#4b5563" }}>
+              <span>Target: 7-8 hours</span>
+              <span>Avg: {(sleepHistory.reduce((s, d) => s + d.hours, 0) / Math.max(1, sleepHistory.filter(d => d.hours > 0).length)).toFixed(1)}h</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ MEDITATE TAB ══ */}
+      {tab === "meditate" && (
+        <div>
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
+            {/* Breathing circle */}
+            <div style={{ width: 180, height: 180, borderRadius: "50%", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", background: `radial-gradient(circle, ${medActive ? "rgba(139,92,246,.08)" : "rgba(16,185,129,.04)"} 0%, transparent 70%)`, border: `2px solid ${medActive ? "rgba(139,92,246,.2)" : "rgba(255,255,255,.06)"}`, transition: "all 1s", transform: medActive ? (breathPhase === "Inhale" ? "scale(1.15)" : breathPhase === "Hold" ? "scale(1.15)" : "scale(0.9)") : "scale(1)" }}>
+              <div style={{ textAlign: "center" }}>
+                {medActive ? (
+                  <>
+                    <div style={{ fontSize: 36, fontWeight: 900, color: "#8b5cf6", fontFamily: "Rajdhani,sans-serif" }}>{fmtMedTime(medTime)}</div>
+                    <div style={{ fontSize: 14, color: "#8b5cf6", fontWeight: 600, marginTop: 4 }}>{breathPhase}</div>
+                    <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{breathPhase === "Inhale" ? "Breathe in..." : breathPhase === "Hold" ? "Hold..." : "Breathe out..."}</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 36 }}>🧘</div>
+                    <div style={{ fontSize: 14, color: "#8b5cf6", fontWeight: 600, marginTop: 4 }}>Meditation</div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {!medActive ? (
+              <div>
+                <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 12 }}>Choose duration</div>
+                <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 16 }}>
+                  {[3, 5, 10, 15, 20].map(min => (
+                    <span key={min} className={`chip ${medTarget === min * 60 ? "chip-a" : "chip-i"}`} onClick={() => setMedTarget(min * 60)} style={{ padding: "10px 18px" }}>{min} min</span>
+                  ))}
+                </div>
+                <button className="bp" onClick={() => { setMedActive(true); setMedTime(0); }} style={{ padding: "14px 40px", fontSize: 16 }}>🧘 Start Meditation</button>
+              </div>
+            ) : (
+              <div>
+                <div style={{ height: 6, background: "rgba(255,255,255,.04)", borderRadius: 3, margin: "0 40px 16px", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${(medTime / medTarget) * 100}%`, background: "linear-gradient(90deg,#8b5cf6,#06b6d4)", borderRadius: 3, transition: "width 1s" }} />
+                </div>
+                <button className="bg" onClick={() => { setMedActive(false); if (medTime >= 60) { addXP(10, "Meditation session"); save({ meditationMin: Math.round(medTime / 60) }); } }} style={{ padding: "12px 32px" }}>⏹ End Session</button>
+              </div>
+            )}
+          </div>
+
+          {/* Meditation tips */}
+          <div className="gs" style={{ padding: 14, marginTop: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>💡 Breathing Guide (4-7-8)</div>
+            <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.8 }}>
+              Inhale through nose for 4 seconds. Hold for 7 seconds. Exhale through mouth for 8 seconds. This activates your parasympathetic nervous system and reduces stress.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ TRENDS TAB ══ */}
+      {tab === "trends" && (
+        <div>
+          {/* 14-day mood chart */}
+          <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>😊 Mood Trend (14 Days)</div>
+            <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 70 }}>
+              {moodHistory.map((day, i) => {
+                const moodObj = MOODS.find(m => m.emoji === day.mood);
+                return (
+                  <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <div style={{ fontSize: 12, marginBottom: 2 }}>{day.mood || ""}</div>
+                    <div style={{ width: "100%", background: moodObj ? `${moodObj.color}40` : "rgba(255,255,255,.03)", borderRadius: "4px 4px 0 0", height: `${Math.max(4, day.value * 12)}px`, transition: "height .5s" }} />
+                    <div style={{ fontSize: 7, color: day.isToday ? "#10b981" : "#4b5563", marginTop: 2 }}>{day.day}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#4b5563", marginTop: 6 }}>
+              <span>Avg: {(moodHistory.reduce((s, d) => s + d.value, 0) / Math.max(1, moodHistory.filter(d => d.value > 0).length)).toFixed(1)}/5</span>
+              <span>Logged: {moodHistory.filter(d => d.value > 0).length}/14 days</span>
+            </div>
+          </div>
+
+          {/* Mood vs Sleep correlation */}
+          <div className="gs" style={{ padding: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>😴 Sleep vs Mood</div>
+            {moodHistory.filter(d => d.value > 0 && d.sleep > 0).length < 3 ? (
+              <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 12 }}>Log mood + sleep for 3+ days to see correlation</div>
+            ) : (
+              <div>
+                {moodHistory.filter(d => d.value > 0).slice(-7).map((day, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
+                    <span style={{ fontSize: 10, color: "#6b7280", width: 24 }}>{day.day}</span>
+                    <span style={{ fontSize: 16 }}>{day.mood}</span>
+                    <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,.04)", borderRadius: 2, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${(day.sleep / 10) * 100}%`, background: day.sleep >= 7 ? "#22c55e" : "#f59e0b", borderRadius: 2 }} />
+                    </div>
+                    <span style={{ fontSize: 10, color: "#6b7280", width: 28 }}>{day.sleep}h</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

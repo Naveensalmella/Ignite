@@ -222,7 +222,7 @@ const GROWTH_DATA = {
 
 function Ring({ pct, color, size = 60, stroke = 5, children }) { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
-export default function GrowthPage({ pillarProg, setPillarProg }) {
+export default function GrowthPage({ pillarProg = {}, setPillarProg = () => { } }) {
   const [selPillar, setSelPillar] = useState("mind");
   const pp = pillarProg || {};
 
