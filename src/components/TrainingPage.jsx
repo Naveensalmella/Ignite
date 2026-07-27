@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { today } from '@/utils';
-import MuscleMap, { getMusclesForExercise } from '@/components/MuscleMap';
-import { getFormTip, getSwapOptions, WARMUP, COOLDOWN } from '@/data/exerciseMeta';
-import { GYM_PROGRAMS, COMBAT_PROGRAMS, getTodayWorkout } from '@/data/trainingPrograms';
-import { FITNESS_PROGRAMS, PROGRAM_TAGS, getRecommendedPrograms, adjustForProfile } from '@/data/fitnessPrograms';
+import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
+import MuscleMap, { getMusclesForExercise } from './MuscleMap';
+import { getFormTip, getSwapOptions, WARMUP, COOLDOWN } from '../data/exerciseMeta';
+import { GYM_PROGRAMS, COMBAT_PROGRAMS, getTodayWorkout } from '../data/trainingPrograms';
+import { FITNESS_PROGRAMS, PROGRAM_TAGS, getRecommendedPrograms, adjustForProfile } from '../data/fitnessPrograms';
 
 // ── YouTube Map ──
 const YT = {
@@ -841,7 +842,7 @@ export default function TrainingPage({ totalXP = 0, addXP = () => { }, workoutLo
             {[["⏱", `${Math.floor(workoutDone.duration / 60)}m ${workoutDone.duration % 60}s`, "Duration"], ["🔥", `${workoutDone.calBurned}`, "Calories"], ["💪", `${workoutDone.totalSets}`, "Sets"], ["🔄", `${workoutDone.totalReps}`, "Reps"], ["⚡", `+${workoutDone.xpEarned}`, "XP"], ["🏋️", workoutDone.maxWeight > 0 ? workoutDone.maxWeight + "kg" : "—", "Max Weight"]].map(([ic, v, l]) => (
               <div key={l} className="gc" style={{ padding: 14, textAlign: "center" }}>
                 <div style={{ fontSize: 16 }}>{ic}</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{v}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 0.5 }}>{v}</div>
                 <div style={{ fontSize: 10, color: "#6b7280" }}>{l}</div>
               </div>
             ))}

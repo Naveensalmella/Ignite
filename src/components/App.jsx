@@ -42,6 +42,7 @@ import { playXP, playLevelUp, playWorkoutComplete } from '@/sounds';
 import { registerSW, startNotifScheduler } from '@/notifications';
 import { applyAccent } from './AccentPicker';
 import BottomNav from './BottomNav';
+import PageTransition from './PageTransition';
 // transitions moved to globals.css
 
 // Global error handler — prevents white screen crashes
@@ -461,8 +462,8 @@ export default function App({ externalUser = null }) {
                             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff" }}>{user.name?.[0]?.toUpperCase() || "U"}</div>
                         </div>
                     </header>
-                    <div className="page-enter" key={page} style={{ padding: "14px min(24px, 4vw)", paddingBottom: 90, maxWidth: 1120, margin: "0 auto", overflowX: "hidden", overflowY: "auto", flex: 1 }}>
-                        {pages[page]}
+                    <div style={{ padding: "14px min(24px, 4vw)", paddingBottom: 90, maxWidth: 1120, margin: "0 auto", overflowX: "hidden", overflowY: "auto", flex: 1 }}>
+                        <PageTransition pageKey={page}>{pages[page]}</PageTransition>
                     </div>
                 </main>
 
