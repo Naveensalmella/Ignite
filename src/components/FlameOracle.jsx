@@ -1,24 +1,56 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { getLevel, getRank, today } from '@/utils';
+import { getLevel, getRank, today } from '../utils';
 
-async function callAI(messages, systemPrompt) {
-  // Try secure server route first (API key hidden on server)
+// Streaming AI call — returns tokens one by one
+async function callAIStream(messages, systemPrompt, onToken) {
+  // Try secure streaming server route first
   try {
     const r = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages, mode: "coach", userContext: systemPrompt }),
     });
-    const data = await r.json();
-    if (data.error) throw new Error(data.error);
-    return data.text || "No response";
+
+    if (r.headers.get("content-type")?.includes("text/event-stream")) {
+      // Streaming response
+      const reader = r.body?.getReader();
+      if (!reader) throw new Error("No reader");
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n").filter(l => l.startsWith("data: "));
+
+        for (const line of lines) {
+          const data = line.replace("data: ", "").trim();
+          if (data === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.token) {
+              fullText += parsed.token;
+              if (onToken) onToken(fullText);
+            }
+            if (parsed.error) throw new Error(parsed.error);
+          } catch { }
+        }
+      }
+      return fullText || "No response";
+    } else {
+      // Non-streaming fallback
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+      return data.text || "No response";
+    }
   } catch (serverErr) {
-    console.warn("Server route failed, trying direct:", serverErr.message);
+    console.warn("Server stream failed:", serverErr.message);
   }
 
-  // Fallback: direct API call (for development)
+  // Fallback: direct API call (non-streaming)
   const groqKey = (process.env.NEXT_PUBLIC_GROQ_API_KEY || process.env.REACT_APP_GROQ_API_KEY);
   const geminiKey = (process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.REACT_APP_GEMINI_API_KEY);
   if (groqKey) {
@@ -35,7 +67,7 @@ async function callAI(messages, systemPrompt) {
   }
   if (geminiKey) {
     const userMsg = messages[messages.length - 1]?.text || "";
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\${geminiKey}`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: userMsg }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, generationConfig: { maxOutputTokens: 1024, temperature: 0.7 } }),
     });
@@ -169,18 +201,25 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
     try {
       const systemPrompt = `You are Flame Oracle (${curMode.name} mode), AI assistant for IGNITE self-improvement app.\n\n${curMode.personality}\n\n${userContext}\n\nCONVERSATION:\n${updatedMessages.slice(-8).map(m => `${m.role}: ${m.text}`).join("\n")}\n\nCOMMANDS (use ONLY when appropriate):\n- Log food: [ADD_FOOD:name|cal|protein|carbs|fat] — use when user says they ATE something\n- Navigate: [NAVIGATE:page] — ONLY when user EXPLICITLY says "open", "go to", "take me to", or "navigate to" a page. NEVER navigate just because you mention a topic. Valid: training,nutrition,dailyquest,focus,wellness,routine,growth,profile,social\n\nIMPORTANT: Do NOT use [NAVIGATE:...] unless the user directly asks to open a page. Discussing a topic is NOT a navigation request.\n\nBe concise (2-4 paragraphs max). Use emojis naturally. Call user by name.`;
 
-      const aiText = await callAI(updatedMessages.slice(-8), systemPrompt);
+      // Stream response in real-time
+      setIsTyping(true);
+      setDisplayText("");
+
+      const aiText = await callAIStream(updatedMessages.slice(-8), systemPrompt, (partialText) => {
+        // Update display as tokens arrive
+        const clean = partialText.replace(/\[ADD_FOOD:.*?\]/g, "").replace(/\[NAVIGATE:.*?\]/g, "").trim();
+        setDisplayText(clean);
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      });
+
+      setIsTyping(false);
       const { actions, navPages } = processActions(aiText);
       let cleanText = aiText.replace(/\[ADD_FOOD:.*?\]/g, "").replace(/\[NAVIGATE:.*?\]/g, "").trim();
       if (actions.length > 0) cleanText += "\n\n" + actions.join("\n");
 
-      // Store nav pages for button rendering (don't auto-navigate)
       const msgData = { role: "assistant", text: cleanText, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), mode: curMode.id, navPages: navPages.length > 0 ? navPages : undefined };
-
-      typeText(cleanText, () => {
-        const finalMessages = [...updatedMessages, msgData];
-        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: finalMessages } : c));
-      });
+      const finalMessages = [...updatedMessages, msgData];
+      setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: finalMessages } : c));
 
     } catch (e) {
       let errMsg;

@@ -2,10 +2,13 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { today } from '@/utils';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
+import { useState as useStateLocal } from 'react';
+let Body3D = null;
+try { Body3D = require('./Body3D').default; } catch { }
 import MuscleMap, { getMusclesForExercise } from './MuscleMap';
-import { getFormTip, getSwapOptions, WARMUP, COOLDOWN } from '@/data/exerciseMeta';
-import { GYM_PROGRAMS, COMBAT_PROGRAMS, getTodayWorkout } from '@/data/trainingPrograms';
-import { FITNESS_PROGRAMS, PROGRAM_TAGS, getRecommendedPrograms, adjustForProfile } from '@/data/fitnessPrograms';
+import { getFormTip, getSwapOptions, WARMUP, COOLDOWN } from '../data/exerciseMeta';
+import { GYM_PROGRAMS, COMBAT_PROGRAMS, getTodayWorkout } from '../data/trainingPrograms';
+import { FITNESS_PROGRAMS, PROGRAM_TAGS, getRecommendedPrograms, adjustForProfile } from '../data/fitnessPrograms';
 
 // ── YouTube Map ──
 const YT = {
@@ -480,7 +483,7 @@ export default function TrainingPage({ totalXP = 0, addXP = () => { }, workoutLo
 
           {/* Tabs */}
           <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto" }}>
-            {[["today", "📋 Today"], ["progress", "📈 Progress"], ["heatmap", "🫁 Muscles"], ["history", "📊 History"]].map(([k, l]) => (
+            {[["today", "📋 Today"], ["progress", "📈 Progress"], ["body3d", "🧬 3D Body"], ["heatmap", "🫁 Muscles"], ["history", "📊 History"]].map(([k, l]) => (
               <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => setTab(k)} style={{ flexShrink: 0 }}>{l}</span>
             ))}
           </div>
@@ -686,6 +689,20 @@ export default function TrainingPage({ totalXP = 0, addXP = () => { }, workoutLo
                     ))}
                   </div>
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* ── 3D BODY TAB ── */}
+          {tab === "body3d" && (
+            <div>
+              {Body3D ? (
+                <Body3D
+                  highlightedMuscles={Object.keys(weekMuscleData || {}).filter(m => (weekMuscleData[m] || 0) > 0)}
+                  onSelectExercise={(ex) => { /* Could auto-search exercise */ }}
+                />
+              ) : (
+                <div style={{ textAlign: "center", padding: 30, color: "#6b7280", fontSize: 13 }}>3D Body loading... Make sure Three.js is installed: npm install three @react-three/fiber @react-three/drei</div>
               )}
             </div>
           )}
