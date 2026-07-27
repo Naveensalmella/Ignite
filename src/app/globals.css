@@ -209,23 +209,16 @@ body {
   border-radius: 4px;
 }
 
-/* Bottom nav spacing — mobile only */
+/* Bottom nav spacing */
 .page-content {
-  padding-bottom: 90px !important;
+  padding-bottom: 70px !important;
   min-height: calc(100vh - 56px);
   overflow-y: auto;
 }
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .page-content {
-    padding-bottom: calc(90px + env(safe-area-inset-bottom)) !important;
-  }
-}
-
-/* Desktop: less bottom padding since nav is less intrusive */
-@media (min-width: 1024px) {
-  .page-content {
-    padding-bottom: 70px !important;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
   }
 }
 
@@ -316,4 +309,48 @@ button, .chip, .ni, [role="button"] {
 /* Fix chip heights in flex rows */
 .chip {
   min-height: 32px;
+}
+
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Spinner animation */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Pull to refresh indicator */
+.pull-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+  z-index: 9999;
+  animation: pullSlide 1s ease-in-out infinite;
+}
+
+@keyframes pullSlide {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
 }

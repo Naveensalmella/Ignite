@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { getLevel, getRank, today } from '@/utils';
+import { getLevel, getRank, today } from '../utils';
 
 // Streaming AI call — returns tokens one by one
 async function callAIStream(messages, systemPrompt, onToken) {

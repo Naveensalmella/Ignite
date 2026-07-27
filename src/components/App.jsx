@@ -28,6 +28,7 @@ import BodyTracker from './BodyTracker';
 import ChallengesPage from './ChallengesPage';
 import { ConfettiBlast, LevelUpCelebration } from './Confetti';
 import ShareCard from './ShareCard';
+import PullToRefresh from './PullToRefresh';
 import WorkoutPrograms from './WorkoutPrograms';
 import SocialPage from './SocialPage';
 import BodyProgress from './BodyProgress';
@@ -399,7 +400,7 @@ export default function App({ externalUser = null }) {
                     </div>
 
                     {/* Nav Items */}
-                    <div style={{ flex: 1, paddingBottom: 90, overflowY: "auto", padding: "12px 0" }}>
+                    <div style={{ flex: 1, paddingBottom: 70, overflowY: "auto", padding: "12px 0" }}>
                         {navItems.map(n => {
                             if (n.submenu) {
                                 // "More" button with expandable submenu
@@ -456,7 +457,7 @@ export default function App({ externalUser = null }) {
                 </nav>
 
                 {/* Main Content */}
-                <main style={{ flex: 1, paddingBottom: 90, overflow: "auto", position: "relative", zIndex: 1 }}>
+                <main style={{ flex: 1, paddingBottom: 70, overflow: "auto", position: "relative", zIndex: 1 }}>
                     <header style={{ padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(6,10,12,.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(16,185,129,.05)", position: "sticky", top: 0, zIndex: 30, gap: 12 }}>
                         <div className="app-header">
                             {isMobile && <span onClick={() => null} style={{ cursor: "pointer", fontSize: 22, color: "#6b7280" }}></span>}
@@ -468,8 +469,8 @@ export default function App({ externalUser = null }) {
                             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff" }}>{user.name?.[0]?.toUpperCase() || "U"}</div>
                         </div>
                     </header>
-                    <div style={{ padding: "14px min(24px, 4vw)", paddingBottom: 90, maxWidth: 1120, margin: "0 auto", overflowX: "hidden", overflowY: "auto", flex: 1 }}>
-                        <PageTransition pageKey={page}>{pages[page]}</PageTransition>
+                    <div style={{ padding: "14px min(24px, 4vw)", paddingBottom: 70, maxWidth: 1120, margin: "0 auto", overflowX: "hidden", overflowY: "auto", flex: 1 }}>
+                        <PullToRefresh onRefresh={async () => { if (user) await loadUserData(user.uid); }}><PageTransition pageKey={page}>{pages[page]}</PageTransition></PullToRefresh>
                     </div>
                 </main>
 
@@ -485,8 +486,8 @@ export default function App({ externalUser = null }) {
                             <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>Leave IGNITE?</div>
                             <p style={{ color: "#6b7280", fontSize: 13, marginTop: 8, marginBottom: 24 }}>Your progress is saved, but your streak depends on you coming back.</p>
                             <div style={{ display: "flex", gap: 10 }}>
-                                <button onClick={() => setShowExitModal(false)} className="bp" style={{ flex: 1, paddingBottom: 90, padding: 14 }}>Stay & Train</button>
-                                <button onClick={() => { setShowExitModal(false); window.history.go(-2); }} className="bg" style={{ flex: 1, paddingBottom: 90, padding: 14, color: "#ef4444" }}>Leave</button>
+                                <button onClick={() => setShowExitModal(false)} className="bp" style={{ flex: 1, paddingBottom: 70, padding: 14 }}>Stay & Train</button>
+                                <button onClick={() => { setShowExitModal(false); window.history.go(-2); }} className="bg" style={{ flex: 1, paddingBottom: 70, padding: 14, color: "#ef4444" }}>Leave</button>
                             </div>
                         </div>
                     </div>
