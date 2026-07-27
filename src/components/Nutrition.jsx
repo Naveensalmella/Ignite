@@ -1,12 +1,12 @@
 "use client";
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { XP } from '@/data/index';
-import { FOOD_DATABASE, FOOD_CATEGORIES, searchFoods, searchFoodsCombined } from '@/data/foodDatabase';
-import { DIET_TEMPLATES, generateDayPlan, generateWeekPlan, getPlanDayTotals, getShoppingList, getSwapOptions as getMealSwaps } from '@/data/mealPlanner';
-import { today } from '@/utils';
+import { XP } from '../data';
+import { FOOD_DATABASE, FOOD_CATEGORIES, searchFoods, searchFoodsCombined } from '../data/foodDatabase';
+import { DIET_TEMPLATES, generateDayPlan, generateWeekPlan, getPlanDayTotals, getShoppingList, getSwapOptions as getMealSwaps } from '../data/mealPlanner';
+import { today } from '../utils';
 import HistoryPanel from './HistoryPanel';
-import { formatNutritionHistory } from '@/historyFormatters';
+import { formatNutritionHistory } from '../historyFormatters';
 
 const MEALS = ["Breakfast", "Lunch", "Dinner", "Snack"];
 const WATER_GOAL = 8;
@@ -211,25 +211,64 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     const url = cv.toDataURL("image/jpeg", .8);
     setScanPhoto(url);
     stopCam();
-    // Switch to text mode for description since Groq text model can't see images
-    setScanMode("text");
-    setTextDesc("");
+    // Send captured photo to Vision AI
+    analyzeImage(url);
   };
   const handleFile = (e) => {
     const f = e.target.files?.[0]; if (!f) return;
     const r = new FileReader();
     r.onload = ev => {
       setScanPhoto(ev.target.result);
-      setScanMode("camera");
-      stopCam();
-      // Since we can't send image to Groq text model, prompt user to describe
-      setScanMode("text");
-      setTextDesc("");
-      setScanError("Photo saved! Now describe what's in the photo for accurate analysis.");
+      // Send image directly to Vision AI for analysis
+      analyzeImage(ev.target.result);
     };
     r.readAsDataURL(f);
   };
   // AI Food Analysis — Direct Groq API (no backend needed)
+  // Analyze food from photo using Vision AI (Groq Vision / Gemini)
+  // Compress image to reduce size before sending to API
+  const compressImage = (base64, maxWidth = 512) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.src = base64;
+    });
+  };
+
+  const analyzeImage = async (base64Image) => {
+    setScanning(true); setScanError(null); setScanResults(null);
+    setScanMode("camera");
+    // Compress image to avoid large payloads
+    const compressed = await compressImage(base64Image, 512);
+    try {
+      const response = await fetch("/api/food-scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: compressed }),
+      });
+      const data = await response.json();
+      if (data.foods?.length > 0) {
+        setScanResults(data.foods);
+        setScanError(null);
+      } else if (data.error) {
+        setScanError(data.error);
+      } else {
+        setScanError("Could not identify food. Try a clearer photo or use Describe mode.");
+      }
+    } catch (err) {
+      setScanError("Analysis failed. Check your internet connection and try again.");
+    }
+    setScanning(false);
+  };
+
   const analyzeWithAI = async (prompt) => {
     setScanning(true); setScanError(null); setScanResults(null);
     const groqKey = (process.env.NEXT_PUBLIC_GROQ_API_KEY || process.env.REACT_APP_GROQ_API_KEY);
@@ -403,6 +442,21 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
           <div style={{ display: "flex", gap: 8 }}>
             <button className="bg" onClick={() => setScanMode("choose")} style={{ padding: "12px 16px" }}>←</button>
             <button className="bp" onClick={() => analyzeText(textDesc)} disabled={!textDesc.trim()} style={{ flex: 1, padding: 12, fontSize: 14 }}>🤖 Analyze Food</button>
+          </div>
+        </div>
+      )}
+
+      {/* Photo preview with error/retry (when Vision analysis done but no results) */}
+      {scanMode === "camera" && scanPhoto && !scanning && !scanResults && (
+        <div style={{ textAlign: "center", padding: "20px 0" }}>
+          <div style={{ width: 200, height: 200, borderRadius: 16, overflow: "hidden", margin: "0 auto 16px", border: "1px solid rgba(255,255,255,.08)" }}>
+            <img src={scanPhoto} alt="Food" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </div>
+          {scanError && <div style={{ fontSize: 13, color: "#f59e0b", marginBottom: 12, padding: "0 20px" }}>{scanError}</div>}
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+            <button className="bp" onClick={() => analyzeImage(scanPhoto)} style={{ padding: "12px 20px" }}>🔄 Retry Analysis</button>
+            <button className="bg" onClick={() => { setScanMode("text"); setTextDesc(""); }} style={{ padding: "12px 20px" }}>✏️ Describe Instead</button>
+            <button className="bg" onClick={() => { setScanMode("choose"); setScanPhoto(null); setScanError(null); }} style={{ padding: "12px 16px" }}>✕</button>
           </div>
         </div>
       )}
