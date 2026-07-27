@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from 'react';
-// styles moved to globals.css
 
 import { DEFAULT_HABITS, navItems, REQUIRED_DAILY, DAILY_PENALTY, XP } from '@/data/index';
 import { getLevel, getRank, getStreakMult, today } from '@/utils';
@@ -42,8 +41,8 @@ import ErrorBoundary from './ErrorBoundary';
 import { playXP, playLevelUp, playWorkoutComplete } from '@/sounds';
 import { registerSW, startNotifScheduler } from '@/notifications';
 import { applyAccent } from './AccentPicker';
+import BottomNav from './BottomNav';
 // transitions moved to globals.css
-
 
 // Global error handler — prevents white screen crashes
 if (typeof window !== 'undefined') {
@@ -53,7 +52,7 @@ if (typeof window !== 'undefined') {
 
 export default function App({ externalUser = null }) {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [page, setPage] = useState("dashboard");
     const [sideOpen, setSideOpen] = useState(false);
     const [moreOpen, setMoreOpen] = useState(false);
@@ -375,24 +374,25 @@ export default function App({ externalUser = null }) {
         <ErrorBoundary>
             <XPToast xpEvents={xpEvents} />
             <MilestoneOverlay milestone={milestone} onClose={() => setMilestone(null)} />
+            <BottomNav active={page} setPage={setPage} />
             {levelUp && <LevelUpOverlay level={levelUp.level} rank={levelUp.rank} onClose={() => setLevelUp(null)} />}
             {showTutorial && <OnboardingTutorial onComplete={handleTutorialComplete} />}
 
-            <div style={{ display: "flex", height: "100vh", background: "#060a0c", overflow: "hidden", position: "relative" }}>
+            <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#060a0c", overflow: "hidden", position: "relative", width: "100%" }}>
                 <div style={{ position: "fixed", top: "-20%", right: "-10%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle,rgba(16,185,129,.025),transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
 
-                {sideOpen && <div onClick={() => { setSideOpen(false); setMoreOpen(false); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 45, backdropFilter: "blur(4px)" }} />}
+                {false && <div />}
 
                 {/* Sidebar */}
-                <nav style={{ width: sideOpen ? 240 : 72, minWidth: sideOpen ? 240 : 72, background: "linear-gradient(180deg,rgba(10,10,18,.99),rgba(8,8,14,.99))", borderRight: "1px solid rgba(16,185,129,.06)", display: "flex", flexDirection: "column", transition: "all .3s", zIndex: 50, position: isMobile ? "fixed" : "relative", height: "100%", left: isMobile && !sideOpen ? -72 : 0 }}>
+                <nav style={{ display: "none", width: sideOpen ? 240 : 72, minWidth: sideOpen ? 240 : 72, background: "linear-gradient(180deg,rgba(10,10,18,.99),rgba(8,8,14,.99))", borderRight: "1px solid rgba(16,185,129,.06)", display: "flex", flexDirection: "column", transition: "all .3s", zIndex: 50, position: isMobile ? "fixed" : "relative", height: "100%", left: isMobile && !sideOpen ? -72 : 0 }}>
                     {/* Logo */}
-                    <div onClick={() => setSideOpen(!sideOpen)} style={{ padding: "20px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid rgba(255,255,255,.04)" }}>
+                    <div onClick={() => null} style={{ padding: "20px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid rgba(255,255,255,.04)" }}>
                         <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0, fontFamily: "Rajdhani,sans-serif" }}>I</div>
                         {sideOpen && <span style={{ fontSize: 18, fontWeight: 800, fontFamily: "Rajdhani,sans-serif", background: "linear-gradient(135deg,#10b981,#06b6d4,#22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: 4 }}>IGNITE</span>}
                     </div>
 
                     {/* Nav Items */}
-                    <div style={{ flex: 1, overflowY: "auto", padding: "12px 0" }}>
+                    <div style={{ flex: 1, paddingBottom: 90, overflowY: "auto", padding: "12px 0" }}>
                         {navItems.map(n => {
                             if (n.submenu) {
                                 // "More" button with expandable submenu
@@ -449,19 +449,19 @@ export default function App({ externalUser = null }) {
                 </nav>
 
                 {/* Main Content */}
-                <main style={{ flex: 1, overflow: "auto", position: "relative", zIndex: 1 }}>
+                <main style={{ flex: 1, paddingBottom: 90, overflow: "auto", position: "relative", zIndex: 1 }}>
                     <header style={{ padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(6,10,12,.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(16,185,129,.05)", position: "sticky", top: 0, zIndex: 30, gap: 12 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-                            {isMobile && <span onClick={() => setSideOpen(true)} style={{ cursor: "pointer", fontSize: 22, color: "#6b7280" }}>☰</span>}
+                        <div className="app-header">
+                            {isMobile && <span onClick={() => null} style={{ cursor: "pointer", fontSize: 22, color: "#6b7280" }}></span>}
                             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>{currentLabel}</h2>
                         </div>
                         <HeaderXPBar totalXP={totalXP} streak={streak} />
-                        <div onClick={() => setPage("profile")} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "4px 10px 4px 14px", borderRadius: 100, background: "rgba(16,185,129,.04)", border: "1px solid rgba(16,185,129,.08)", flexShrink: 0 }}>
+                        <div onClick={() => setPage("profile")} style={{ display: "none", alignItems: "center", gap: 8, cursor: "pointer", padding: "4px 10px 4px 14px", borderRadius: 100, background: "rgba(16,185,129,.04)", border: "1px solid rgba(16,185,129,.08)", flexShrink: 0 }}>
                             <span className="do" style={{ fontSize: 12, color: "#34d399" }}>{user.name}</span>
                             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff" }}>{user.name?.[0]?.toUpperCase() || "U"}</div>
                         </div>
                     </header>
-                    <div className="page-enter" key={page} style={{ padding: "14px min(24px, 4vw)", maxWidth: 1120, margin: "0 auto", overflowX: "hidden" }}>
+                    <div className="page-enter" key={page} style={{ padding: "14px min(24px, 4vw)", paddingBottom: 90, maxWidth: 1120, margin: "0 auto", overflowX: "hidden", overflowY: "auto", flex: 1 }}>
                         {pages[page]}
                     </div>
                 </main>
@@ -478,8 +478,8 @@ export default function App({ externalUser = null }) {
                             <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>Leave IGNITE?</div>
                             <p style={{ color: "#6b7280", fontSize: 13, marginTop: 8, marginBottom: 24 }}>Your progress is saved, but your streak depends on you coming back.</p>
                             <div style={{ display: "flex", gap: 10 }}>
-                                <button onClick={() => setShowExitModal(false)} className="bp" style={{ flex: 1, padding: 14 }}>Stay & Train</button>
-                                <button onClick={() => { setShowExitModal(false); window.history.go(-2); }} className="bg" style={{ flex: 1, padding: 14, color: "#ef4444" }}>Leave</button>
+                                <button onClick={() => setShowExitModal(false)} className="bp" style={{ flex: 1, paddingBottom: 90, padding: 14 }}>Stay & Train</button>
+                                <button onClick={() => { setShowExitModal(false); window.history.go(-2); }} className="bg" style={{ flex: 1, paddingBottom: 90, padding: 14, color: "#ef4444" }}>Leave</button>
                             </div>
                         </div>
                     </div>

@@ -208,3 +208,112 @@ body {
   background: rgba(255, 255, 255, .1);
   border-radius: 4px;
 }
+
+/* Bottom nav spacing — mobile only */
+.page-content {
+  padding-bottom: 90px !important;
+  min-height: calc(100vh - 56px);
+  overflow-y: auto;
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .page-content {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* Desktop: less bottom padding since nav is less intrusive */
+@media (min-width: 1024px) {
+  .page-content {
+    padding-bottom: 70px !important;
+  }
+}
+
+/* Hide scrollbar on nav */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Touch feedback */
+button:active {
+  transform: scale(0.96);
+}
+
+/* Better mobile inputs */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* Hide old sidebar nav only */
+.ni {
+  display: none !important;
+}
+
+nav:has(.ni) {
+  display: none !important;
+}
+
+/* ═══ Responsive Layout ═══ */
+.app-shell {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Header */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(7, 9, 13, .95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, .04);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.app-header .page-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #f3f4f6;
+  font-family: "Rajdhani", sans-serif;
+  white-space: nowrap;
+}
+
+/* Page content */
+.page-content {
+  padding: 16px;
+  padding-bottom: 90px !important;
+  min-height: calc(100vh - 60px);
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .page-content {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better tap targets */
+button, .chip, .ni, [role="button"] {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Fix chip heights in flex rows */
+.chip {
+  min-height: 32px;
+}
