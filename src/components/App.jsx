@@ -92,6 +92,7 @@ export default function App({ externalUser = null }) {
     const [questChainData, setQuestChainData] = useState({});
     const [bodyPhotos, setBodyPhotos] = useState({});
     const [milestone, setMilestone] = useState(null);
+    const [shareCard, setShareCard] = useState(null);
     const [showTutorial, setShowTutorial] = useState(false);
     const saveTimer = useRef(null);
 
@@ -275,6 +276,8 @@ export default function App({ externalUser = null }) {
         setTimeout(() => setXpEvents(p => p.filter(e => e.id !== id)), 1600);
         logActivity("xp", `+${actual} XP: ${reason}`);
         play('xpGain'); hapticTap();
+        // Show share card for workouts
+        if ((reason || "").includes("Workout")) setTimeout(() => setShareCard({ type: "workout", data: { splitName: reason, calBurned: amount * 2, exercises: [], duration: 1800 } }), 1500);
         playXP();
         // Log XP source for breakdown
         try {

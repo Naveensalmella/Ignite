@@ -1,182 +1,229 @@
 "use client";
-import { useState } from 'react';
+import { useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
+import * as THREE from 'three';
 
-// ══════════════════════════════════════
-// Exercise Animation — YouTube Tutorials
-// 90+ exercises with hand-picked videos
-// Tap thumbnail to play inline
-// ══════════════════════════════════════
+const SKIN = "#3a4a5a";
 
-const VIDEO_MAP = {
-  // ── Push variations ──
-  "push-ups": "_l3ySVKYVJ8", "standard push-ups": "_l3ySVKYVJ8", "push ups": "_l3ySVKYVJ8",
-  "diamond push-ups": "J0DnG1_S92I", "decline push-ups": "SKPab2YC8BE",
-  "pike push-ups": "sposDXWEB0A", "incline push-ups": "cfns5VDVVvk",
-  "archer push-ups": "yvCNFRjMDKE", "wide push-ups": "pfnVMnfXGkQ",
-  "clap push-ups": "EYwWCgm6FVg",
-  // ── Squats ──
-  "squats": "YaXPRqUwItQ", "bodyweight squats": "YaXPRqUwItQ",
-  "jump squats": "A-cFYGvaXio", "sumo squats": "3MFxyCAcWKo",
-  "goblet squats": "MeIiIdhvXT4", "bulgarian split squats": "2C-uNgKwPLE",
-  "pistol squats": "qDcniqddTeE", "wall sit": "y-wV4Lz6wJk",
-  // ── Lower body ──
-  "lunges": "QOVaHwm-Q6U", "walking lunges": "L8fvypPH3fA",
-  "reverse lunges": "xrPteyQLGAo", "glute bridge": "8bbE64NuDTU",
-  "hip thrusts": "SEdqd1n0icg", "calf raises": "gwLzBJYoWlI",
-  "step-ups": "dQqApCGd5Ag", "leg press": "IZxyjW7MPJQ",
-  "romanian deadlift": "JCXUYuzwNrM", "hamstring curls": "1Tq3QdYUuHs",
-  // ── Core ──
-  "plank": "ASdvN_XEl_c", "plank hold": "ASdvN_XEl_c",
-  "side plank": "K2VljzCC16g", "crunches": "Xyd_fa5zoEU",
-  "bicycle crunches": "9FGilxCbdz8", "leg raises": "JB2oyawG9KI",
-  "mountain climbers": "nmwgirgXLYM", "russian twists": "wkD8rjkodUI",
-  "superman": "z6PJMT2y8GQ", "flutter kicks": "ANVdMDaYRts",
-  "hanging knee raises": "Pr1ieGZ5atk", "v-ups": "iP2fjvG0g3w",
-  "sit-ups": "1fbU_MkV7NE", "dead bug": "4XLEnwUr1d8",
-  "dragon flags": "moyFIvRrS0s", "l-sit": "IUZJoSP66HI",
-  // ── Upper body ──
-  "tricep dips": "0326dy_-CzM", "pull-ups": "eGo4IYlbE5g",
-  "chin-ups": "brhRXlOhsAM", "bench press": "rT7DgCr-3pg",
-  "dumbbell press": "VmB1G1K7v94", "overhead press": "_RlRDWO2jfg",
-  "shoulder press": "qEwKCR5JCog", "lat pulldown": "CAwf7n6Luuc",
-  "barbell row": "FWJR5Ve8bnQ", "dumbbell row": "pYcpY20QaE8",
-  "dumbbell curl": "ykJmrZ5v0Oo", "hammer curl": "TwD-YGVP4Bk",
-  "tricep extension": "_gsUck-7M74", "chest fly": "eozdVDA78K0",
-  "lateral raise": "3VcKaXpzqRo", "front raise": "gzDM5uaKx0E",
-  "face pull": "rep-qVOkqgk", "shrug": "cJRVVxmytaM",
-  // ── Full body ──
-  "burpees": "dZgVxmf6jkA", "deadlift": "op9kVnSso6Q",
-  "jumping jacks": "CWpmIW6l-YA", "high knees": "D0e3TO_OwTY",
-  "tuck jumps": "JYMzFBEg1eA", "box jumps": "52r_Ul5k03g",
-  "bear crawl": "pL7sHHZOY88", "inchworm": "VSp0z4eDkMo",
-  // ── Warm-up / Stretches ──
-  "arm circles": "y5CG86hpMvo", "leg swings": "LT7OaBHLULo",
-  "hip circles": "QxGPnrUqx8Q", "quad stretch": "YO6JBLQlbZ0",
-  "child's pose": "2MJGg-dUKh0", "downward dog": "j97SSGsnCAQ",
-  "standing forward fold": "g7Uhp5tphAs", "cobra stretch": "JDcdhTuycOI",
-  "cat-cow": "kqnua4rHVVA", "pigeon pose": "UWIYsL5ewug",
-  "deep breathing": "tybOi4hjZFQ", "neck rolls": "wKOoWNrXELY",
-  "sprint in place": "D0e3TO_OwTY",
-  // ── Boxing ──
-  "jab": "hMh1lyeNsPY", "cross": "hMh1lyeNsPY",
-  "hook": "QHxnIlMnGIQ", "uppercut": "LCrMCmJkvxE",
-  "jab-cross combo": "hMh1lyeNsPY", "shadow boxing": "WR9dCSGORqk",
-  "front kick": "E1YGPGEQLHE", "roundhouse kick": "e0A4kV37qLA",
-  "knee strikes": "xB5e9xHxtzM", "elbow strikes": "KKsVORj67qk",
-  "slip and counter": "Y0rGMIkhDBU", "4-punch combo": "z8Cvel_BXNM",
-  "defensive footwork": "XPjDsBVjHxM",
-  // ── MMA ──
-  "spinning back fist": "K7JXhedWo_c", "tornado kick": "VYK3KB6UEfI",
-  "flying knee": "u4RNQvwpJEE", "axe kick": "Cv3hSRKLO0g",
-  // ── Yoga ──
-  "warrior i": "k4qaVoAg4qU", "warrior ii": "QVkqpODHpVo",
-  "tree pose": "Fr5kiIygm0c", "bridge pose": "8bbE64NuDTU",
-  "downward facing dog": "j97SSGsnCAQ",
-  // ── HIIT ──
-  "skaters": "d1J3NLNWAIM", "level change drill": "XPjDsBVjHxM",
-};
-
-function getVideoId(name) {
-  const l = name.toLowerCase().trim();
-  if (VIDEO_MAP[l]) return VIDEO_MAP[l];
-  for (const [k, id] of Object.entries(VIDEO_MAP)) {
-    if (l.includes(k) || k.includes(l)) return id;
-  }
-  const first = l.split(' ')[0];
-  if (first.length > 3) {
-    for (const [k, id] of Object.entries(VIDEO_MAP)) {
-      if (k.includes(first)) return id;
-    }
-  }
-  return null;
+// ── Animated Limb ──
+function Limb({ position, radius = 0.04, height = 0.3, rotation = [0, 0, 0], color = SKIN }) {
+  return (
+    <group position={position} rotation={rotation}>
+      <mesh><cylinderGeometry args={[radius, radius * 0.9, height, 8]} /><meshStandardMaterial color={color} roughness={0.7} /></mesh>
+      <mesh position={[0, height / 2, 0]}><sphereGeometry args={[radius, 8, 8]} /><meshStandardMaterial color={color} roughness={0.7} /></mesh>
+      <mesh position={[0, -height / 2, 0]}><sphereGeometry args={[radius * 0.9, 8, 8]} /><meshStandardMaterial color={color} roughness={0.7} /></mesh>
+    </group>
+  );
 }
 
-// CSS fallback
-const CSS = `
-@keyframes exPush{0%,100%{transform:translateY(0)}50%{transform:translateY(12px) rotateX(5deg)}}
-@keyframes exSquat{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(14px) scaleY(.86)}}
-@keyframes exPlank{0%,100%{opacity:1}50%{opacity:.75}}
-@keyframes exBurpee{0%{transform:translateY(0)}25%{transform:translateY(16px) scaleY(.72)}75%{transform:translateY(-10px)}100%{transform:translateY(0)}}
-@keyframes exPunch{0%,100%{transform:translateX(0)}40%{transform:translateX(18px) scale(1.04)}}
-@keyframes exKick{0%,100%{transform:rotateZ(0)}40%{transform:rotateZ(14deg) translateY(-8px)}}
-@keyframes exGeneric{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
-@keyframes glow{0%,100%{box-shadow:0 0 10px rgba(16,185,129,.05)}50%{box-shadow:0 0 18px rgba(16,185,129,.1)}}
-`;
-const AK = { "push": "exPush", "press": "exPush", "dip": "exPush", "fly": "exPush", "squat": "exSquat", "lunge": "exSquat", "split": "exSquat", "wall": "exSquat", "plank": "exPlank", "hold": "exPlank", "stretch": "exPlank", "pose": "exPlank", "dog": "exPlank", "cobra": "exPlank", "child": "exPlank", "cat": "exPlank", "burpee": "exBurpee", "climber": "exBurpee", "mountain": "exBurpee", "jab": "exPunch", "cross": "exPunch", "punch": "exPunch", "uppercut": "exPunch", "shadow": "exPunch", "hook": "exPunch", "elbow": "exPunch", "kick": "exKick", "knee": "exKick", "roundhouse": "exKick", "jump": "exSquat", "jack": "exSquat" };
-function getAn(n) { const l = n.toLowerCase(); for (const [k, v] of Object.entries(AK)) { if (l.includes(k)) return v; } return "exGeneric"; }
+// ── Exercise: Push-up ──
+function PushUp() {
+  const group = useRef();
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const t = Math.sin(clock.elapsedTime * 1.5) * 0.5 + 0.5; // 0 to 1
+    // Body goes down and up
+    group.current.position.y = 0.15 + t * 0.15;
+    group.current.rotation.x = -0.1 + t * 0.05;
+    // Arms bend
+    const arms = group.current.children;
+    if (arms[4]) arms[4].rotation.z = -0.3 - t * 0.4; // left arm
+    if (arms[5]) arms[5].rotation.z = 0.3 + t * 0.4; // right arm
+  });
+  return (
+    <group ref={group} rotation={[Math.PI / 2 - 0.3, 0, 0]} position={[0, 0.3, 0]}>
+      {/* Head */}<mesh position={[0, 0.85, 0]}><sphereGeometry args={[0.08, 12, 12]} /><meshStandardMaterial color={SKIN} /></mesh>
+      {/* Torso */}<Limb position={[0, 0.55, 0]} height={0.5} radius={0.1} />
+      {/* Hips */}<mesh position={[0, 0.25, 0]}><sphereGeometry args={[0.1, 10, 10]} /><meshStandardMaterial color={SKIN} /></mesh>
+      {/* Legs */}<Limb position={[-0.08, -0.1, 0]} height={0.5} /><Limb position={[0.08, -0.1, 0]} height={0.5} />
+      {/* Arms */}<group position={[-0.2, 0.65, 0]}><Limb height={0.35} /></group><group position={[0.2, 0.65, 0]}><Limb height={0.35} /></group>
+    </group>
+  );
+}
 
-export default function ExerciseAnimation3D({ exerciseName, color = "#10b981", size = 180 }) {
-  const [playing, setPlaying] = useState(false);
-  const [imgError, setImgError] = useState(false);
-  const videoId = getVideoId(exerciseName);
-  const an = getAn(exerciseName);
-  const isSmall = size <= 80;
+// ── Exercise: Squat ──
+function Squat() {
+  const group = useRef();
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const t = Math.sin(clock.elapsedTime * 1.2) * 0.5 + 0.5;
+    // Body goes down
+    group.current.position.y = -t * 0.3;
+    // Knees bend
+    const legs = group.current.children;
+    if (legs[3]) legs[3].rotation.x = t * 0.8;
+    if (legs[4]) legs[4].rotation.x = t * 0.8;
+    // Arms forward for balance
+    if (legs[5]) legs[5].rotation.x = -t * 1.2;
+    if (legs[6]) legs[6].rotation.x = -t * 1.2;
+  });
+  return (
+    <group ref={group} position={[0, 0.5, 0]}>
+      <mesh position={[0, 1.1, 0]}><sphereGeometry args={[0.09, 12, 12]} /><meshStandardMaterial color={SKIN} /></mesh>
+      <Limb position={[0, 0.75, 0]} height={0.45} radius={0.09} />
+      <mesh position={[0, 0.48, 0]}><sphereGeometry args={[0.1, 10, 10]} /><meshStandardMaterial color={SKIN} /></mesh>
+      <group position={[-0.1, 0.15, 0]}><Limb height={0.45} /></group>
+      <group position={[0.1, 0.15, 0]}><Limb height={0.45} /></group>
+      <group position={[-0.2, 0.85, 0]}><Limb height={0.3} /></group>
+      <group position={[0.2, 0.85, 0]}><Limb height={0.3} /></group>
+    </group>
+  );
+}
 
-  // ── Video playing ──
-  if (playing && videoId) {
+// ── Exercise: Bicep Curl ──
+function BicepCurl() {
+  const leftArm = useRef();
+  const rightArm = useRef();
+  useFrame(({ clock }) => {
+    const t = Math.sin(clock.elapsedTime * 1.8) * 0.5 + 0.5;
+    if (leftArm.current) leftArm.current.rotation.x = -t * 2.2;
+    if (rightArm.current) rightArm.current.rotation.x = -t * 2.2;
+  });
+  return (
+    <group position={[0, 0, 0]}>
+      <mesh position={[0, 1.6, 0]}><sphereGeometry args={[0.09, 12, 12]} /><meshStandardMaterial color={SKIN} /></mesh>
+      <Limb position={[0, 1.25, 0]} height={0.45} radius={0.09} />
+      <mesh position={[0, 0.98, 0]}><sphereGeometry args={[0.1, 10, 10]} /><meshStandardMaterial color={SKIN} /></mesh>
+      <Limb position={[-0.1, 0.6, 0]} height={0.5} /><Limb position={[0.1, 0.6, 0]} height={0.5} />
+      {/* Upper arms */}
+      <Limb position={[-0.22, 1.2, 0]} height={0.3} />
+      <Limb position={[0.22, 1.2, 0]} height={0.3} />
+      {/* Forearms (animated) */}
+      <group ref={leftArm} position={[-0.22, 1.0, 0]}><Limb position={[0, -0.12, 0.05]} height={0.25} radius={0.035} color="#4a5a6a" /></group>
+      <group ref={rightArm} position={[0.22, 1.0, 0]}><Limb position={[0, -0.12, 0.05]} height={0.25} radius={0.035} color="#4a5a6a" /></group>
+    </group>
+  );
+}
+
+// ── Exercise: Plank ──
+function Plank() {
+  const group = useRef();
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    // Slight breathing movement
+    group.current.position.y = Math.sin(clock.elapsedTime * 2) * 0.01;
+  });
+  return (
+    <group ref={group} rotation={[Math.PI / 2 - 0.15, 0, 0]} position={[0, 0.25, 0]}>
+      <mesh position={[0, 0.85, 0]}><sphereGeometry args={[0.08, 12, 12]} /><meshStandardMaterial color={SKIN} /></mesh>
+      <Limb position={[0, 0.55, 0]} height={0.5} radius={0.09} />
+      <mesh position={[0, 0.25, 0]}><sphereGeometry args={[0.09, 10, 10]} /><meshStandardMaterial color={SKIN} /></mesh>
+      <Limb position={[-0.08, -0.05, 0]} height={0.45} /><Limb position={[0.08, -0.05, 0]} height={0.45} />
+      <group position={[-0.18, 0.7, 0]} rotation={[0, 0, -0.2]}><Limb height={0.3} /></group>
+      <group position={[0.18, 0.7, 0]} rotation={[0, 0, 0.2]}><Limb height={0.3} /></group>
+    </group>
+  );
+}
+
+// ── Exercise: Lunge ──
+function Lunge() {
+  const group = useRef();
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const t = Math.sin(clock.elapsedTime * 1.0) * 0.5 + 0.5;
+    group.current.position.y = -t * 0.25;
+    const parts = group.current.children;
+    if (parts[3]) parts[3].rotation.x = t * 0.9; // front leg bends
+    if (parts[4]) parts[4].rotation.x = -t * 0.6; // back leg extends
+  });
+  return (
+    <group ref={group} position={[0, 0.5, 0]}>
+      <mesh position={[0, 1.1, 0]}><sphereGeometry args={[0.09, 12, 12]} /><meshStandardMaterial color={SKIN} /></mesh>
+      <Limb position={[0, 0.75, 0]} height={0.45} radius={0.09} />
+      <mesh position={[0, 0.48, 0]}><sphereGeometry args={[0.1, 10, 10]} /><meshStandardMaterial color={SKIN} /></mesh>
+      <group position={[-0.08, 0.15, 0.1]}><Limb height={0.45} /></group>
+      <group position={[0.08, 0.15, -0.15]}><Limb height={0.45} /></group>
+      <Limb position={[-0.2, 0.85, 0]} height={0.3} /><Limb position={[0.2, 0.85, 0]} height={0.3} />
+    </group>
+  );
+}
+
+// ── Exercise: Shoulder Press ──
+function ShoulderPress() {
+  const leftArm = useRef();
+  const rightArm = useRef();
+  useFrame(({ clock }) => {
+    const t = Math.sin(clock.elapsedTime * 1.5) * 0.5 + 0.5;
+    if (leftArm.current) leftArm.current.rotation.z = 0.3 - t * 0.3;
+    if (rightArm.current) rightArm.current.rotation.z = -0.3 + t * 0.3;
+    if (leftArm.current) leftArm.current.position.y = 1.15 + t * 0.2;
+    if (rightArm.current) rightArm.current.position.y = 1.15 + t * 0.2;
+  });
+  return (
+    <group position={[0, 0, 0]}>
+      <mesh position={[0, 1.6, 0]}><sphereGeometry args={[0.09, 12, 12]} /><meshStandardMaterial color={SKIN} /></mesh>
+      <Limb position={[0, 1.25, 0]} height={0.45} radius={0.09} />
+      <mesh position={[0, 0.98, 0]}><sphereGeometry args={[0.1, 10, 10]} /><meshStandardMaterial color={SKIN} /></mesh>
+      <Limb position={[-0.1, 0.6, 0]} height={0.5} /><Limb position={[0.1, 0.6, 0]} height={0.5} />
+      <group ref={leftArm} position={[-0.25, 1.15, 0]}><Limb height={0.4} /></group>
+      <group ref={rightArm} position={[0.25, 1.15, 0]}><Limb height={0.4} /></group>
+    </group>
+  );
+}
+
+// ── Exercise map ──
+const EXERCISES = {
+  "Push-ups": PushUp, "Push Up": PushUp, "Pushup": PushUp,
+  "Squats": Squat, "Squat": Squat, "Goblet Squat": Squat, "Bodyweight Squat": Squat,
+  "Bicep Curls": BicepCurl, "Bicep Curl": BicepCurl, "Hammer Curls": BicepCurl, "Curls": BicepCurl,
+  "Plank": Plank, "Forearm Plank": Plank,
+  "Lunges": Lunge, "Lunge": Lunge, "Walking Lunges": Lunge,
+  "Shoulder Press": ShoulderPress, "Overhead Press": ShoulderPress, "Military Press": ShoulderPress,
+};
+
+// ── Floor grid ──
+function Floor() {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.35, 0]}>
+      <planeGeometry args={[3, 3]} />
+      <meshStandardMaterial color="#080a10" transparent opacity={0.5} />
+    </mesh>
+  );
+}
+
+// ── Main Component ──
+export default function ExerciseAnimation3DView({ exerciseName = "Push-ups", style = {} }) {
+  const ExerciseComponent = useMemo(() => {
+    // Find matching exercise
+    const key = Object.keys(EXERCISES).find(k =>
+      k.toLowerCase() === exerciseName.toLowerCase() ||
+      exerciseName.toLowerCase().includes(k.toLowerCase()) ||
+      k.toLowerCase().includes(exerciseName.toLowerCase().split(" ")[0])
+    );
+    return key ? EXERCISES[key] : null;
+  }, [exerciseName]);
+
+  if (!ExerciseComponent) {
     return (
-      <div style={{ width: "100%", height: Math.max(size, 240), borderRadius: 16, overflow: "hidden", position: "relative", background: "#000" }}>
-        <iframe src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-          title={exerciseName} width="100%" height="100%" frameBorder="0"
-          allow="autoplay; encrypted-media" allowFullScreen style={{ borderRadius: 16 }} />
-        <div onClick={(e) => { e.stopPropagation(); setPlaying(false); }}
-          style={{ position: "absolute", top: 10, right: 10, width: 32, height: 32, borderRadius: "50%", background: "rgba(0,0,0,.75)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: "#fff", zIndex: 5, backdropFilter: "blur(4px)" }}>✕</div>
+      <div style={{ width: "100%", height: 200, borderRadius: 12, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "center", ...style }}>
+        <div style={{ textAlign: "center", color: "#6b7280" }}>
+          <div style={{ fontSize: 28, marginBottom: 4 }}>🏋️</div>
+          <div style={{ fontSize: 12 }}>{exerciseName}</div>
+          <div style={{ fontSize: 10, marginTop: 2 }}>3D animation coming soon</div>
+        </div>
       </div>
     );
   }
 
-  // ── Container ──
   return (
-    <div style={{ width: "100%", height: size, borderRadius: isSmall ? 10 : 16, background: "rgba(255,255,255,.015)", border: "1px solid rgba(255,255,255,.06)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", cursor: videoId && !isSmall ? "pointer" : "default" }}
-      onClick={() => videoId && !isSmall && setPlaying(true)}>
-      <style>{CSS}</style>
+    <div style={{ width: "100%", height: 250, borderRadius: 12, overflow: "hidden", background: "radial-gradient(ellipse at 50% 40%, rgba(16,185,129,.04) 0%, #07090d 70%)", border: "1px solid rgba(255,255,255,.05)", ...style }}>
+      <Canvas camera={{ position: [0, 0.8, 2.2], fov: 40 }} gl={{ antialias: true }}>
+        <ambientLight intensity={0.4} />
+        <directionalLight position={[2, 4, 3]} intensity={0.7} />
+        <pointLight position={[0, 2, 1]} intensity={0.3} color="#10b981" />
 
-      {/* ── YouTube Thumbnail (large) ── */}
-      {videoId && !isSmall && !imgError && (
-        <>
-          <img src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
-            alt={exerciseName} onError={() => setImgError(true)}
-            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} />
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(16,185,129,.9)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(16,185,129,.35)", transition: "transform .2s" }}>
-              <span style={{ fontSize: 20, marginLeft: 2, color: "#fff" }}>▶</span>
-            </div>
-          </div>
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 12px 8px", background: "linear-gradient(transparent, rgba(0,0,0,.75))", borderRadius: "0 0 16px 16px" }}>
-            <div style={{ fontSize: 11, color: "#10b981", fontWeight: 600 }}>▶ Tap to watch how to do it</div>
-          </div>
-        </>
-      )}
+        <ExerciseComponent />
+        <Floor />
 
-      {/* ── YouTube Thumbnail (small/mini) ── */}
-      {videoId && isSmall && !imgError && (
-        <img src={`https://img.youtube.com/vi/${videoId}/default.jpg`}
-          alt={exerciseName} onError={() => setImgError(true)}
-          style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8 }} />
-      )}
+        <OrbitControls enablePan={false} enableZoom={false} autoRotate autoRotateSpeed={0.3} />
+      </Canvas>
 
-      {/* ── CSS Fallback (no video or image error) ── */}
-      {(!videoId || imgError) && (
-        <>
-          <div style={{ position: "absolute", bottom: 16, width: "30%", height: 6, borderRadius: "50%", background: "rgba(0,0,0,.2)", filter: "blur(3px)" }} />
-          <div style={{ animation: `${an} ${an === "exPunch" ? ".8s" : "2s"} ease-in-out infinite`, animation2: "glow 4s ease-in-out infinite" }}>
-            <svg width={isSmall ? 36 : 80} height={isSmall ? 56 : 125} viewBox="0 0 80 125">
-              <defs><linearGradient id={`gx${an}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity=".85" /><stop offset="100%" stopColor={color} stopOpacity=".45" /></linearGradient></defs>
-              <circle cx="40" cy="15" r="10" fill={color} opacity=".8" />
-              <circle cx="36" cy="12" r="1.2" fill="#0d1117" /><circle cx="44" cy="12" r="1.2" fill="#0d1117" />
-              <rect x="37" y="24" width="6" height="5" rx="2" fill={color} opacity=".6" />
-              <path d="M26 30L54 30L52 66L28 66Z" fill={`url(#gx${an})`} opacity=".75" />
-              <path d="M26 32L14 48L17 60" fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" opacity=".75" />
-              <path d="M54 32L66 48L63 60" fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" opacity=".75" />
-              <path d="M32 66L24 92L21 108" fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" opacity=".7" />
-              <path d="M48 66L56 92L59 108" fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" opacity=".7" />
-              <ellipse cx="19" cy="110" rx="5" ry="2" fill={color} opacity=".45" />
-              <ellipse cx="61" cy="110" rx="5" ry="2" fill={color} opacity=".45" />
-            </svg>
-          </div>
-          {!isSmall && <div style={{ position: "absolute", bottom: 6, fontSize: 9, color: "#4b5563" }}>{exerciseName}</div>}
-        </>
-      )}
+      <div style={{ position: "relative", bottom: 30, textAlign: "center" }}>
+        <span style={{ fontSize: 11, color: "#10b981", background: "rgba(7,9,13,.85)", padding: "3px 10px", borderRadius: 100, fontWeight: 600 }}>{exerciseName}</span>
+      </div>
     </div>
   );
 }
+
+export { EXERCISES };

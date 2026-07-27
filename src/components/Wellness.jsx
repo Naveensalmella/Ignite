@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from 'react';
+import { requestWakeLock, releaseWakeLock } from './wakeLock';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { today } from '@/utils';
 
@@ -44,6 +45,13 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
     const data = { ...todayData, sleepHours: parseFloat(sleepHours) || 0, sleepQuality, bedTime, wakeTime, mood, entry, gratitude, ...updates };
     setJournal(prev => ({ ...prev, [d]: data }));
   };
+
+  // Wake Lock for meditation
+  useEffect(() => {
+    if (medActive) requestWakeLock();
+    else releaseWakeLock();
+    return () => releaseWakeLock();
+  }, [medActive]);
 
   // Meditation timer
   useEffect(() => {

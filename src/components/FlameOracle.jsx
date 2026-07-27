@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { getLevel, getRank, today } from '../utils';
+import { getLevel, getRank, today } from '@/utils';
 
 // Streaming AI call — returns tokens one by one
 async function callAIStream(messages, systemPrompt, onToken) {
@@ -78,6 +78,26 @@ async function callAIStream(messages, systemPrompt, onToken) {
   throw new Error("NO_KEY");
 }
 
+// ── Voice Output (AI speaks back) ──
+function speakText(text) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const clean = text.replace(/[*#🔥💪⚔️🍎⚡🎯📊✅❌🏆]/g, "").replace(/\n/g, ". ").slice(0, 500);
+  const utterance = new SpeechSynthesisUtterance(clean);
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+  utterance.volume = 0.8;
+  utterance.lang = "en-IN";
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.lang.includes("en") && v.name.includes("Google")) || voices.find(v => v.lang.includes("en"));
+  if (preferred) utterance.voice = preferred;
+  window.speechSynthesis.speak(utterance);
+}
+
+function stopSpeaking() {
+  if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
+}
+
 const MODES = [
   { id: "coach", name: "Coach", icon: "🔥", color: "#10b981", desc: "Fitness & training advice", personality: "You are an intense, motivating fitness coach. Push the user to their limits. Be direct, use short powerful sentences." },
   { id: "nutritionist", name: "Nutritionist", icon: "🍎", color: "#f59e0b", desc: "Diet & nutrition guidance", personality: "You are a knowledgeable sports nutritionist specializing in Indian diets. Give specific meal suggestions with macros." },
@@ -109,6 +129,7 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
   const [isTyping, setIsTyping] = useState(false);
   const [showModes, setShowModes] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const typingRef = useRef(null);
@@ -220,6 +241,7 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
       const msgData = { role: "assistant", text: cleanText, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), mode: curMode.id, navPages: navPages.length > 0 ? navPages : undefined };
       const finalMessages = [...updatedMessages, msgData];
       setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: finalMessages } : c));
+      if (voiceOn) speakText(cleanText);
 
     } catch (e) {
       let errMsg;
@@ -362,6 +384,10 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
           </div>
         )}
         <div style={{ display: "flex", gap: 6 }}>
+          {/* Voice output toggle */}
+          <button onClick={() => { setVoiceOn(!voiceOn); if (voiceOn) stopSpeaking(); }} style={{ background: voiceOn ? "rgba(16,185,129,.15)" : "rgba(255,255,255,.03)", border: voiceOn ? "1px solid rgba(16,185,129,.3)" : "1px solid rgba(255,255,255,.06)", borderRadius: 12, padding: "10px 12px", cursor: "pointer", fontSize: 16, color: voiceOn ? "#10b981" : "#6b7280", flexShrink: 0 }}>
+            {voiceOn ? "🔊" : "🔇"}
+          </button>
           {("webkitSpeechRecognition" in window || "SpeechRecognition" in window) && (
             <button onClick={startVoice} style={{ background: isListening ? "rgba(239,68,68,.15)" : "rgba(255,255,255,.03)", border: isListening ? "1px solid rgba(239,68,68,.3)" : "1px solid rgba(255,255,255,.06)", borderRadius: 12, padding: "10px 12px", cursor: "pointer", fontSize: 16, color: isListening ? "#ef4444" : "#6b7280", flexShrink: 0 }}>
               {isListening ? "🔴" : "🎤"}

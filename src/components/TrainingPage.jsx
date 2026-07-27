@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { requestWakeLock, releaseWakeLock } from './wakeLock';
 import { today } from '@/utils';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { useState as useStateLocal } from 'react';
@@ -122,6 +123,12 @@ export default function TrainingPage({ totalXP = 0, addXP = () => { }, workoutLo
   const isProgramComplete = activeProgram && (activeProgram.curriculum ? (combatWeek >= activeProgram.curriculum.length - 1 && completedDays.length >= activeProgram.curriculum.length * activeProgram.daysPerWeek) : (currentWeek >= parseInt((activeProgram.phases?.[activeProgram.phases.length - 1]?.weeks || "1-12").split("-")[1] || 12)));
 
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  // ── Wake Lock (screen stays on during workout) ──
+  useEffect(() => {
+    if (activeProgram && !todayW) { requestWakeLock(); }
+    return () => releaseWakeLock();
+  }, [activeProgram, todayW]);
   const todayName = dayNames[currentDayInWeek];
 
   const isRestDay = useMemo(() => {

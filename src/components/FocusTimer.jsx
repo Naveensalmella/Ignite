@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { requestWakeLock, releaseWakeLock } from './wakeLock';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { today } from '@/utils';
 
@@ -24,6 +25,13 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
   const todaySessions = focusLog[d] || [];
   const todayMinutes = todaySessions.reduce((s, sess) => s + (sess.duration || 0), 0);
   const goalPct = Math.min(100, Math.round((todayMinutes / dailyGoal) * 100));
+
+  // Wake Lock
+  useEffect(() => {
+    if (isRunning) requestWakeLock();
+    else releaseWakeLock();
+    return () => releaseWakeLock();
+  }, [isRunning]);
 
   // Timer logic
   useEffect(() => {
