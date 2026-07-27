@@ -1,13 +1,14 @@
 "use client";
 import { useState, useMemo } from 'react';
+import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { getLevel, getLevelProg, getRank, xpToNext, calcBMI, bmiCat, bmiCol, today } from '@/utils';
 import { RANKS, XP } from '@/data/index';
 import { BADGES, checkBadges, getRarityColor } from '@/data/badges';
-import YearHeatmap from '@/components/YearHeatmap';
-import ThemeToggle from '@/components/ThemeToggle';
-import DataExport from '@/components/DataExport';
-import AccentPicker from '@/components/AccentPicker';
-import NotificationSettings from '@/components/NotificationSettings';
+import YearHeatmap from './YearHeatmap';
+import ThemeToggle from './ThemeToggle';
+import DataExport from './DataExport';
+import AccentPicker from './AccentPicker';
+import NotificationSettings from './NotificationSettings';
 
 export default function ProfilePage({ profile = {}, setProfile = () => { }, totalXP = 0, streak = 0, workoutLog = {}, appState = {}, freezeData = null, setPage = () => { } }) {
   const lv = getLevel(totalXP), rank = getRank(lv), prog = getLevelProg(totalXP), remain = xpToNext(totalXP);

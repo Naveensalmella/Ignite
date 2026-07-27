@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from 'react';
+import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 
 const PILLARS = [
   { id: "mind", label: "Mind", icon: "⚡", color: "#06b6d4", desc: "Knowledge, learning, intellectual growth" },

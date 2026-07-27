@@ -3,9 +3,9 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { today } from '@/utils';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import MuscleMap, { getMusclesForExercise } from './MuscleMap';
-import { getFormTip, getSwapOptions, WARMUP, COOLDOWN } from '../data/exerciseMeta';
-import { GYM_PROGRAMS, COMBAT_PROGRAMS, getTodayWorkout } from '../data/trainingPrograms';
-import { FITNESS_PROGRAMS, PROGRAM_TAGS, getRecommendedPrograms, adjustForProfile } from '../data/fitnessPrograms';
+import { getFormTip, getSwapOptions, WARMUP, COOLDOWN } from '@/data/exerciseMeta';
+import { GYM_PROGRAMS, COMBAT_PROGRAMS, getTodayWorkout } from '@/data/trainingPrograms';
+import { FITNESS_PROGRAMS, PROGRAM_TAGS, getRecommendedPrograms, adjustForProfile } from '@/data/fitnessPrograms';
 
 // ── YouTube Map ──
 const YT = {

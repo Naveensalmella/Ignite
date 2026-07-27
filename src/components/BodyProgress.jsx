@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef } from 'react';
+import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 
 export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { } }) {
     const [viewMode, setViewMode] = useState("grid"); // grid | compare

@@ -1,11 +1,12 @@
 "use client";
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { XP } from '../data';
-import { FOOD_DATABASE, FOOD_CATEGORIES, searchFoods, searchFoodsCombined } from '../data/foodDatabase';
-import { DIET_TEMPLATES, generateDayPlan, generateWeekPlan, getPlanDayTotals, getShoppingList, getSwapOptions as getMealSwaps } from '../data/mealPlanner';
-import { today } from '../utils';
+import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
+import { XP } from '@/data/index';
+import { FOOD_DATABASE, FOOD_CATEGORIES, searchFoods, searchFoodsCombined } from '@/data/foodDatabase';
+import { DIET_TEMPLATES, generateDayPlan, generateWeekPlan, getPlanDayTotals, getShoppingList, getSwapOptions as getMealSwaps } from '@/data/mealPlanner';
+import { today } from '@/utils';
 import HistoryPanel from './HistoryPanel';
-import { formatNutritionHistory } from '../historyFormatters';
+import { formatNutritionHistory } from '@/historyFormatters';
 
 const MEALS = ["Breakfast", "Lunch", "Dinner", "Snack"];
 const WATER_GOAL = 8;

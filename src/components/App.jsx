@@ -43,6 +43,7 @@ import { registerSW, startNotifScheduler } from '@/notifications';
 import { applyAccent } from './AccentPicker';
 import BottomNav from './BottomNav';
 import PageTransition from './PageTransition';
+import { play, hapticTap, hapticSuccess } from './soundEngine';
 // transitions moved to globals.css
 
 // Global error handler — prevents white screen crashes
@@ -54,7 +55,8 @@ if (typeof window !== 'undefined') {
 export default function App({ externalUser = null }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [page, setPage] = useState("dashboard");
+    const [page, setPageRaw] = useState("dashboard");
+    const setPage = (p) => { play("navTap"); setPageRaw(p); };
     const [sideOpen, setSideOpen] = useState(false);
     const [moreOpen, setMoreOpen] = useState(false);
     const [foodLog, setFoodLog] = useState({});
@@ -272,6 +274,7 @@ export default function App({ externalUser = null }) {
         setXpEvents(p => [...p, { id, amount: actual, reason: reason + (mult > 1 ? ` (×${mult})` : "") }]);
         setTimeout(() => setXpEvents(p => p.filter(e => e.id !== id)), 1600);
         logActivity("xp", `+${actual} XP: ${reason}`);
+        play('xpGain'); hapticTap();
         playXP();
         // Log XP source for breakdown
         try {

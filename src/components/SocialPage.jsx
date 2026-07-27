@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from 'react';
+import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { getLevel, getRank, today } from '@/utils';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';

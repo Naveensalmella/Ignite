@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from 'react';
+import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { getLevel, getRank, today } from '@/utils';
 import {
     getDailyXPProgress, getXPBreakdown, XP_SOURCES, getComboStatus,

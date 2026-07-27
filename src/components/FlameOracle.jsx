@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { getLevel, getRank, today } from '../utils';
+import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
+import { getLevel, getRank, today } from '@/utils';
 
 async function callAI(messages, systemPrompt) {
   // Try secure server route first (API key hidden on server)

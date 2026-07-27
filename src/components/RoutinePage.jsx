@@ -1,7 +1,8 @@
 "use client";
 import { useState, useMemo } from 'react';
+import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { today } from '@/utils';
-import HistoryPanel from '@/components/HistoryPanel';
+import HistoryPanel from './HistoryPanel';
 
 const CATEGORIES = [
   { id: "power", label: "Physical", icon: "💪", color: "#ef4444" },
