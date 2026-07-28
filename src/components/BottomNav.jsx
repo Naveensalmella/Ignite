@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { Home, Swords, Apple, Sparkles, User, Menu, X, Gamepad2, Target, Timer, Heart, Users, Calendar, TrendingUp, Wallet, Camera } from 'lucide-react';
+import { Home, Swords, Apple, Sparkles, User, Menu, X, Gamepad2, Target, Timer, Heart, Users, Calendar, TrendingUp, Wallet, Camera, Activity, Dumbbell, Trophy } from 'lucide-react';
 
 const MAIN_TABS = [
     { key: "dashboard", label: "Home", Icon: Home },
@@ -20,6 +20,9 @@ const MORE_PAGES = [
     { key: "growth", label: "Growth", Icon: TrendingUp, desc: "110 missions" },
     { key: "finance", label: "Finance", Icon: Wallet, desc: "Money tracker" },
     { key: "bodyphotos", label: "Progress", Icon: Camera, desc: "Body photos" },
+    { key: "body", label: "Body Stats", Icon: Activity, desc: "Measurements" },
+    { key: "programs", label: "Programs", Icon: Dumbbell, desc: "Browse workouts" },
+    { key: "challenges", label: "Challenges", Icon: Trophy, desc: "Compete & win" },
 ];
 
 export default function BottomNav({ active, setPage }) {
