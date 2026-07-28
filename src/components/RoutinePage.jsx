@@ -1,523 +1,421 @@
 "use client";
 import { useState, useMemo } from 'react';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { today } from '@/utils';
-import HistoryPanel from './HistoryPanel';
-
-const CATEGORIES = [
-  { id: "power", label: "Physical", icon: "💪", color: "#ef4444" },
-  { id: "mind", label: "Mental", icon: "⚡", color: "#06b6d4" },
-  { id: "heart", label: "Heart", icon: "💛", color: "#f59e0b" },
-  { id: "spirit", label: "Spirit", icon: "🌟", color: "#8b5cf6" },
-  { id: "life", label: "Life", icon: "🌱", color: "#10b981" },
-];
-
-const CAT_COLORS = { power: "#ef4444", mind: "#06b6d4", heart: "#f59e0b", spirit: "#8b5cf6", life: "#10b981" };
-
-const PRESET_BLOCKS = [
-  { time: "05:30", activity: "Wake Up", icon: "🌅", duration: 10, cat: "spirit" },
-  { time: "05:40", activity: "Cold Water + Freshen Up", icon: "🚿", duration: 20, cat: "life" },
-  { time: "06:00", activity: "Training / Workout", icon: "⚔️", duration: 60, cat: "power" },
-  { time: "07:00", activity: "Shower + Get Ready", icon: "🧖", duration: 30, cat: "life" },
-  { time: "07:30", activity: "Breakfast", icon: "🍳", duration: 30, cat: "power" },
-  { time: "08:00", activity: "Deep Work / Study", icon: "💻", duration: 120, cat: "mind" },
-  { time: "10:00", activity: "Break + Stretch", icon: "🤸", duration: 15, cat: "power" },
-  { time: "10:15", activity: "Work / Study Block 2", icon: "📚", duration: 105, cat: "mind" },
-  { time: "12:00", activity: "Lunch", icon: "🍽️", duration: 45, cat: "power" },
-  { time: "12:45", activity: "Short Walk / Rest", icon: "🚶", duration: 15, cat: "spirit" },
-  { time: "13:00", activity: "Afternoon Work / Study", icon: "📊", duration: 120, cat: "mind" },
-  { time: "15:00", activity: "Snack Break", icon: "🍎", duration: 15, cat: "power" },
-  { time: "15:15", activity: "Focus Session", icon: "🎯", duration: 90, cat: "mind" },
-  { time: "16:45", activity: "Skill Practice / Learning", icon: "🧠", duration: 45, cat: "mind" },
-  { time: "17:30", activity: "Evening Exercise / Walk", icon: "🏃", duration: 30, cat: "power" },
-  { time: "18:00", activity: "Free Time / Hobbies", icon: "🎮", duration: 60, cat: "heart" },
-  { time: "19:00", activity: "Dinner", icon: "🍽️", duration: 45, cat: "power" },
-  { time: "19:45", activity: "Family / Social Time", icon: "👨‍👩‍👧", duration: 45, cat: "heart" },
-  { time: "20:30", activity: "Reading", icon: "📖", duration: 30, cat: "mind" },
-  { time: "21:00", activity: "Journal + Reflect", icon: "📝", duration: 20, cat: "heart" },
-  { time: "21:20", activity: "Meditate + Gratitude", icon: "🧘", duration: 15, cat: "spirit" },
-  { time: "21:35", activity: "Wind Down + Sleep", icon: "😴", duration: 25, cat: "spirit" },
-];
 
 const TEMPLATES = {
-  warrior: { name: "Warrior's Day", icon: "⚔️", desc: "5:30 AM start, intense training, deep work focus", blocks: PRESET_BLOCKS },
-  balanced: {
-    name: "Balanced Day", icon: "⚖️", desc: "7 AM start, moderate pace, work-life balance", blocks: [
-      { time: "07:00", activity: "Wake Up + Morning Routine", icon: "🌅", duration: 30, cat: "spirit" },
-      { time: "07:30", activity: "Light Exercise / Yoga", icon: "🧘", duration: 30, cat: "power" },
-      { time: "08:00", activity: "Breakfast", icon: "🍳", duration: 30, cat: "power" },
-      { time: "08:30", activity: "Work / Study", icon: "💼", duration: 150, cat: "mind" },
-      { time: "11:00", activity: "Break + Snack", icon: "☕", duration: 15, cat: "life" },
-      { time: "11:15", activity: "Work / Study Block 2", icon: "💻", duration: 105, cat: "mind" },
-      { time: "13:00", activity: "Lunch + Rest", icon: "🍽️", duration: 60, cat: "power" },
-      { time: "14:00", activity: "Afternoon Work", icon: "📊", duration: 120, cat: "mind" },
-      { time: "16:00", activity: "Training Session", icon: "⚔️", duration: 60, cat: "power" },
-      { time: "17:00", activity: "Free Time", icon: "🎮", duration: 60, cat: "heart" },
-      { time: "18:00", activity: "Dinner + Family", icon: "🍽️", duration: 90, cat: "heart" },
-      { time: "19:30", activity: "Reading + Learning", icon: "📖", duration: 45, cat: "mind" },
-      { time: "20:15", activity: "Journal + Meditate", icon: "📝", duration: 30, cat: "spirit" },
-      { time: "20:45", activity: "Relax + Sleep", icon: "😴", duration: 30, cat: "spirit" },
-    ]
-  },
-  weekend: {
-    name: "Weekend Warrior", icon: "🌤️", desc: "Sleep in, train hard, enjoy life", blocks: [
-      { time: "08:00", activity: "Wake Up + Stretch", icon: "🌅", duration: 20, cat: "spirit" },
-      { time: "08:20", activity: "Big Breakfast", icon: "🍳", duration: 40, cat: "power" },
-      { time: "09:00", activity: "Intense Training", icon: "⚔️", duration: 90, cat: "power" },
-      { time: "10:30", activity: "Shower + Get Ready", icon: "🧖", duration: 30, cat: "life" },
-      { time: "11:00", activity: "Skill / Side Project", icon: "🧠", duration: 120, cat: "mind" },
-      { time: "13:00", activity: "Lunch", icon: "🍽️", duration: 45, cat: "power" },
-      { time: "13:45", activity: "Free Time / Hobbies", icon: "🎮", duration: 120, cat: "heart" },
-      { time: "15:45", activity: "Light Walk / Outdoor", icon: "🚶", duration: 30, cat: "spirit" },
-      { time: "16:15", activity: "Reading / Learning", icon: "📖", duration: 45, cat: "mind" },
-      { time: "17:00", activity: "Social Time / Friends", icon: "👫", duration: 120, cat: "heart" },
-      { time: "19:00", activity: "Dinner", icon: "🍽️", duration: 60, cat: "power" },
-      { time: "20:00", activity: "Movie / Relax", icon: "🎬", duration: 90, cat: "heart" },
-      { time: "21:30", activity: "Journal + Sleep", icon: "😴", duration: 30, cat: "spirit" },
+  default: {
+    name: "Default", icon: "☀️", blocks: [
+      { id: "1", time: "06:00", name: "Wake Up", icon: "🌅", duration: 10, category: "health" },
+      { id: "2", time: "06:15", name: "Morning Workout", icon: "💪", duration: 45, category: "fitness" },
+      { id: "3", time: "07:00", name: "Shower & Get Ready", icon: "🚿", duration: 30, category: "health" },
+      { id: "4", time: "07:30", name: "Breakfast", icon: "🥣", duration: 20, category: "nutrition" },
+      { id: "5", time: "09:00", name: "Work / Study", icon: "💼", duration: 180, category: "work" },
+      { id: "6", time: "12:00", name: "Lunch", icon: "🍽️", duration: 30, category: "nutrition" },
+      { id: "7", time: "12:30", name: "Walk / Rest", icon: "🚶", duration: 30, category: "health" },
+      { id: "8", time: "13:00", name: "Work / Study", icon: "📚", duration: 180, category: "work" },
+      { id: "9", time: "17:00", name: "Evening Workout", icon: "⚔️", duration: 45, category: "fitness" },
+      { id: "10", time: "18:00", name: "Dinner", icon: "🍛", duration: 30, category: "nutrition" },
+      { id: "11", time: "19:00", name: "Free Time", icon: "🎮", duration: 60, category: "leisure" },
+      { id: "12", time: "21:00", name: "Journal & Reflect", icon: "📝", duration: 15, category: "mind" },
+      { id: "13", time: "21:30", name: "Sleep", icon: "😴", duration: 0, category: "health" },
     ]
   },
   earlybird: {
-    name: "Early Bird", icon: "🐦", desc: "4:30 AM start, maximize your morning", blocks: [
-      { time: "04:30", activity: "Wake Up + Hydrate", icon: "💧", duration: 10, cat: "spirit" },
-      { time: "04:40", activity: "Meditation", icon: "🧘", duration: 20, cat: "spirit" },
-      { time: "05:00", activity: "Training", icon: "⚔️", duration: 60, cat: "power" },
-      { time: "06:00", activity: "Cold Shower", icon: "🚿", duration: 15, cat: "power" },
-      { time: "06:15", activity: "Breakfast + Journal", icon: "📝", duration: 30, cat: "heart" },
-      { time: "06:45", activity: "Deep Work (Golden Hour)", icon: "💻", duration: 120, cat: "mind" },
-      { time: "08:45", activity: "Break", icon: "☕", duration: 15, cat: "life" },
-      { time: "09:00", activity: "Work / Study", icon: "📊", duration: 180, cat: "mind" },
-      { time: "12:00", activity: "Lunch", icon: "🍽️", duration: 45, cat: "power" },
-      { time: "12:45", activity: "Walk + Podcast", icon: "🎧", duration: 30, cat: "mind" },
-      { time: "13:15", activity: "Afternoon Work", icon: "💼", duration: 165, cat: "mind" },
-      { time: "16:00", activity: "Snack + Walk", icon: "🍎", duration: 20, cat: "power" },
-      { time: "16:20", activity: "Skill Practice", icon: "🧠", duration: 40, cat: "mind" },
-      { time: "17:00", activity: "Free Time", icon: "🎮", duration: 60, cat: "heart" },
-      { time: "18:00", activity: "Dinner + Family", icon: "👨‍👩‍👧", duration: 90, cat: "heart" },
-      { time: "19:30", activity: "Reading", icon: "📖", duration: 30, cat: "mind" },
-      { time: "20:00", activity: "Wind Down + Sleep", icon: "😴", duration: 30, cat: "spirit" },
-    ]
-  },
-  wfh: {
-    name: "Work From Home", icon: "🏠", desc: "Stay productive while working remotely", blocks: [
-      { time: "07:00", activity: "Wake Up + Morning Routine", icon: "🌅", duration: 30, cat: "spirit" },
-      { time: "07:30", activity: "Quick Workout", icon: "💪", duration: 30, cat: "power" },
-      { time: "08:00", activity: "Breakfast", icon: "🍳", duration: 30, cat: "power" },
-      { time: "08:30", activity: "Deep Work (No Meetings)", icon: "💻", duration: 120, cat: "mind" },
-      { time: "10:30", activity: "Stand Up + Stretch", icon: "🤸", duration: 10, cat: "power" },
-      { time: "10:40", activity: "Meetings / Calls", icon: "📞", duration: 80, cat: "mind" },
-      { time: "12:00", activity: "Lunch Away From Desk", icon: "🍽️", duration: 45, cat: "power" },
-      { time: "12:45", activity: "Short Walk Outside", icon: "🚶", duration: 15, cat: "spirit" },
-      { time: "13:00", activity: "Afternoon Work", icon: "📊", duration: 120, cat: "mind" },
-      { time: "15:00", activity: "Tea Break + Stretch", icon: "☕", duration: 15, cat: "life" },
-      { time: "15:15", activity: "Focus Sprint", icon: "🎯", duration: 105, cat: "mind" },
-      { time: "17:00", activity: "Exercise / Training", icon: "⚔️", duration: 60, cat: "power" },
-      { time: "18:00", activity: "Dinner + Decompress", icon: "🍽️", duration: 60, cat: "heart" },
-      { time: "19:00", activity: "Hobby / Social", icon: "🎮", duration: 90, cat: "heart" },
-      { time: "20:30", activity: "Reading + Journal", icon: "📖", duration: 30, cat: "mind" },
-      { time: "21:00", activity: "Sleep Routine", icon: "😴", duration: 30, cat: "spirit" },
+    name: "Early Bird", icon: "🐦", blocks: [
+      { id: "1", time: "05:00", name: "Wake Up", icon: "🌅", duration: 10, category: "health" },
+      { id: "2", time: "05:15", name: "Meditation", icon: "🧘", duration: 20, category: "mind" },
+      { id: "3", time: "05:35", name: "Morning Run", icon: "🏃", duration: 40, category: "fitness" },
+      { id: "4", time: "06:30", name: "Cold Shower", icon: "🚿", duration: 10, category: "health" },
+      { id: "5", time: "07:00", name: "Healthy Breakfast", icon: "🥗", duration: 20, category: "nutrition" },
+      { id: "6", time: "08:00", name: "Deep Work", icon: "💻", duration: 240, category: "work" },
+      { id: "7", time: "12:00", name: "Lunch", icon: "🍽️", duration: 30, category: "nutrition" },
+      { id: "8", time: "13:00", name: "Work", icon: "📊", duration: 180, category: "work" },
+      { id: "9", time: "17:00", name: "Gym", icon: "💪", duration: 60, category: "fitness" },
+      { id: "10", time: "19:00", name: "Dinner", icon: "🍛", duration: 30, category: "nutrition" },
+      { id: "11", time: "20:00", name: "Reading", icon: "📖", duration: 60, category: "mind" },
+      { id: "12", time: "21:00", name: "Sleep", icon: "😴", duration: 0, category: "health" },
     ]
   },
   student: {
-    name: "Student Mode", icon: "📚", desc: "Optimized for learning, exams, and growth", blocks: [
-      { time: "06:00", activity: "Wake Up + Quick Workout", icon: "💪", duration: 45, cat: "power" },
-      { time: "06:45", activity: "Shower + Breakfast", icon: "🍳", duration: 45, cat: "life" },
-      { time: "07:30", activity: "Study / Classes", icon: "📚", duration: 150, cat: "mind" },
-      { time: "10:00", activity: "Break", icon: "☕", duration: 15, cat: "life" },
-      { time: "10:15", activity: "Study Block 2", icon: "📖", duration: 105, cat: "mind" },
-      { time: "12:00", activity: "Lunch", icon: "🍽️", duration: 45, cat: "power" },
-      { time: "12:45", activity: "Power Nap / Walk", icon: "🚶", duration: 15, cat: "spirit" },
-      { time: "13:00", activity: "Study / Classes", icon: "💻", duration: 120, cat: "mind" },
-      { time: "15:00", activity: "Snack + Break", icon: "🍎", duration: 15, cat: "power" },
-      { time: "15:15", activity: "Hardest Subject Focus", icon: "🧠", duration: 90, cat: "mind" },
-      { time: "16:45", activity: "Training / Sports", icon: "⚔️", duration: 60, cat: "power" },
-      { time: "17:45", activity: "Free Time", icon: "🎮", duration: 45, cat: "heart" },
-      { time: "18:30", activity: "Dinner", icon: "🍽️", duration: 45, cat: "power" },
-      { time: "19:15", activity: "Light Revision", icon: "📝", duration: 60, cat: "mind" },
-      { time: "20:15", activity: "Social / Relax", icon: "💛", duration: 45, cat: "heart" },
-      { time: "21:00", activity: "Journal + Sleep", icon: "😴", duration: 30, cat: "spirit" },
+    name: "Student", icon: "🎓", blocks: [
+      { id: "1", time: "07:00", name: "Wake Up", icon: "🌅", duration: 10, category: "health" },
+      { id: "2", time: "07:30", name: "Breakfast", icon: "🥣", duration: 20, category: "nutrition" },
+      { id: "3", time: "08:00", name: "Classes", icon: "📚", duration: 180, category: "work" },
+      { id: "4", time: "11:00", name: "Study Session", icon: "✏️", duration: 120, category: "work" },
+      { id: "5", time: "13:00", name: "Lunch", icon: "🍽️", duration: 30, category: "nutrition" },
+      { id: "6", time: "14:00", name: "Classes / Lab", icon: "🔬", duration: 120, category: "work" },
+      { id: "7", time: "16:00", name: "Workout", icon: "💪", duration: 45, category: "fitness" },
+      { id: "8", time: "17:00", name: "Free Time", icon: "🎮", duration: 60, category: "leisure" },
+      { id: "9", time: "18:00", name: "Dinner", icon: "🍛", duration: 30, category: "nutrition" },
+      { id: "10", time: "19:00", name: "Study / Revision", icon: "📖", duration: 120, category: "work" },
+      { id: "11", time: "21:00", name: "Relax", icon: "📱", duration: 60, category: "leisure" },
+      { id: "12", time: "22:00", name: "Sleep", icon: "😴", duration: 0, category: "health" },
+    ]
+  },
+  weekend: {
+    name: "Weekend", icon: "🌴", blocks: [
+      { id: "1", time: "08:00", name: "Wake Up Late", icon: "🌅", duration: 10, category: "health" },
+      { id: "2", time: "08:30", name: "Big Breakfast", icon: "🥞", duration: 30, category: "nutrition" },
+      { id: "3", time: "09:00", name: "Workout", icon: "💪", duration: 60, category: "fitness" },
+      { id: "4", time: "10:00", name: "Hobby / Side Project", icon: "🎨", duration: 120, category: "mind" },
+      { id: "5", time: "12:00", name: "Lunch", icon: "🍽️", duration: 30, category: "nutrition" },
+      { id: "6", time: "13:00", name: "Socialise / Go Out", icon: "👥", duration: 180, category: "leisure" },
+      { id: "7", time: "16:00", name: "Self Care", icon: "💛", duration: 60, category: "health" },
+      { id: "8", time: "17:00", name: "Free Time", icon: "🎮", duration: 120, category: "leisure" },
+      { id: "9", time: "19:00", name: "Dinner", icon: "🍛", duration: 30, category: "nutrition" },
+      { id: "10", time: "20:00", name: "Movie / Series", icon: "🎬", duration: 120, category: "leisure" },
+      { id: "11", time: "22:00", name: "Sleep", icon: "😴", duration: 0, category: "health" },
     ]
   },
 };
 
-function Ring({ pct, color, size = 70, stroke = 5, children }) { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
+const CATS = {
+  fitness: { color: "#10b981", label: "Fitness" },
+  nutrition: { color: "#f59e0b", label: "Nutrition" },
+  work: { color: "#3b82f6", label: "Work" },
+  health: { color: "#06b6d4", label: "Health" },
+  mind: { color: "#8b5cf6", label: "Mind" },
+  leisure: { color: "#ec4899", label: "Leisure" },
+};
 
 export default function RoutinePage({ routineData = null, setRoutineData = () => { } }) {
-  const d = today();
-  const [mode, setMode] = useState("daily"); // daily | setup | edit | history
-  const [addTime, setAddTime] = useState("08:00");
-  const [addName, setAddName] = useState("");
-  const [addIcon, setAddIcon] = useState("⭐");
-  const [addDur, setAddDur] = useState("30");
-  const [addCat, setAddCat] = useState("mind");
-
-  // Data structure: { routine: [...blocks], daily: { "date": { done: [], missed: [] } } }
-  const data = routineData || { routine: [], daily: {} };
+  const d = new Date().toISOString().split("T")[0];
+  const data = routineData || {};
   const routine = data.routine || [];
-  const dailyStatus = data.daily?.[d] || { done: [], missed: [] };
+  const daily = data.daily || {};
+  const todayDone = daily[d]?.done || [];
 
-  const hasRoutine = routine.length > 0;
+  const [showTemplates, setShowTemplates] = useState(routine.length === 0);
+  const [customMode, setCustomMode] = useState(false);
+  const [customBlocks, setCustomBlocks] = useState([]);
+  const [customName, setCustomName] = useState('');
+  const [customTime, setCustomTime] = useState('06:00');
+  const [customIcon, setCustomIcon] = useState('⭐');
+  const [customCat, setCustomCat] = useState('work');
+  const [customDuration, setCustomDuration] = useState(30);
+  const [addMode, setAddMode] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newTime, setNewTime] = useState("08:00");
+  const [newIcon, setNewIcon] = useState("⭐");
+  const [newCat, setNewCat] = useState("work");
 
-  const save = (newData) => setRoutineData(newData);
+  // Current time for highlighting
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
 
-  // ── SETUP: Apply template or start blank ──
+  const getMin = (t) => { const [h, m] = (t || "00:00").split(":").map(Number); return h * 60 + m; };
+
+  // Find current activity
+  const currentIdx = useMemo(() => {
+    for (let i = routine.length - 1; i >= 0; i--) {
+      if (nowMin >= getMin(routine[i].time)) return i;
+    }
+    return -1;
+  }, [routine, nowMin]);
+
+  // Stats
+  const totalBlocks = routine.length;
+  const doneCount = todayDone.length;
+  const pct = totalBlocks > 0 ? Math.round((doneCount / totalBlocks) * 100) : 0;
+
+  const catStats = useMemo(() => {
+    const stats = {};
+    routine.forEach(b => {
+      const cat = b.category || "work";
+      stats[cat] = (stats[cat] || 0) + (b.duration || 30);
+    });
+    return Object.entries(stats).sort((a, b) => b[1] - a[1]);
+  }, [routine]);
+
+  // Handlers
   const applyTemplate = (key) => {
-    const t = TEMPLATES[key];
-    const blocks = t.blocks.map((b, i) => ({ ...b, id: `b${i}_${Date.now()}` }));
-    save({ ...data, routine: blocks });
-    setMode("daily");
+    const template = TEMPLATES[key];
+    setRoutineData({ routine: template.blocks, daily: {} });
+    setShowTemplates(false);
   };
 
-  const startBlank = () => {
-    save({ ...data, routine: [] });
-    setMode("edit");
+  const toggleDone = (blockId) => {
+    const done = todayDone.includes(blockId) ? todayDone.filter(x => x !== blockId) : [...todayDone, blockId];
+    setRoutineData({ ...data, daily: { ...daily, [d]: { done } } });
   };
 
-  // ── EDIT: Add/Remove blocks ──
+  const markAllDone = () => {
+    setRoutineData({ ...data, daily: { ...daily, [d]: { done: routine.map(b => b.id) } } });
+  };
+
   const addBlock = () => {
-    if (!addName.trim()) return;
-    const newBlock = { id: `b${Date.now()}`, time: addTime, activity: addName.trim(), icon: addIcon, duration: parseInt(addDur) || 30, cat: addCat };
-    const newRoutine = [...routine, newBlock].sort((a, b) => a.time.localeCompare(b.time));
-    save({ ...data, routine: newRoutine });
-    setAddName(""); setAddTime("08:00");
+    if (!newName.trim()) return;
+    const block = { id: Date.now().toString(), time: newTime, name: newName.trim(), icon: newIcon, duration: 30, category: newCat };
+    const updated = [...routine, block].sort((a, b) => getMin(a.time) - getMin(b.time));
+    setRoutineData({ ...data, routine: updated });
+    setNewName(""); setAddMode(false);
   };
 
   const removeBlock = (id) => {
-    save({ ...data, routine: routine.filter(b => b.id !== id) });
+    setRoutineData({ ...data, routine: routine.filter(b => b.id !== id) });
   };
 
-  const addPreset = (preset) => {
-    const block = { ...preset, id: `b${Date.now()}_${Math.random().toString(36).slice(2, 6)}` };
-    const newRoutine = [...routine, block].sort((a, b) => a.time.localeCompare(b.time));
-    save({ ...data, routine: newRoutine });
+  const resetRoutine = () => {
+    if (window.confirm("Reset entire routine? This removes all blocks.")) {
+      setRoutineData({ routine: [], daily: {} });
+      setShowTemplates(true);
+    }
   };
 
-  // ── DAILY: Mark done/missed ──
-  const markDone = (id) => {
-    const newDaily = { ...data.daily, [d]: { done: [...(dailyStatus.done || []).filter(x => x !== id), id], missed: (dailyStatus.missed || []).filter(x => x !== id) } };
-    save({ ...data, daily: newDaily });
+  // ── Custom Plan Builder ──
+  const ICONS = ['🌅', '💪', '🏃', '🧘', '🚿', '🥣', '💼', '📚', '✏️', '💻', '🍽️', '🚶', '⚔️', '🎮', '📖', '📝', '😴', '🎨', '👥', '📊', '🔬', '🎬', '📱', '💛', '🎯', '⭐'];
+  const DURATIONS = [10, 15, 20, 30, 45, 60, 90, 120, 180, 240];
+
+  const addCustomBlock = () => {
+    if (!customName.trim()) return;
+    const block = { id: Date.now().toString(), time: customTime, name: customName.trim(), icon: customIcon, duration: customDuration, category: customCat };
+    const updated = [...customBlocks, block].sort((a, b) => getMin(a.time) - getMin(b.time));
+    setCustomBlocks(updated);
+    setCustomName('');
+    // Auto-increment time
+    const mins = getMin(customTime) + customDuration;
+    const nextH = Math.floor(mins / 60).toString().padStart(2, '0');
+    const nextM = (mins % 60).toString().padStart(2, '0');
+    setCustomTime(`${nextH}:${nextM}`);
   };
 
-  const markMissed = (id) => {
-    const newDaily = { ...data.daily, [d]: { done: (dailyStatus.done || []).filter(x => x !== id), missed: [...(dailyStatus.missed || []).filter(x => x !== id), id] } };
-    save({ ...data, daily: newDaily });
+  const saveCustomPlan = () => {
+    if (customBlocks.length < 2) return;
+    setRoutineData({ routine: customBlocks, daily: {} });
+    setCustomMode(false);
+    setCustomBlocks([]);
+    setShowTemplates(false);
   };
 
-  const unmark = (id) => {
-    const newDaily = { ...data.daily, [d]: { done: (dailyStatus.done || []).filter(x => x !== id), missed: (dailyStatus.missed || []).filter(x => x !== id) } };
-    save({ ...data, daily: newDaily });
-  };
-
-  const getStatus = (id) => {
-    if ((dailyStatus.done || []).includes(id)) return "done";
-    if ((dailyStatus.missed || []).includes(id)) return "missed";
-    return "pending";
-  };
-
-  // Stats
-  const doneCount = (dailyStatus.done || []).length;
-  const missedCount = (dailyStatus.missed || []).length;
-  const totalBlocks = routine.length;
-  const markedCount = doneCount + missedCount;
-  const progress = totalBlocks > 0 ? Math.round((doneCount / totalBlocks) * 100) : 0;
-  const totalMin = routine.reduce((s, b) => s + (b.duration || 30), 0);
-
-  // Current time indicator
-  const now = new Date();
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const currentBlockIdx = routine.findIndex(b => {
-    const [h, m] = b.time.split(":").map(Number);
-    const blockStart = h * 60 + m;
-    return blockStart + (b.duration || 30) > nowMinutes && blockStart <= nowMinutes + 30;
-  });
-
-  // History data
-  const historyEntries = useMemo(() => {
-    return Object.entries(data.daily || {}).filter(([date]) => date !== d).map(([date, status]) => {
-      const done = (status.done || []).length;
-      const missed = (status.missed || []).length;
-      const total = routine.length;
-      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-      return {
-        date,
-        icon: pct >= 80 ? "🏆" : pct >= 50 ? "⚡" : "📅",
-        title: `${pct}% completed`,
-        subtitle: `${done} done · ${missed} missed · ${total - done - missed} unmarked`,
-        value: `${done}/${total}`,
-        valueColor: pct >= 80 ? "#22c55e" : pct >= 50 ? "#f59e0b" : "#ef4444",
-        badge: pct >= 100 ? { text: "Perfect Day", color: "#22c55e" } : pct >= 80 ? { text: "Great Day", color: "#10b981" } : null,
-        details: [
-          { label: "Completed", value: done, color: "#22c55e" },
-          { label: "Missed", value: missed, color: "#ef4444" },
-          { label: "Unmarked", value: total - done - missed },
-          { label: "Score", value: `${pct}%`, color: pct >= 80 ? "#22c55e" : "#f59e0b" },
-        ],
-        items: routine.map(b => {
-          const s = (status.done || []).includes(b.id) ? "done" : (status.missed || []).includes(b.id) ? "missed" : "unmarked";
-          return {
-            icon: s === "done" ? "✅" : s === "missed" ? "❌" : "⬜",
-            text: `${b.time} — ${b.activity}`,
-            sub: `${b.duration}min`,
-            value: s === "done" ? "✓" : s === "missed" ? "✗" : "—",
-            valueColor: s === "done" ? "#22c55e" : s === "missed" ? "#ef4444" : "#4b5563",
-          };
-        }),
-      };
-    });
-  }, [data.daily, routine, d]);
-
-  // ══ NO ROUTINE — SETUP ══
-  if (!hasRoutine && mode !== "edit") {
-    return (<div>
-      <div style={{ textAlign: "center", marginBottom: 24 }}>
-        <div style={{ fontSize: 40, marginBottom: 8 }}>📅</div>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>Build Your Daily Routine</h2>
-        <p style={{ color: "#6b7280", fontSize: 13, marginTop: 6 }}>Create once, follow every day. Choose a template or build your own.</p>
-      </div>
-
-      {Object.entries(TEMPLATES).map(([key, t]) => (
-        <div key={key} className="gc" onClick={() => applyTemplate(key)} style={{ padding: 16, marginBottom: 10, cursor: "pointer" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <span style={{ fontSize: 32 }}>{t.icon}</span>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6" }}>{t.name}</div>
-              <div style={{ fontSize: 12, color: "#6b7280" }}>{t.desc}</div>
-              <div style={{ fontSize: 11, color: "#4b5563", marginTop: 2 }}>{t.blocks.length} activities · {Math.floor(t.blocks.reduce((s, b) => s + (b.duration || 30), 0) / 60)}h planned</div>
-            </div>
+  if (customMode) {
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>✨ Build Your Day</div>
+            <div style={{ fontSize: 11, color: "#6b7280" }}>{customBlocks.length} activities added</div>
           </div>
+          <span onClick={() => { setCustomMode(false); setShowTemplates(true); setCustomBlocks([]); }} style={{ fontSize: 12, color: "#6b7280", cursor: "pointer" }}>← Back</span>
         </div>
-      ))}
 
-      <div style={{ textAlign: "center", marginTop: 16 }}>
-        <button className="bg" onClick={startBlank} style={{ padding: "12px 24px" }}>🛠️ Build From Scratch</button>
-      </div>
-    </div>);
-  }
+        {/* Add activity form */}
+        <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <input className="inp" type="time" value={customTime} onChange={e => setCustomTime(e.target.value)} style={{ width: 100 }} />
+            <input className="inp" placeholder="Activity name" value={customName} onChange={e => setCustomName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCustomBlock()} style={{ flex: 1 }} />
+          </div>
 
-  // ══ EDIT MODE ══
-  if (mode === "edit") {
-    return (<div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div><div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>🛠️ Edit Routine</div><div style={{ fontSize: 12, color: "#6b7280" }}>{routine.length} blocks · {Math.floor(totalMin / 60)}h {totalMin % 60}m</div></div>
-        <button className="bp" onClick={() => setMode("daily")} style={{ padding: "8px 18px" }}>✓ Done</button>
-      </div>
+          {/* Icon picker */}
+          <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 4 }}>Icon</div>
+          <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
+            {ICONS.map(icon => (
+              <span key={icon} onClick={() => setCustomIcon(icon)} style={{ fontSize: 18, padding: "4px 6px", borderRadius: 8, cursor: "pointer", background: customIcon === icon ? "rgba(16,185,129,.15)" : "transparent", border: customIcon === icon ? "1px solid rgba(16,185,129,.2)" : "1px solid transparent" }}>{icon}</span>
+            ))}
+          </div>
 
-      {/* Add Block Form */}
-      <div className="gs" style={{ marginBottom: 16, border: "1px solid rgba(16,185,129,.15)" }}>
-        <div className="sl">Add New Block</div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          <input className="inp" type="time" value={addTime} onChange={e => setAddTime(e.target.value)} style={{ width: 110 }} />
-          <input className="inp" placeholder="Activity name" value={addName} onChange={e => setAddName(e.target.value)} style={{ flex: 1 }} />
-          <input className="inp" type="number" placeholder="min" value={addDur} onChange={e => setAddDur(e.target.value)} style={{ width: 60, textAlign: "center" }} />
+          {/* Duration */}
+          <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 4 }}>Duration</div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 10, overflowX: "auto" }}>
+            {DURATIONS.map(dur => (
+              <span key={dur} className={`chip ${customDuration === dur ? "chip-a" : "chip-i"}`} onClick={() => setCustomDuration(dur)} style={{ fontSize: 10, flexShrink: 0 }}>
+                {dur >= 60 ? `${dur / 60}h` : `${dur}m`}
+              </span>
+            ))}
+          </div>
+
+          {/* Category */}
+          <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 4 }}>Category</div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+            {Object.entries(CATS).map(([key, cat]) => (
+              <span key={key} className={`chip ${customCat === key ? "chip-a" : "chip-i"}`} onClick={() => setCustomCat(key)} style={{ fontSize: 10 }}>{cat.label}</span>
+            ))}
+          </div>
+
+          <button className="bp" onClick={addCustomBlock} disabled={!customName.trim()} style={{ width: "100%", padding: 12, fontSize: 13 }}>
+            ＋ Add Activity
+          </button>
         </div>
-        <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-          {CATEGORIES.map(c => <span key={c.id} className={`chip ${addCat === c.id ? "chip-a" : "chip-i"}`} onClick={() => setAddCat(c.id)}>{c.icon} {c.label}</span>)}
-        </div>
-        <button className="bp" onClick={addBlock} disabled={!addName.trim()} style={{ width: "100%", padding: 10 }}>+ Add Block</button>
-      </div>
 
-      {/* Quick Add from Presets */}
-      <div className="gs" style={{ marginBottom: 16 }}>
-        <div className="sl">Quick Add</div>
-        <div style={{ maxHeight: 200, overflowY: "auto" }}>
-          {PRESET_BLOCKS.filter(p => !routine.some(r => r.activity === p.activity)).map((p, i) => (
-            <div key={i} onClick={() => addPreset(p)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.03)", cursor: "pointer" }}>
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <span style={{ fontSize: 16 }}>{p.icon}</span>
-                <div><div style={{ fontSize: 13, color: "#e5e7eb" }}>{p.activity}</div><div style={{ fontSize: 10, color: "#4b5563" }}>{p.time} · {p.duration}min</div></div>
+        {/* Preview of added blocks */}
+        {customBlocks.length > 0 && (
+          <div>
+            <div className="sl" style={{ marginBottom: 8 }}>Your Plan Preview</div>
+            {customBlocks.map((block, i) => (
+              <div key={block.id} style={{ display: "flex", gap: 10, padding: "8px 12px", marginBottom: 4, borderRadius: 10, background: "rgba(255,255,255,.02)" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 14 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: CATS[block.category]?.color || "#6b7280" }} />
+                  {i < customBlocks.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 16, background: "rgba(255,255,255,.04)", marginTop: 2 }} />}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, color: "#f3f4f6" }}>{block.icon} {block.name}</div>
+                  <div style={{ fontSize: 10, color: "#6b7280" }}>{block.time} · {block.duration >= 60 ? `${block.duration / 60}h` : `${block.duration}m`}</div>
+                </div>
+                <span onClick={() => setCustomBlocks(customBlocks.filter(b => b.id !== block.id))} style={{ fontSize: 14, color: "#4b5563", cursor: "pointer" }}>×</span>
               </div>
-              <span style={{ color: "#10b981", fontSize: 18 }}>+</span>
+            ))}
+
+            <button className="bp" onClick={saveCustomPlan} disabled={customBlocks.length < 2} style={{ width: "100%", marginTop: 12, padding: 14, fontSize: 14 }}>
+              ✅ Save My Plan ({customBlocks.length} activities)
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Template Selection ──
+  if (showTemplates || routine.length === 0) {
+    return (
+      <div>
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>📅</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>Set Up Your Day</div>
+          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Choose a template to get started</div>
+        </div>
+
+        <StaggerContainer>
+          {/* Custom Plan */}
+          <StaggerItem>
+            <div className="gc" onClick={() => { setShowTemplates(false); setCustomMode(true); }} style={{ marginBottom: 10, padding: 16, cursor: "pointer", border: "1px solid rgba(16,185,129,.15)", background: "rgba(16,185,129,.03)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 28 }}>✨</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#10b981", fontFamily: "Rajdhani, sans-serif" }}>Custom Plan</div>
+                  <div style={{ fontSize: 11, color: "#6b7280" }}>Build your own day from scratch</div>
+                </div>
+                <span style={{ fontSize: 11, color: "#10b981" }}>Create →</span>
+              </div>
             </div>
+          </StaggerItem>
+
+          {Object.entries(TEMPLATES).map(([key, tmpl]) => (
+            <StaggerItem key={key}>
+              <div className="gc" onClick={() => applyTemplate(key)} style={{ marginBottom: 10, padding: 16, cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 28 }}>{tmpl.icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>{tmpl.name}</div>
+                    <div style={{ fontSize: 11, color: "#6b7280" }}>{tmpl.blocks.length} activities · {tmpl.blocks[0]?.time} — {tmpl.blocks[tmpl.blocks.length - 1]?.time}</div>
+                  </div>
+                  <span style={{ fontSize: 11, color: "#10b981" }}>Use →</span>
+                </div>
+              </div>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
       </div>
-
-      {/* Current Routine */}
-      <div className="sl">Your Routine ({routine.length})</div>
-      {routine.map(b => (
-        <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
-          <div style={{ width: 6, height: 6, borderRadius: 3, background: CAT_COLORS[b.cat] || "#6b7280", flexShrink: 0 }} />
-          <span style={{ fontSize: 16 }}>{b.icon}</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: "#e5e7eb" }}>{b.activity}</div>
-            <div style={{ fontSize: 11, color: "#4b5563" }}>{b.time} · {b.duration}min</div>
-          </div>
-          <span onClick={() => removeBlock(b.id)} style={{ color: "#ef4444", fontSize: 14, cursor: "pointer", padding: "4px 8px" }}>✕</span>
-        </div>
-      ))}
-
-      {/* Reset */}
-      <button onClick={() => { save({ ...data, routine: [] }); }} style={{ width: "100%", marginTop: 16, padding: 10, background: "transparent", border: "1px solid rgba(239,68,68,.15)", borderRadius: 8, color: "#ef4444", fontSize: 12, cursor: "pointer" }}>Reset Routine</button>
-    </div>);
+    );
   }
 
-  // ══ HISTORY MODE ══
-  if (mode === "history") {
-    return (<div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>📅 Routine History</div>
-        <button className="bg" onClick={() => setMode("daily")} style={{ padding: "8px 16px" }}>← Back</button>
-      </div>
-      <HistoryPanel entries={historyEntries} title="Daily Routine History" emptyText="Follow your routine for a day to see history here" />
-    </div>);
-  }
-
-  // ══ DAILY VIEW ══
-  return (<div style={{ maxWidth: "100%", overflowX: "hidden" }}>
-
-    {/* Current Activity Spotlight */}
-    {currentBlockIdx >= 0 && routine[currentBlockIdx] && (() => {
-      const cur = routine[currentBlockIdx];
-      const [ch, cm] = cur.time.split(":").map(Number);
-      const endMin = ch * 60 + cm + (cur.duration || 30);
-      const remaining = endMin - nowMinutes;
-      const elapsed = nowMinutes - (ch * 60 + cm);
-      const pctDone = Math.round((elapsed / (cur.duration || 30)) * 100);
-      const status = getStatus(cur.id);
-      if (status !== "pending") return null;
-      return (
-        <div className="gs" style={{ marginBottom: 14, padding: 14, border: "1px solid rgba(16,185,129,.2)", background: "rgba(16,185,129,.04)", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", bottom: 0, left: 0, height: 3, width: `${pctDone}%`, background: "#10b981", transition: "width 60s linear" }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ fontSize: 28 }}>{cur.icon}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 10, color: "#10b981", fontWeight: 600, letterSpacing: 1 }}>NOW</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{cur.activity}</div>
-              <div style={{ fontSize: 12, color: "#6b7280" }}>{remaining > 0 ? `${remaining} min remaining` : "Wrapping up..."}</div>
+  return (
+    <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
+      <StaggerContainer>
+        {/* Today's Progress */}
+        <StaggerItem>
+          <div className="gs" style={{ marginBottom: 14, padding: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>Today's Progress</div>
+                <div style={{ fontSize: 11, color: "#6b7280" }}>{doneCount}/{totalBlocks} completed</div>
+              </div>
+              <div style={{ position: "relative", width: 48, height: 48 }}>
+                <svg width={48} height={48} style={{ transform: "rotate(-90deg)" }}>
+                  <circle cx={24} cy={24} r={20} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={4} />
+                  <circle cx={24} cy={24} r={20} fill="none" stroke={pct >= 100 ? "#22c55e" : "#10b981"} strokeWidth={4} strokeDasharray={125.6} strokeDashoffset={125.6 * (1 - pct / 100)} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} />
+                </svg>
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>{pct}%</div>
+              </div>
             </div>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button onClick={() => markDone(cur.id)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(34,197,94,.3)", background: "rgba(34,197,94,.1)", color: "#22c55e", fontSize: 13, cursor: "pointer" }}>Done ✓</button>
+
+            {/* Category breakdown */}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {catStats.map(([cat, mins]) => (
+                <span key={cat} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 100, background: `${CATS[cat]?.color || "#6b7280"}12`, color: CATS[cat]?.color || "#6b7280", border: `1px solid ${CATS[cat]?.color || "#6b7280"}20` }}>
+                  {CATS[cat]?.label || cat} · {Math.round(mins / 60)}h
+                </span>
+              ))}
             </div>
           </div>
-        </div>
-      );
-    })()}
+        </StaggerItem>
 
-    {/* Header */}
-    <div className="gs" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-      <Ring pct={progress} color={progress >= 80 ? "#22c55e" : progress >= 50 ? "#f59e0b" : "#ef4444"} size={75} stroke={6}>
-        <div style={{ textAlign: "center" }}><div style={{ fontSize: 22, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", lineHeight: 1 }}>{progress}%</div><div style={{ fontSize: 8, color: "#6b7280" }}>done</div></div>
-      </Ring>
-      <div style={{ flex: 1, minWidth: 140 }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Today's Routine</div>
-        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-          <span style={{ color: "#22c55e" }}>✓ {doneCount}</span> · <span style={{ color: "#ef4444" }}>✗ {missedCount}</span> · <span>{totalBlocks - markedCount} remaining</span>
-        </div>
-        <div style={{ fontSize: 11, color: "#4b5563", marginTop: 2 }}>{Math.floor(totalMin / 60)}h {totalMin % 60}m planned</div>
-      </div>
-    </div>
-
-    {/* Category breakdown */}
-    <div style={{ display: "flex", gap: 4, marginBottom: 12, overflowX: "auto" }}>
-      {CATEGORIES.map(cat => {
-        const catMin = routine.filter(b => b.cat === cat.id).reduce((s, b) => s + (b.duration || 30), 0);
-        const catDone = routine.filter(b => b.cat === cat.id && getStatus(b.id) === "done").length;
-        const catTotal = routine.filter(b => b.cat === cat.id).length;
-        if (catTotal === 0) return null;
-        return (
-          <div key={cat.id} style={{ flex: "1 1 0", minWidth: 56, padding: "6px 4px", borderRadius: 8, background: `${cat.color}08`, textAlign: "center" }}>
-            <div style={{ fontSize: 14 }}>{cat.icon}</div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: cat.color }}>{catDone}/{catTotal}</div>
-            <div style={{ fontSize: 8, color: "#6b7280" }}>{Math.floor(catMin / 60)}h{catMin % 60 > 0 ? `${catMin % 60}m` : ""}</div>
+        {/* Actions */}
+        <StaggerItem>
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            <button className="bp" onClick={markAllDone} style={{ flex: 1, padding: "10px 14px", fontSize: 12 }}>✅ Mark All Done</button>
+            <button className="bg" onClick={() => setAddMode(!addMode)} style={{ padding: "10px 14px", fontSize: 12 }}>{addMode ? "✕" : "＋ Add"}</button>
+            <button className="bg" onClick={resetRoutine} style={{ padding: "10px 14px", fontSize: 12 }}>🔄</button>
           </div>
-        );
-      })}
-    </div>
+        </StaggerItem>
 
-    {/* Mark All Done */}
-    {totalBlocks > 0 && doneCount < totalBlocks && (
-      <button className="bg" onClick={() => { routine.forEach(b => { if (getStatus(b.id) === "pending") markDone(b.id); }); }}
-        style={{ width: "100%", padding: 10, marginBottom: 12, fontSize: 12 }}>✅ Mark All Remaining as Done</button>
-    )}
+        {/* Add new block */}
+        {addMode && (
+          <StaggerItem>
+            <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif", marginBottom: 10 }}>Add Activity</div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                <input className="inp" type="time" value={newTime} onChange={e => setNewTime(e.target.value)} style={{ width: 110 }} />
+                <input className="inp" placeholder="Activity name" value={newName} onChange={e => setNewName(e.target.value)} style={{ flex: 1 }} />
+              </div>
+              <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                {Object.entries(CATS).map(([key, cat]) => (
+                  <span key={key} className={`chip ${newCat === key ? "chip-a" : "chip-i"}`} onClick={() => setNewCat(key)} style={{ fontSize: 10 }}>{cat.label}</span>
+                ))}
+              </div>
+              <button className="bp" onClick={addBlock} disabled={!newName.trim()} style={{ width: "100%", padding: 10, fontSize: 13 }}>Add to Routine</button>
+            </div>
+          </StaggerItem>
+        )}
 
-    {/* Action buttons */}
-    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-      <button className="bg" onClick={() => setMode("edit")} style={{ flex: 1, padding: 10 }}>✏️ Edit</button>
-      <button className="bg" onClick={() => setMode("history")} style={{ flex: 1, padding: 10 }}>📅 History</button>
-    </div>
+        {/* Timeline */}
+        {routine.map((block, i) => {
+          const isDone = todayDone.includes(block.id);
+          const isCurrent = i === currentIdx;
+          const isPast = nowMin > getMin(block.time) + (block.duration || 30);
+          const cat = CATS[block.category] || CATS.work;
 
-    {/* Timeline */}
-    {routine.map((b, i) => {
-      const status = getStatus(b.id);
-      const isCurrent = i === currentBlockIdx;
-      const [bh, bm] = b.time.split(":").map(Number);
-      const blockMin = bh * 60 + bm;
-      const isPast = blockMin + (b.duration || 30) < nowMinutes;
-      const catColor = CAT_COLORS[b.cat] || "#6b7280";
+          return (
+            <StaggerItem key={block.id}>
+              <div onClick={() => toggleDone(block.id)} style={{ display: "flex", gap: 12, marginBottom: 4, cursor: "pointer", padding: "10px 12px", borderRadius: 12, background: isCurrent ? "rgba(16,185,129,.06)" : isDone ? "rgba(34,197,94,.03)" : "transparent", border: isCurrent ? "1px solid rgba(16,185,129,.15)" : "1px solid transparent", transition: "all .2s" }}>
+                {/* Timeline line + dot */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 16, flexShrink: 0 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: isDone ? "#22c55e" : isCurrent ? "#10b981" : "rgba(255,255,255,.08)", border: isCurrent ? "2px solid #10b981" : "none", boxShadow: isCurrent ? "0 0 8px rgba(16,185,129,.3)" : "none", flexShrink: 0 }} />
+                  {i < routine.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 24, background: isDone ? "rgba(34,197,94,.2)" : "rgba(255,255,255,.04)", marginTop: 4 }} />}
+                </div>
 
-      return (
-        <div key={b.id} style={{ display: "flex", gap: 10, position: "relative" }}>
-          {/* Timeline rail */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 24 }}>
-            <div style={{
-              width: 12, height: 12, borderRadius: "50%", flexShrink: 0, transition: "all .3s",
-              background: status === "done" ? "#22c55e" : status === "missed" ? "#ef4444" : isCurrent ? "#10b981" : "rgba(255,255,255,.06)",
-              border: isCurrent && status === "pending" ? "2px solid #10b981" : "none",
-              boxShadow: isCurrent ? "0 0 8px rgba(16,185,129,.4)" : "none",
-            }} />
-            {i < routine.length - 1 && <div style={{ width: 2, flex: 1, background: status === "done" ? "rgba(34,197,94,.2)" : "rgba(255,255,255,.04)" }} />}
-          </div>
+                {/* Content */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 18 }}>{block.icon}</span>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: isDone ? "#6b7280" : "#f3f4f6", textDecoration: isDone ? "line-through" : "none" }}>{block.name}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                          <span style={{ fontSize: 10, color: "#6b7280" }}>{block.time}</span>
+                          {block.duration > 0 && <span style={{ fontSize: 10, color: "#4b5563" }}>· {block.duration >= 60 ? `${Math.floor(block.duration / 60)}h${block.duration % 60 > 0 ? ` ${block.duration % 60}m` : ""}` : `${block.duration}m`}</span>}
+                          <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 100, background: `${cat.color}12`, color: cat.color }}>{cat.label}</span>
+                        </div>
+                      </div>
+                    </div>
 
-          {/* Block card */}
-          <div style={{
-            flex: 1, padding: "10px 14px", marginBottom: 6, borderRadius: 10, transition: "all .2s",
-            background: status === "done" ? "rgba(34,197,94,.04)" : status === "missed" ? "rgba(239,68,68,.03)" : isCurrent ? "rgba(16,185,129,.04)" : "rgba(255,255,255,.015)",
-            border: isCurrent && status === "pending" ? "1px solid rgba(16,185,129,.2)" : status === "done" ? "1px solid rgba(34,197,94,.1)" : status === "missed" ? "1px solid rgba(239,68,68,.1)" : "1px solid rgba(255,255,255,.03)",
-            opacity: status === "done" || status === "missed" ? 0.75 : 1,
-          }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
-                <span style={{ fontSize: 18 }}>{b.icon}</span>
-                <div>
-                  <div style={{
-                    fontSize: 14, fontWeight: 500, color: status === "done" ? "#6b7280" : "#e5e7eb",
-                    textDecoration: status === "done" ? "line-through" : "none",
-                  }}>{b.activity}</div>
-                  <div style={{ fontSize: 11, color: "#4b5563" }}>
-                    {b.time} · {b.duration}min
-                    <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: 3, background: catColor, marginLeft: 6, verticalAlign: "middle" }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {isDone && <span style={{ fontSize: 14, color: "#22c55e" }}>✓</span>}
+                      {isCurrent && !isDone && <span style={{ fontSize: 8, padding: "2px 8px", borderRadius: 100, background: "rgba(16,185,129,.15)", color: "#10b981", fontWeight: 600 }}>NOW</span>}
+                      <span onClick={e => { e.stopPropagation(); removeBlock(block.id); }} style={{ fontSize: 14, color: "#4b5563", padding: "2px 4px", cursor: "pointer" }}>×</span>
+                    </div>
                   </div>
                 </div>
               </div>
+            </StaggerItem>
+          );
+        })}
 
-              {/* Category breakdown */}
-              <div style={{ display: "flex", gap: 4, marginBottom: 12, overflowX: "auto" }}>
-                {CATEGORIES.map(cat => {
-                  const catMin = routine.filter(b => b.cat === cat.id).reduce((s, b) => s + (b.duration || 30), 0);
-                  const catDone = routine.filter(b => b.cat === cat.id && getStatus(b.id) === "done").length;
-                  const catTotal = routine.filter(b => b.cat === cat.id).length;
-                  if (catTotal === 0) return null;
-                  return (
-                    <div key={cat.id} style={{ flex: "1 1 0", minWidth: 56, padding: "6px 4px", borderRadius: 8, background: `${cat.color}08`, textAlign: "center" }}>
-                      <div style={{ fontSize: 14 }}>{cat.icon}</div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: cat.color }}>{catDone}/{catTotal}</div>
-                      <div style={{ fontSize: 8, color: "#6b7280" }}>{Math.floor(catMin / 60)}h{catMin % 60 > 0 ? `${catMin % 60}m` : ""}</div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Mark All Done */}
-              {totalBlocks > 0 && doneCount < totalBlocks && (
-                <button className="bg" onClick={() => { routine.forEach(b => { if (getStatus(b.id) === "pending") markDone(b.id); }); }}
-                  style={{ width: "100%", padding: 10, marginBottom: 12, fontSize: 12 }}>✅ Mark All Remaining as Done</button>
-              )}
-
-              {/* Action buttons */}
-              <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                {status === "pending" && (
-                  <>
-                    <button onClick={() => markDone(b.id)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(34,197,94,.2)", background: "rgba(34,197,94,.06)", color: "#22c55e", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✓</button>
-                    <button onClick={() => markMissed(b.id)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(239,68,68,.2)", background: "rgba(239,68,68,.06)", color: "#ef4444", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✗</button>
-                  </>
-                )}
-                {status !== "pending" && (
-                  <button onClick={() => unmark(b.id)} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,.06)", background: "transparent", color: "#6b7280", fontSize: 10, cursor: "pointer" }}>Undo</button>
-                )}
-              </div>
-            </div>
+        {/* Change template */}
+        <StaggerItem>
+          <div style={{ textAlign: "center", marginTop: 12 }}>
+            <span onClick={() => setShowTemplates(true)} style={{ fontSize: 11, color: "#6b7280", cursor: "pointer", textDecoration: "underline" }}>Change template</span>
           </div>
-        </div>
-      );
-    })}
-  </div>);
+        </StaggerItem>
+      </StaggerContainer>
+    </div>
+  );
 }

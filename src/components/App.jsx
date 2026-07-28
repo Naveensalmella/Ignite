@@ -49,6 +49,12 @@ import { play, hapticTap, hapticSuccess } from './soundEngine';
 
 // Global error handler — prevents white screen crashes
 if (typeof window !== 'undefined') {
+    // Suppress harmless ResizeObserver error
+    const ro = window.onerror;
+    window.onerror = (msg, ...args) => {
+        if (typeof msg === 'string' && msg.includes('ResizeObserver')) return true;
+        return ro ? ro(msg, ...args) : false;
+    };
     window.onerror = (msg, src, line, col, err) => { console.error("Global error:", msg, err); return false; };
     window.onunhandledrejection = (e) => { console.error("Unhandled promise:", e.reason); };
 }
@@ -136,6 +142,8 @@ export default function App({ externalUser = null }) {
                     username: firebaseUser.uid,
                 };
                 setUser(u);
+                // Save email to Firestore immediately so friends can find this user
+                try { await store.saveUserData(firebaseUser.uid, { email: firebaseUser.email }, true); } catch { }
                 await loadUserData(u.uid);
             } else {
                 setUser(null);
@@ -369,7 +377,7 @@ export default function App({ externalUser = null }) {
         challenges: <ChallengesPage challengeData={challengeData} setChallengeData={setChallengeData} addXP={addXP} />,
         share: <ShareCard totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} />,
         bodyphotos: <BodyProgress bodyPhotos={bodyPhotos} setBodyPhotos={setBodyPhotos} />,
-        social: <SocialPage user={user} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />,
+        social: <SocialPage user={user} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} />,
         gaming: <GamingHub appState={appState} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} profile={profile} loginData={loginData} setLoginData={setLoginData} xpLog={xpLog} activeTitle={activeTitle} setActiveTitle={setActiveTitle} questChainData={questChainData} setQuestChainData={setQuestChainData} />,
         programs: <WorkoutPrograms programData={programData} setProgramData={setProgramData} addXP={addXP} />,
     };
@@ -458,7 +466,7 @@ export default function App({ externalUser = null }) {
 
                 {/* Main Content */}
                 <main style={{ flex: 1, paddingBottom: 70, overflow: "auto", position: "relative", zIndex: 1 }}>
-                    <header style={{ padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(6,10,12,.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(16,185,129,.05)", position: "sticky", top: 0, zIndex: 30, gap: 12 }}>
+                    <header style={{ padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(6,10,12,.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(16,185,129,.05)", position: "fixed", top: 0, left: 0, right: 0, zIndex: 30, gap: 12 }}>
                         <div className="app-header">
                             {isMobile && <span onClick={() => null} style={{ cursor: "pointer", fontSize: 22, color: "#6b7280" }}></span>}
                             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>{currentLabel}</h2>
@@ -469,7 +477,7 @@ export default function App({ externalUser = null }) {
                             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff" }}>{user.name?.[0]?.toUpperCase() || "U"}</div>
                         </div>
                     </header>
-                    <div style={{ padding: "14px min(24px, 4vw)", paddingBottom: 70, maxWidth: 1120, margin: "0 auto", overflowX: "hidden", overflowY: "auto", flex: 1 }}>
+                    <div style={{ padding: "14px min(24px, 4vw)", paddingTop: 60, paddingBottom: 70, maxWidth: 1120, margin: "0 auto", overflowX: "hidden", overflowY: "auto", flex: 1 }}>
                         <PullToRefresh onRefresh={async () => { if (user) await loadUserData(user.uid); }}><PageTransition pageKey={page}>{pages[page]}</PageTransition></PullToRefresh>
                     </div>
                 </main>

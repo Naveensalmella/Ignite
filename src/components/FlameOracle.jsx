@@ -289,7 +289,7 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 180px)", position: "relative", maxWidth: "100%", overflowX: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 135px)", position: "relative", maxWidth: "100%", overflowX: "hidden" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 0 12px", borderBottom: "1px solid rgba(255,255,255,.04)", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

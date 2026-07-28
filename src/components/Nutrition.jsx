@@ -204,10 +204,10 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const capture = () => {
     if (!videoRef.current || !canvasRef.current) return;
     const cv = canvasRef.current, v = videoRef.current;
-    cv.width = 512; cv.height = 512;
+    cv.width = 256; cv.height = 256;
     const ctx = cv.getContext("2d");
     const sz = Math.min(v.videoWidth, v.videoHeight);
-    ctx.drawImage(v, (v.videoWidth - sz) / 2, (v.videoHeight - sz) / 2, sz, sz, 0, 0, 512, 512);
+    ctx.drawImage(v, (v.videoWidth - sz) / 2, (v.videoHeight - sz) / 2, sz, sz, 0, 0, 256, 256);
     const url = cv.toDataURL("image/jpeg", .8);
     setScanPhoto(url);
     stopCam();
@@ -227,7 +227,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   // AI Food Analysis — Direct Groq API (no backend needed)
   // Analyze food from photo using Vision AI (Groq Vision / Gemini)
   // Compress image to reduce size before sending to API
-  const compressImage = (base64, maxWidth = 512) => {
+  const compressImage = (base64, maxWidth = 256) => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {

@@ -209,17 +209,22 @@ body {
   border-radius: 4px;
 }
 
-/* Bottom nav spacing */
+/* Page layout — fixed header + bottom nav */
 .page-content {
-  padding-bottom: 70px !important;
-  min-height: calc(100vh - 56px);
+  padding-bottom: 68px !important;
   overflow-y: auto;
+  min-height: calc(100vh - 56px);
 }
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .page-content {
-    padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom)) !important;
   }
+}
+
+/* Prevent body scroll bounce */
+html, body {
+  overscroll-behavior: none;
 }
 
 /* Hide scrollbar on nav */
