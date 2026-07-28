@@ -477,7 +477,7 @@ export default function App({ externalUser = null }) {
                             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff" }}>{user.name?.[0]?.toUpperCase() || "U"}</div>
                         </div>
                     </header>
-                    <div style={{ padding: "14px min(24px, 4vw)", paddingTop: 60, paddingBottom: 70, maxWidth: 1120, margin: "0 auto", overflowX: "hidden", overflowY: "auto", flex: 1 }}>
+                    <div style={{ padding: "14px min(24px, 4vw)", paddingTop: 72, paddingBottom: 70, maxWidth: 1120, margin: "0 auto", overflowX: "hidden", overflowY: "auto", flex: 1 }}>
                         <PullToRefresh onRefresh={async () => { if (user) await loadUserData(user.uid); }}><PageTransition pageKey={page}>{pages[page]}</PageTransition></PullToRefresh>
                     </div>
                 </main>
