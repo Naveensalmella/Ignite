@@ -35,11 +35,9 @@ export default function Home() {
     setShowIntro(false);
   };
 
-  // Splash screen shows FIRST every time
   if (showSplash) return <SplashScreen onComplete={handleSplashComplete} />;
-
   if (loading) return <Loading />;
   if (showIntro && !user) return <IntroPage onGetStarted={handleGetStarted} />;
-  if (!user) return <AuthPage />;
+  if (!user) return <AuthPage onAuth={(u: any) => setUser(u)} />;
   return <MainApp user={user} />;
 }
