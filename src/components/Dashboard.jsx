@@ -7,6 +7,7 @@ import { getDailyXPProgress, getXPBreakdown, XP_SOURCES, getComboStatus, getLogi
 import StreakFreeze from './StreakFreeze';
 import WeeklyReport from './WeeklyReport';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
+import { hasDayWorkout, getDayCal, getDayDuration, getDaySplit, getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
 
 function Ring({ pct, color, size = 56, stroke = 5, children }) { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
@@ -18,11 +19,11 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
   const needed = xpToNext(totalXP);
   const mult = getStreakMult(streak);
 
-  const todayWorkout = !!workoutLog[d];
+  const todayWorkout = hasDayWorkout(workoutLog, d);
   const todayFood = (foodLog[d] || []).length > 0;
   const todayFocus = (focusLog[d] || []).length > 0;
   const todayQuests = (habitLog[d] || []).length;
-  const totalWorkouts = Object.keys(workoutLog).length;
+  const totalWorkouts = countWorkoutDays(workoutLog);
 
   // Section scores
   const sectionScores = {

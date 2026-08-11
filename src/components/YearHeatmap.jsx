@@ -1,5 +1,6 @@
 "use client";
 import { useMemo } from 'react';
+import { hasDayWorkout, getDayCal, getDayDuration, getDaySplit, getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
 
 // GitHub-style year activity heatmap
 export default function YearHeatmap({ workoutLog, title = "Activity" }) {
@@ -11,7 +12,7 @@ export default function YearHeatmap({ workoutLog, title = "Activity" }) {
             const d = new Date(today);
             d.setDate(d.getDate() - i);
             const ds = d.toISOString().split("T")[0];
-            const hasWorkout = !!workoutLog[ds];
+            const hasWorkout = hasDayWorkout(workoutLog, ds);
             days.push({ date: ds, active: hasWorkout, day: d.getDay(), month: d.getMonth() });
         }
         return days;

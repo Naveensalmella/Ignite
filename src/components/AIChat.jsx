@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getLevel, getRank, today } from '@/utils';
 import { GATES, XP } from '@/data/index';
+import { hasDayWorkout, getDayCal, getDayDuration, getDaySplit, getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
 
 export default function AIChat({ appState, onAction, chatHistory, setChatHistory, totalXP, streak, workoutLog }) {
   const [input, setInput] = useState("");
@@ -21,8 +22,8 @@ export default function AIChat({ appState, onAction, chatHistory, setChatHistory
     const todayHabits = habitLog[d] || [];
     const todayFood = foodLog[d] || [];
     const todayJournal = journal[d];
-    const totalWorkouts = Object.keys(workoutLog).length;
-    const todayTrained = !!workoutLog[d];
+    const totalWorkouts = countWorkoutDays(workoutLog);
+    const todayTrained = hasDayWorkout(workoutLog, d);
 
     return `You are the Flame Oracle — the wise, bold AI coach of IGNITE, a self-improvement RPG platform. You speak with authority and warmth. Address the user as "Champion."
 

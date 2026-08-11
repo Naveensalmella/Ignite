@@ -9,6 +9,7 @@ import ThemeToggle from './ThemeToggle';
 import DataExport from './DataExport';
 import AccentPicker from './AccentPicker';
 import NotificationSettings from './NotificationSettings';
+import { hasDayWorkout, getDayCal, getDayDuration, getDaySplit, getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
 
 export default function ProfilePage({ profile = {}, setProfile = () => { }, totalXP = 0, streak = 0, workoutLog = {}, appState = {}, freezeData = null, setPage = () => { } }) {
   const lv = getLevel(totalXP), rank = getRank(lv), prog = getLevelProg(totalXP), remain = xpToNext(totalXP);
@@ -18,8 +19,8 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
   const [tab, setTab] = useState("overview");
   const { journal, foodLog, focusLog, pillarProg, finances } = appState || {};
 
-  const totalWorkouts = Object.keys(workoutLog || {}).length;
-  const totalCal = Object.values(workoutLog || {}).reduce((s, w) => s + (w.calBurned || 0), 0);
+  const totalWorkouts = countWorkoutDays(workoutLog);
+  const totalCal = getTotalCal(workoutLog);
 
   const earnedIds = useMemo(() => checkBadges({ totalXP, level: lv, streak, workoutLog: workoutLog || {}, foodLog: foodLog || {}, journal: journal || {}, focusLog: focusLog || {}, pillarProg: pillarProg || {} }), [totalXP, lv, streak, workoutLog, foodLog, journal, focusLog, pillarProg]);
 

@@ -9,6 +9,7 @@ import {
     QUEST_CHAINS, getQuestChainProgress, getXPHistory, checkMilestone, MILESTONES,
     SKILL_TREE, getSkillTreeProgress, getWeekStart, getWeekSeed,
 } from '@/data/gamingSystem';
+import { hasDayWorkout, getDayCal, getDayDuration, getDaySplit, getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
 
 
 // Level-up rewards (inline to avoid import issues)
@@ -62,7 +63,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
     const unlockedTitles = getUnlockedTitles(lv);
 
     // ── Achievement Tiers ──
-    const totalWorkouts = Object.keys(workoutLog || {}).length;
+    const totalWorkouts = countWorkoutDays(workoutLog);
     const foodDays = Object.keys(appState.foodLog || {}).filter(k => !k.startsWith("water_") && Array.isArray(appState.foodLog[k]) && appState.foodLog[k].length > 0).length;
     const focusSessions = Object.values(appState.focusLog || {}).flat().length;
 

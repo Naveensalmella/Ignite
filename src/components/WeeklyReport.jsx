@@ -1,6 +1,7 @@
 "use client";
 import { useMemo } from 'react';
 import { getLevel, getRank } from '@/utils';
+import { hasDayWorkout, getDayCal, getDayDuration, getDaySplit, getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
 
 export default function WeeklyReport({ totalXP, streak, workoutLog, foodLog, habitLog, focusLog }) {
     const report = useMemo(() => {
@@ -12,15 +13,9 @@ export default function WeeklyReport({ totalXP, streak, workoutLog, foodLog, hab
             weekDays.push(d.toISOString().split("T")[0]);
         }
 
-        const workouts = weekDays.filter(d => workoutLog[d]).length;
-        const totalCal = weekDays.reduce((s, d) => {
-            const w = workoutLog[d];
-            return s + (w?.calBurned || 0);
-        }, 0);
-        const totalDuration = weekDays.reduce((s, d) => {
-            const w = workoutLog[d];
-            return s + (w?.duration || 0);
-        }, 0);
+        const workouts = weekDays.filter(d => hasDayWorkout(workoutLog, d)).length;
+        const totalCal = weekDays.reduce((s, d) => s + getDayCal(workoutLog, d), 0);
+        const totalDuration = weekDays.reduce((s, d) => s + getDayDuration(workoutLog, d), 0);
         const foodDays = weekDays.filter(d => (foodLog[d] || []).length > 0).length;
         const totalFoodCal = weekDays.reduce((s, d) => {
             return s + (foodLog[d] || []).reduce((fs, f) => fs + (f.cal || 0), 0);
@@ -69,7 +64,7 @@ export default function WeeklyReport({ totalXP, streak, workoutLog, foodLog, hab
                 <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 8 }}>Day by Day</div>
                 <div style={{ display: "flex", gap: 6 }}>
                     {report.weekDays.map((d, i) => {
-                        const worked = !!workoutLog[d];
+                        const worked = hasDayWorkout(workoutLog, d);
                         const dayName = dayNames[new Date(d + 'T00:00:00').getDay()];
                         const isToday = d === new Date().toISOString().split("T")[0];
                         return (

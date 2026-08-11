@@ -4,6 +4,7 @@ import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { getLevel, getRank, today } from '@/utils';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { hasDayWorkout, getDayCal, getDayDuration, getDaySplit, getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
 
 function Ring({ pct, color, size = 44, stroke = 4, children }) {
     const r = (size - stroke) / 2, c = 2 * Math.PI * r;
@@ -28,7 +29,7 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
 
     const myLv = getLevel(totalXP);
     const myRank = getRank(myLv);
-    const myWorkouts = Object.keys(workoutLog || {}).length;
+    const myWorkouts = countWorkoutDays(workoutLog);
     const d = today();
 
     // ── Load all data ──

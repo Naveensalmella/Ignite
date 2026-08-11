@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { hasDayWorkout, getDaySplit, countWorkoutDays } from '@/lib/workoutHelpers';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { getLevel, getRank, today } from '../utils';
 
@@ -155,15 +156,15 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
     const lv = getLevel(totalXP || 0);
     const rank = getRank(lv);
     const todayFood = appState?.foodLog?.[d] || [];
-    const todayWorkout = workoutLog?.[d];
+    const todayWorked = hasDayWorkout(workoutLog, d);
     const todayCal = todayFood.reduce((s, f) => s + (f.cal || 0), 0);
     const todayProtein = todayFood.reduce((s, f) => s + (f.protein || 0), 0);
     const water = appState?.foodLog?.[`water_${d}`] || 0;
-    const totalWorkouts = Object.keys(workoutLog || {}).length;
+    const totalWorkouts = countWorkoutDays(workoutLog);
     const w = parseFloat(profile?.weight) || 70, h = parseFloat(profile?.height) || 170, age = parseInt(profile?.age) || 25;
     const bmr = profile?.gender === "female" ? 10 * w + 6.25 * h - 5 * age - 161 : 10 * w + 6.25 * h - 5 * age + 5;
     const calTarget = Math.round(bmr * 1.55 * (profile?.goal === "lose" ? 0.8 : profile?.goal === "muscle" ? 1.2 : 1));
-    return `USER: ${profile?.name || "Warrior"}, Age ${profile?.age || 25}, ${profile?.gender || "male"}, ${profile?.weight || 70}kg, Goal: ${profile?.goal || "fit"}, Level: ${lv} (${rank.name}), XP: ${totalXP || 0}, Streak: ${streak || 0}d, Workouts: ${totalWorkouts}\nTODAY: Trained=${todayWorkout ? "YES (" + (todayWorkout.splitName || "done") + ")" : "NO"}, Calories=${todayCal}/${calTarget}, Protein=${Math.round(todayProtein)}g, Water=${water}/8`;
+    return `USER: ${profile?.name || "Warrior"}, Age ${profile?.age || 25}, ${profile?.gender || "male"}, ${profile?.weight || 70}kg, Goal: ${profile?.goal || "fit"}, Level: ${lv} (${rank.name}), XP: ${totalXP || 0}, Streak: ${streak || 0}d, Workouts: ${totalWorkouts}\nTODAY: Trained=${todayWorked ? "YES (" + (getDaySplit(workoutLog, d) || "done") + ")" : "NO"}, Calories=${todayCal}/${calTarget}, Protein=${Math.round(todayProtein)}g, Water=${water}/8`;
   }, [totalXP, streak, workoutLog, appState, profile, d]);
 
   const curMode = MODES.find(m => m.id === mode) || MODES[0];
@@ -255,10 +256,10 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
 
   // ── Context-aware quick actions ──
   const quickActions = useMemo(() => {
-    const todayWorkout = workoutLog?.[d];
+    const todayWorked = hasDayWorkout(workoutLog, d);
     const todayCal = (appState?.foodLog?.[d] || []).reduce((s, f) => s + (f.cal || 0), 0);
     const a = [];
-    if (!todayWorkout) a.push({ label: "Plan today's workout", icon: "⚔️" });
+    if (!todayWorked) a.push({ label: "Plan today's workout", icon: "⚔️" });
     else a.push({ label: "Review my workout", icon: "📊" });
     if (todayCal === 0) a.push({ label: "What should I eat for breakfast?", icon: "🍳" });
     else a.push({ label: "Am I on track with calories?", icon: "📊" });

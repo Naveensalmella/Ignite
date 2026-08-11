@@ -4,6 +4,7 @@
 // ══════════════════════════════════════════════════════
 
 import { today } from '@/utils';
+import { normalizeDayEntries } from '@/lib/workoutLog';
 
 // ── 1. DAILY XP GOAL ──
 export const DEFAULT_XP_GOAL = 100;
@@ -44,7 +45,7 @@ export const XP_SOURCES = {
 export function getComboStatus(appState, workoutLog) {
     const d = today();
     const activities = [];
-    if (workoutLog[d]) activities.push("Training");
+    if (normalizeDayEntries(workoutLog[d]).length > 0) activities.push("Training");
     if ((appState.foodLog?.[d] || []).length > 0) activities.push("Nutrition");
     if ((appState.habitLog?.[d] || []).length > 0) activities.push("Quests");
     if ((appState.focusLog?.[d] || []).length > 0) activities.push("Focus");
@@ -118,9 +119,9 @@ export function getChallengeProgress(challenge, appState, workoutLog, weekStart)
     }
 
     switch (challenge.type) {
-        case "workouts": return days.filter(d => workoutLog[d]).length;
+        case "workouts": return days.filter(d => normalizeDayEntries(workoutLog[d]).length > 0).length;
         case "foodDays": return days.filter(d => (appState.foodLog?.[d] || []).length > 0).length;
-        case "calBurned": return days.reduce((s, d) => s + (workoutLog[d]?.calBurned || 0), 0);
+        case "calBurned": return days.reduce((s, d) => s + normalizeDayEntries(workoutLog[d]).reduce((ss, e) => ss + (e.calBurned || 0), 0), 0);
         case "quests": return days.reduce((s, d) => s + (appState.habitLog?.[d] || []).length, 0);
         case "focusSessions": return days.reduce((s, d) => s + (appState.focusLog?.[d] || []).length, 0);
         case "journalDays": return days.filter(d => appState.journal?.[d]?.entry?.length > 10).length;
@@ -128,7 +129,7 @@ export function getChallengeProgress(challenge, appState, workoutLog, weekStart)
         case "weeklyXP": return days.reduce((s, d) => s + (appState.xpLog?.[d] || []).reduce((ss, e) => ss + (e.amount || 0), 0), 0);
         case "comboDays": return days.filter(d => {
             let c = 0;
-            if (workoutLog[d]) c++;
+            if (normalizeDayEntries(workoutLog[d]).length > 0) c++;
             if ((appState.foodLog?.[d] || []).length > 0) c++;
             if ((appState.habitLog?.[d] || []).length > 0) c++;
             if ((appState.focusLog?.[d] || []).length > 0) c++;
@@ -236,7 +237,7 @@ export const QUEST_CHAINS = [
         id: "warrior_week", name: "Warrior's Week", icon: "⚔️", totalDays: 7,
         desc: "Train every day for 7 days straight",
         dailyTask: "Complete a training session",
-        checkDay: (d, workoutLog) => !!workoutLog[d],
+        checkDay: (d, workoutLog) => normalizeDayEntries(workoutLog[d]).length > 0,
         rewards: { partial: 10, completion: 500 },
     },
     {
@@ -263,7 +264,7 @@ export const QUEST_CHAINS = [
         dailyTask: "Get a 4+ combo",
         checkDay: (d, workoutLog, appState) => {
             let c = 0;
-            if (workoutLog[d]) c++;
+            if (normalizeDayEntries(workoutLog[d]).length > 0) c++;
             if ((appState.foodLog?.[d] || []).length > 0) c++;
             if ((appState.habitLog?.[d] || []).length > 0) c++;
             if ((appState.focusLog?.[d] || []).length > 0) c++;
