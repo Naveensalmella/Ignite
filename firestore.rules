@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── USER DATA ──
+    // Each user can only read/write their OWN document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Future: subcollections (workouts, foodLog, etc.) inherit the same rule
+      match /{subcollection}/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // ── SOCIAL / PUBLIC PROFILES ──
+    // Any logged-in user can read public profiles (for friend search)
+    // But only the owner can write their own profile
+    match /publicProfiles/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── DENY EVERYTHING ELSE ──
+    // Any collection not explicitly listed above is blocked
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

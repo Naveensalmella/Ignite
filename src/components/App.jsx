@@ -323,10 +323,25 @@ export default function App({ externalUser = null }) {
     useEffect(() => {
         window.history.pushState({ ignite: true }, "");
         const handlePopState = () => { setShowExitModal(true); window.history.pushState({ ignite: true }, ""); };
-        const handleBeforeUnload = (e) => { e.preventDefault(); e.returnValue = ""; return ""; };
+        const handleBeforeUnload = (e) => {
+            // Save data immediately before tab closes
+            if (user && saveTimer.current) {
+                clearTimeout(saveTimer.current);
+                saveData();
+            }
+            e.preventDefault(); e.returnValue = ""; return "";
+        };
+        const handleVisibilityChange = () => {
+            // Save when user switches tabs or minimizes (critical for mobile)
+            if (document.visibilityState === "hidden" && user) {
+                if (saveTimer.current) clearTimeout(saveTimer.current);
+                saveData();
+            }
+        };
         window.addEventListener("popstate", handlePopState);
         window.addEventListener("beforeunload", handleBeforeUnload);
-        return () => { window.removeEventListener("popstate", handlePopState); window.removeEventListener("beforeunload", handleBeforeUnload); };
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () => { window.removeEventListener("popstate", handlePopState); window.removeEventListener("beforeunload", handleBeforeUnload); document.removeEventListener("visibilitychange", handleVisibilityChange); };
     }, []);
 
     // Loading screen
