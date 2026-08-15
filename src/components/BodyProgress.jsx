@@ -1,44 +1,67 @@
 "use client";
 import { useState, useRef } from 'react';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
+import storeV2 from '@/store-v2';
 
-export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { } }) {
+export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { }, userId = null }) {
     const [viewMode, setViewMode] = useState("grid"); // grid | compare
     const [compareA, setCompareA] = useState(null);
     const [compareB, setCompareB] = useState(null);
+    const [uploading, setUploading] = useState(false);
     const fileRef = useRef(null);
 
     const sortedDates = Object.keys(bodyPhotos).sort().reverse();
 
-    // Add photo
-    const addPhoto = (e) => {
+    // Add photo — uploads to Firebase Storage via store-v2
+    const addPhoto = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        const note = prompt("Add a note (optional):", "") || "";
+        const weight = prompt("Current weight (kg):", "") || "";
+        const d = new Date().toISOString().split("T")[0];
+
+        // Read file as data URL
         const reader = new FileReader();
-        reader.onload = (ev) => {
-            const d = new Date().toISOString().split("T")[0];
-            const note = prompt("Add a note (optional):", "") || "";
+        reader.onload = async (ev) => {
+            const dataUrl = ev.target.result;
+            // Optimistic update — show immediately with local data URL
             setBodyPhotos(prev => ({
                 ...prev,
-                [d]: {
-                    photo: ev.target.result,
-                    date: d,
-                    note,
-                    weight: prompt("Current weight (kg):", "") || "",
-                }
+                [d]: { photo: dataUrl, date: d, note, weight }
             }));
+
+            // Upload to Firebase Storage in background
+            if (userId) {
+                setUploading(true);
+                try {
+                    const photoUrl = await storeV2.saveBodyPhoto(userId, d, dataUrl, note, weight);
+                    // Update with Storage URL (replaces base64 in memory)
+                    setBodyPhotos(prev => ({
+                        ...prev,
+                        [d]: { photo: photoUrl, date: d, note, weight }
+                    }));
+                } catch (err) {
+                    console.error("Photo upload failed:", err);
+                    // Keep the base64 version — will retry on next save
+                }
+                setUploading(false);
+            }
         };
         reader.readAsDataURL(file);
     };
 
-    // Delete photo
-    const deletePhoto = (date) => {
+    // Delete photo — removes from Storage + Firestore subcollection
+    const deletePhoto = async (date) => {
         if (!window.confirm("Delete this progress photo?")) return;
         setBodyPhotos(prev => {
             const updated = { ...prev };
             delete updated[date];
             return updated;
         });
+        // Delete from Storage + subcollection
+        if (userId) {
+            try { await storeV2.deleteBodyPhoto(userId, date); } catch (e) { console.error("Delete error:", e); }
+        }
     };
 
     return (
@@ -49,7 +72,7 @@ export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { 
                     <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>📸 Body Progress</div>
                     <div style={{ fontSize: 12, color: "#6b7280" }}>{sortedDates.length} photos · Track your transformation</div>
                 </div>
-                <button className="bp" onClick={() => fileRef.current?.click()} style={{ padding: "8px 16px", fontSize: 13 }}>+ Add Photo</button>
+                <button className="bp" onClick={() => fileRef.current?.click()} disabled={uploading} style={{ padding: "8px 16px", fontSize: 13, opacity: uploading ? 0.6 : 1 }}>{uploading ? "Uploading..." : "+ Add Photo"}</button>
                 <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display: "none" }} />
             </div>
 

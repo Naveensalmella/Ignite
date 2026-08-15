@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { DEFAULT_HABITS, navItems, REQUIRED_DAILY, DAILY_PENALTY, XP } from '@/data/index';
 import { getLevel, getRank, getStreakMult, today } from '@/utils';
 import store from '@/store';
+import storeV2 from '@/store-v2';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import AuthPage from './AuthPage';
@@ -153,66 +154,145 @@ export default function App({ externalUser = null }) {
         return () => unsub();
     }, []);
 
-    // Load all data from Firestore
+    // Load all data from Firestore (subcollections + fallback to old single-doc)
     const loadUserData = async (uid) => {
         try {
-            const d = await store.getUserData(uid);
-            if (d) {
-                d.foodLog && setFoodLog(d.foodLog);
-                d.habits && setHabits(d.habits);
-                d.habitLog && setHabitLog(d.habitLog);
-                d.tasks && setTasks(d.tasks);
-                d.journal && setJournal(d.journal);
-                d.finances && setFinances(d.finances);
-                d.profile && setProfile(d.profile);
-                d.chatHistory && setChatHistory(d.chatHistory);
-                d.workoutLog && setWorkoutLog(d.workoutLog);
-                d.pillarProg && setPillarProg(d.pillarProg);
-                d.activityLog && setActivityLog(d.activityLog);
-                d.focusLog && setFocusLog(d.focusLog);
-                d.routineData && setRoutineData(d.routineData);
-                d.masteryData && setMasteryData(d.masteryData);
-                d.bodyData && setBodyData(d.bodyData);
-                d.challengeData && setChallengeData(d.challengeData);
-                d.programData && setProgramData(d.programData);
-                d.freezeData && setFreezeData(d.freezeData);
-                d.programState && setProgramState(d.programState);
-                d.xpLog && setXpLog(d.xpLog);
-                d.loginData && setLoginData(d.loginData);
-                d.activeTitle && setActiveTitle(d.activeTitle);
-                d.questChainData && setQuestChainData(d.questChainData);
-                d.bodyPhotos && setBodyPhotos(d.bodyPhotos);
-                if (d.totalXP !== undefined) setTotalXP(d.totalXP);
-                if (d.streak !== undefined) setStreak(d.streak);
-                if (d.lastCheck) setLastCheck(d.lastCheck);
-                // Show tutorial for first-time users
-                if (!d.tutorialDone) setShowTutorial(true);
-            } else {
-                // Brand new user — show tutorial
-                setShowTutorial(true);
+            // 1. Load main profile doc (always needed, has scalar stats)
+            const d = await storeV2.getUserProfile(uid);
+            if (!d) { setShowTutorial(true); return; }
+
+            // Set profile & scalar fields from main doc
+            d.profile && setProfile(d.profile);
+            d.habits && setHabits(d.habits);
+            d.tasks && setTasks(d.tasks);
+            d.pillarProg && setPillarProg(d.pillarProg);
+            d.routineData && setRoutineData(d.routineData);
+            d.masteryData && setMasteryData(d.masteryData);
+            d.bodyData && setBodyData(d.bodyData);
+            d.challengeData && setChallengeData(d.challengeData);
+            d.programData && setProgramData(d.programData);
+            d.freezeData && setFreezeData(d.freezeData);
+            d.programState && setProgramState(d.programState);
+            d.loginData && setLoginData(d.loginData);
+            d.activeTitle && setActiveTitle(d.activeTitle);
+            d.questChainData && setQuestChainData(d.questChainData);
+            if (d.totalXP !== undefined) setTotalXP(d.totalXP);
+            if (d.streak !== undefined) setStreak(d.streak);
+            if (d.lastCheck) setLastCheck(d.lastCheck);
+            if (!d.tutorialDone) setShowTutorial(true);
+
+            // 2. Run migration if needed (copies old data to subcollections)
+            if (!d._migrated) {
+                console.log('[IGNITE] Running one-time data migration...');
+                await storeV2.migrateUserData(uid);
+                console.log('[IGNITE] Migration complete');
             }
+
+            // 3. Load subcollection data in parallel (fast — small individual docs)
+            const [workouts, food, journals, xp, focus, habits_log, chats, finances_data, activity, photos] = await Promise.all([
+                storeV2.getWorkouts(uid),
+                storeV2.getFoodLog(uid),
+                storeV2.getJournal(uid),
+                storeV2.getXpLog(uid),
+                storeV2.getFocusLog(uid),
+                storeV2.getHabitLog(uid),
+                storeV2.getChatHistory(uid),
+                storeV2.getFinances(uid),
+                storeV2.getActivityLog(uid),
+                storeV2.getBodyPhotos(uid),
+            ]);
+
+            // 4. Use subcollection data if available, else fall back to old main-doc data
+            setWorkoutLog(Object.keys(workouts).length > 0 ? workouts : (d.workoutLog || {}));
+            setFoodLog(Object.keys(food).length > 0 ? food : (d.foodLog || {}));
+            setJournal(Object.keys(journals).length > 0 ? journals : (d.journal || {}));
+            setXpLog(Object.keys(xp).length > 0 ? xp : (d.xpLog || {}));
+            setFocusLog(Object.keys(focus).length > 0 ? focus : (d.focusLog || {}));
+            setHabitLog(Object.keys(habits_log).length > 0 ? habits_log : (d.habitLog || {}));
+            setChatHistory(chats.length > 0 ? chats : (d.chatHistory || []));
+            setFinances(finances_data.length > 0 ? finances_data : (d.finances || []));
+            setActivityLog(activity.length > 0 ? activity : (d.activityLog || []));
+            setBodyPhotos(Object.keys(photos).length > 0 ? photos : (d.bodyPhotos || {}));
         } catch (e) { console.error("Load error:", e); setShowTutorial(true); }
     };
 
-    // Save to Firestore (debounced)
+    // Save to Firestore (debounced) — writes to BOTH main doc + subcollections
     const saveData = useCallback(async () => {
         if (!user) return;
         try {
-            await store.saveUserData(user.uid, {
-                foodLog, habits, habitLog, tasks, journal, finances, profile,
-                chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
-                activityLog, focusLog, routineData, masteryData, bodyData,
-                challengeData, programData, freezeData, programState,
-                xpLog, loginData, activeTitle, questChainData, bodyPhotos,
+            const uid = user.uid;
+
+            // 1. Save scalar/profile data to main document (small, fast)
+            await storeV2.saveUserProfile(uid, {
+                profile, habits, tasks, totalXP, streak, lastCheck, pillarProg,
+                routineData, masteryData, bodyData, challengeData, programData,
+                freezeData, programState, loginData, activeTitle, questChainData,
                 email: user.email,
                 lastSaved: new Date().toISOString(),
             });
+
+            // 2. Save subcollection data in parallel
+            const saveOps = [];
+
+            // Workout log — save each date entry
+            if (workoutLog) {
+                for (const [date, data] of Object.entries(workoutLog)) {
+                    if (data) saveOps.push(storeV2.saveWorkout(uid, date, data));
+                }
+            }
+            // Food log
+            if (foodLog) {
+                for (const [date, data] of Object.entries(foodLog)) {
+                    if (data) saveOps.push(storeV2.saveFoodEntry(uid, date, typeof data === 'object' && !Array.isArray(data) ? data : { entries: data }));
+                }
+            }
+            // Journal
+            if (journal) {
+                for (const [date, data] of Object.entries(journal)) {
+                    if (data) saveOps.push(storeV2.saveJournalEntry(uid, date, typeof data === 'object' ? data : { entry: data }));
+                }
+            }
+            // XP log
+            if (xpLog) {
+                for (const [date, data] of Object.entries(xpLog)) {
+                    if (data) saveOps.push(storeV2.saveXpEntry(uid, date, Array.isArray(data) ? { events: data } : data));
+                }
+            }
+            // Focus log
+            if (focusLog) {
+                for (const [date, data] of Object.entries(focusLog)) {
+                    if (data) saveOps.push(storeV2.saveFocusEntry(uid, date, Array.isArray(data) ? { sessions: data } : data));
+                }
+            }
+            // Habit log
+            if (habitLog) {
+                for (const [date, data] of Object.entries(habitLog)) {
+                    if (data) saveOps.push(storeV2.saveHabitEntry(uid, date, typeof data === 'object' ? data : { data }));
+                }
+            }
+            // Chat history
+            if (chatHistory?.length > 0) {
+                saveOps.push(storeV2.saveChatHistory(uid, chatHistory));
+            }
+            // Finances
+            if (finances?.length > 0) {
+                saveOps.push(storeV2.saveFinances(uid, finances));
+            }
+            // Activity log
+            if (activityLog?.length > 0) {
+                saveOps.push(storeV2.saveActivityLog(uid, activityLog));
+            }
+
+            // Note: bodyPhotos saved directly via BodyProgress component (not in bulk save)
+            // This prevents re-uploading base64 images on every debounced save
+
+            await Promise.all(saveOps);
         } catch (e) { console.error("Save error:", e); }
     }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile,
         chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
         activityLog, focusLog, routineData, masteryData, bodyData,
         challengeData, programData, freezeData, programState,
-        xpLog, loginData, activeTitle, questChainData, bodyPhotos]);
+        xpLog, loginData, activeTitle, questChainData]);
 
     // Debounced auto-save
     useEffect(() => {
@@ -391,7 +471,7 @@ export default function App({ externalUser = null }) {
         body: <BodyTracker bodyData={bodyData} setBodyData={setBodyData} />,
         challenges: <ChallengesPage challengeData={challengeData} setChallengeData={setChallengeData} addXP={addXP} />,
         share: <ShareCard totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} />,
-        bodyphotos: <BodyProgress bodyPhotos={bodyPhotos} setBodyPhotos={setBodyPhotos} />,
+        bodyphotos: <BodyProgress bodyPhotos={bodyPhotos} setBodyPhotos={setBodyPhotos} userId={user?.uid} />,
         social: <SocialPage user={user} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} />,
         gaming: <GamingHub appState={appState} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} profile={profile} loginData={loginData} setLoginData={setLoginData} xpLog={xpLog} activeTitle={activeTitle} setActiveTitle={setActiveTitle} questChainData={questChainData} setQuestChainData={setQuestChainData} />,
         programs: <WorkoutPrograms programData={programData} setProgramData={setProgramData} addXP={addXP} />,
