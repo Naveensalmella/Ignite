@@ -284,7 +284,7 @@ export default function ExerciseVisual({ type, bodyPart, size = "md" }) {
         <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 8, flexWrap: "wrap" }}>
           {muscles.parts.map(p => (
             <span key={p} style={{
-              fontSize: 9, padding: "2px 6px", borderRadius: 100,
+              fontSize: 11, padding: "2px 6px", borderRadius: 100,
               background: `${muscles.color}15`, color: muscles.color,
               textTransform: "capitalize",
             }}>{p}</span>

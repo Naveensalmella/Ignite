@@ -96,7 +96,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                             <Ring pct={xpProgress.pct} color={xpProgress.pct >= 100 ? "#22c55e" : "#10b981"} size={64} stroke={6}>
                                 <div style={{ textAlign: "center" }}>
                                     <div style={{ fontSize: 16, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{xpProgress.earned}</div>
-                                    <div style={{ fontSize: 8, color: "#6b7280" }}>/{xpProgress.goal}</div>
+                                    <div style={{ fontSize: 11, color: "#6b7280" }}>/{xpProgress.goal}</div>
                                 </div>
                             </Ring>
                             <div style={{ flex: 1 }}>
@@ -151,7 +151,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                             {xpHistory.map((h, i) => (
                                 <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
                                     <div style={{ width: "100%", background: h.xp > 0 ? (h.date === d ? "#10b981" : "rgba(16,185,129,.3)") : "rgba(255,255,255,.03)", borderRadius: "3px 3px 0 0", height: `${Math.max(2, (h.xp / maxDayXP) * 50)}px`, transition: "height .5s" }} />
-                                    <div style={{ fontSize: 7, color: h.date === d ? "#10b981" : "#4b5563", marginTop: 2 }}>{h.day}</div>
+                                    <div style={{ fontSize: 11, color: h.date === d ? "#10b981" : "#4b5563", marginTop: 2 }}>{h.day}</div>
                                 </div>
                             ))}
                         </div>
@@ -322,7 +322,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                             <div style={{ width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: node.unlocked ? `${branch.color}20` : "rgba(255,255,255,.03)", border: node.unlocked ? `2px solid ${branch.color}` : "2px solid rgba(255,255,255,.06)", position: "relative" }}>
                                                 <span style={{ fontSize: node.unlocked ? 14 : 10, color: node.unlocked ? branch.color : "#4b5563" }}>{node.unlocked ? "✓" : "🔒"}</span>
                                                 {!node.unlocked && node.progress > 0 && (
-                                                    <div style={{ position: "absolute", bottom: -8, fontSize: 8, color: branch.color }}>{node.progress}%</div>
+                                                    <div style={{ position: "absolute", bottom: -8, fontSize: 11, color: branch.color }}>{node.progress}%</div>
                                                 )}
                                             </div>
                                             {i < nodes.length - 1 && <div style={{ flex: 1, height: 2, background: node.unlocked ? branch.color : "rgba(255,255,255,.06)", margin: "0 2px" }} />}
@@ -332,7 +332,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                 <div style={{ display: "flex", gap: 4, marginTop: 10 }}>
                                     {nodes.map(node => (
                                         <div key={node.id} style={{ flex: 1, textAlign: "center" }}>
-                                            <div style={{ fontSize: 8, color: node.unlocked ? branch.color : "#4b5563" }}>{node.name}</div>
+                                            <div style={{ fontSize: 11, color: node.unlocked ? branch.color : "#4b5563" }}>{node.name}</div>
                                         </div>
                                     ))}
                                 </div>

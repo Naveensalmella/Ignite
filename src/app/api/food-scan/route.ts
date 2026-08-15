@@ -35,7 +35,6 @@ export async function POST(req: NextRequest) {
   try {
     const { description, image } = await req.json();
     const GEMINI_KEY = process.env.GEMINI_API_KEY;
-    const GROQ_KEY = process.env.GROQ_API_KEY;
 
     // ── IMAGE ANALYSIS (Gemini) ──
     if (image) {
@@ -89,38 +88,50 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── TEXT ANALYSIS (Groq — unchanged, works well for text) ──
+    // ── TEXT ANALYSIS (Gemini — unified with image analysis for consistent results) ──
     if (description) {
-      if (!GROQ_KEY) {
-        return NextResponse.json({ error: "GROQ_API_KEY not configured", foods: [] }, { status: 500 });
+      if (!GEMINI_KEY) {
+        return NextResponse.json({ error: "GEMINI_API_KEY not configured", foods: [] }, { status: 500 });
       }
 
       try {
-        const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_KEY}` },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            max_tokens: 512,
-            temperature: 0.3,
-            messages: [
-              {
-                role: "system",
-                content: `You are a nutrition expert specializing in Indian and global cuisines.
-Return ONLY a JSON array: [{"name":"Food","emoji":"🍛","cal":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"serving":"portion"}].
-Use realistic Indian portion sizes. No explanation, no markdown.`,
-              },
-              { role: "user", content: `Analyze: "${description}"` },
-            ],
-          }),
-        });
+        const textPrompt = `${FOOD_PROMPT}\n\nThe user describes their food as: "${description}".\nAnalyze this description and return the JSON array.`;
+
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: textPrompt }] }],
+              generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+            }),
+          }
+        );
+
         const data = await r.json();
-        if (!data.error) {
-          const foods = extractFoods(data.choices?.[0]?.message?.content || "");
-          if (foods) return NextResponse.json({ foods, source: "groq-text" });
+
+        if (data.error) {
+          console.error("[Gemini-Text] Error:", data.error.message);
+          return NextResponse.json({ error: data.error.message, foods: [] }, { status: 500 });
         }
-      } catch { }
-      return NextResponse.json({ error: "Analysis failed. Try again.", foods: [] });
+
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        console.log("[Gemini-Text] Response:", text.substring(0, 300));
+
+        const foods = extractFoods(text);
+        if (foods) {
+          console.log(`[Gemini-Text] ✅ ${foods.length} items detected`);
+          return NextResponse.json({ foods, source: "gemini-text" });
+        }
+
+        console.warn("[Gemini-Text] No valid JSON in response");
+        return NextResponse.json({ error: "Could not analyze food. Try rephrasing.", foods: [] });
+
+      } catch (e: any) {
+        console.error("[Gemini-Text] Exception:", e.message);
+        return NextResponse.json({ error: "Analysis failed. Try again.", foods: [] }, { status: 500 });
+      }
     }
 
     return NextResponse.json({ error: "Send description or image", foods: [] }, { status: 400 });

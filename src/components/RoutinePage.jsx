@@ -392,14 +392,14 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
                           <span style={{ fontSize: 10, color: "#6b7280" }}>{block.time}</span>
                           {block.duration > 0 && <span style={{ fontSize: 10, color: "#4b5563" }}>· {block.duration >= 60 ? `${Math.floor(block.duration / 60)}h${block.duration % 60 > 0 ? ` ${block.duration % 60}m` : ""}` : `${block.duration}m`}</span>}
-                          <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 100, background: `${cat.color}12`, color: cat.color }}>{cat.label}</span>
+                          <span style={{ fontSize: 11, padding: "1px 5px", borderRadius: 100, background: `${cat.color}12`, color: cat.color }}>{cat.label}</span>
                         </div>
                       </div>
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       {isDone && <span style={{ fontSize: 14, color: "#22c55e" }}>✓</span>}
-                      {isCurrent && !isDone && <span style={{ fontSize: 8, padding: "2px 8px", borderRadius: 100, background: "rgba(16,185,129,.15)", color: "#10b981", fontWeight: 600 }}>NOW</span>}
+                      {isCurrent && !isDone && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: "rgba(16,185,129,.15)", color: "#10b981", fontWeight: 600 }}>NOW</span>}
                       <span onClick={e => { e.stopPropagation(); removeBlock(block.id); }} style={{ fontSize: 14, color: "#4b5563", padding: "2px 4px", cursor: "pointer" }}>×</span>
                     </div>
                   </div>

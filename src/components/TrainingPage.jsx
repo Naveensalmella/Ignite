@@ -482,7 +482,7 @@ export default function TrainingPage({ totalXP = 0, addXP = () => { }, workoutLo
               {[{ v: 1, l: "Easy", e: "😌", c: "#22c55e" }, { v: 2, l: "Moderate", e: "😊", c: "#06b6d4" }, { v: 3, l: "Challenging", e: "😤", c: "#f59e0b" }, { v: 4, l: "Hard", e: "🥵", c: "#f97316" }, { v: 5, l: "Brutal", e: "💀", c: "#ef4444" }].map(dd => (
                 <div key={dd.v} onClick={() => setDifficultyRating(dd.v)} style={{ flex: 1, textAlign: "center", padding: "10px 4px", borderRadius: 10, cursor: "pointer", background: difficultyRating === dd.v ? dd.c + "15" : "rgba(255,255,255,.02)", border: difficultyRating === dd.v ? `1px solid ${dd.c}30` : "1px solid rgba(255,255,255,.04)", transition: "all .2s" }}>
                   <div style={{ fontSize: 22 }}>{dd.e}</div>
-                  <div style={{ fontSize: 9, color: difficultyRating === dd.v ? dd.c : "#6b7280", fontWeight: 600, marginTop: 2 }}>{dd.l}</div>
+                  <div style={{ fontSize: 11, color: difficultyRating === dd.v ? dd.c : "#6b7280", fontWeight: 600, marginTop: 2 }}>{dd.l}</div>
                 </div>
               ))}
             </div>

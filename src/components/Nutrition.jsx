@@ -271,45 +271,22 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
 
   const analyzeWithAI = async (prompt) => {
     setScanning(true); setScanError(null); setScanResults(null);
-    const groqKey = (process.env.NEXT_PUBLIC_GROQ_API_KEY || process.env.REACT_APP_GROQ_API_KEY);
-    if (!groqKey) { setScanError("API key missing. Add REACT_APP_GROQ_API_KEY to .env.local"); setScanning(false); return; }
-    // Try secure server route first
     try {
-      const sr = await fetch("/api/food-scan", {
+      const response = await fetch("/api/food-scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description: prompt }),
       });
-      const sd = await sr.json();
-      if (sd.foods?.length > 0) { setScanResults(sd.foods); setScanning(false); return; }
-      if (sd.error) throw new Error(sd.error);
-    } catch (serverErr) { console.warn("Server route failed, trying direct:", serverErr.message); }
-
-    // Fallback: direct API call
-    try {
-      const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile", max_tokens: 1024, temperature: 0.3,
-          messages: [
-            { role: "system", content: `You are a nutrition expert. Analyze the food described and return ONLY valid JSON array. Each item: {"name":"Food Name","emoji":"🍛","cal":calories_number,"protein":grams,"carbs":grams,"fat":grams,"fiber":grams,"serving":"portion description"}. Be accurate with Indian food portions. Return ONLY the JSON array, no other text.` },
-            { role: "user", content: prompt }
-          ],
-        }),
-      });
-      const data = await r.json();
-      if (data.error) throw new Error(data.error.message);
-      const text = data.choices?.[0]?.message?.content || "";
-      // Parse JSON from response
-      const jsonMatch = text.match(/\[.*\]/s);
-      if (jsonMatch) {
-        const foods = JSON.parse(jsonMatch[0]);
-        if (foods.length > 0) { setScanResults(foods); }
-        else { setScanError("Could not identify food. Try describing it differently."); }
-      } else { setScanError("AI couldn't parse the food. Try again."); }
+      const data = await response.json();
+      if (data.foods?.length > 0) {
+        setScanResults(data.foods);
+      } else if (data.error) {
+        setScanError(data.error);
+      } else {
+        setScanError("Could not identify food. Try describing it differently.");
+      }
     } catch (e) {
-      setScanError("Analysis failed: " + e.message);
+      setScanError("Analysis failed. Check your internet connection and try again.");
     }
     setScanning(false);
   };
@@ -535,7 +512,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         </div>
         <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 12 }}>
           {[["Protein", totals.protein, proteinG, "#ef4444"], ["Carbs", totals.carbs, carbG, "#f59e0b"], ["Fat", totals.fat, fatG, "#06b6d4"], ["Fiber", totals.fiber, 25, "#22c55e"]].map(([l, v, t, c]) => (
-            <div key={l} style={{ textAlign: "center" }}><Ring pct={(v / t) * 100} color={c} size={40} stroke={3}><span style={{ fontSize: 9, fontWeight: 700, color: c }}>{Math.round(v)}</span></Ring><div style={{ fontSize: 9, color: "#6b7280", marginTop: 2 }}>{l}</div></div>
+            <div key={l} style={{ textAlign: "center" }}><Ring pct={(v / t) * 100} color={c} size={40} stroke={3}><span style={{ fontSize: 11, fontWeight: 700, color: c }}>{Math.round(v)}</span></Ring><div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{l}</div></div>
           ))}
         </div>
       </div>
@@ -596,7 +573,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(55px,1fr))", gap: 6, marginBottom: 12, textAlign: "center", padding: 10, background: "rgba(255,255,255,.02)", borderRadius: 8 }}>
           {[["Cal", Math.round(selFood.cal * grams / 100), "#f59e0b"], ["Protein", Math.round(selFood.protein * grams / 100 * 10) / 10, "#ef4444"], ["Carbs", Math.round(selFood.carbs * grams / 100 * 10) / 10, "#f59e0b"], ["Fat", Math.round(selFood.fat * grams / 100 * 10) / 10, "#06b6d4"], ["Fiber", Math.round(selFood.fiber * grams / 100 * 10) / 10, "#22c55e"]].map(([l, v, c]) => (
-            <div key={l}><div style={{ fontSize: 16, fontWeight: 700, color: c }}>{v}{l === "Cal" ? "" : "g"}</div><div style={{ fontSize: 9, color: "#6b7280" }}>{l}</div></div>
+            <div key={l}><div style={{ fontSize: 16, fontWeight: 700, color: c }}>{v}{l === "Cal" ? "" : "g"}</div><div style={{ fontSize: 11, color: "#6b7280" }}>{l}</div></div>
           ))}
         </div>
         <div style={{ display: "flex", gap: 8 }}><button className="bp" onClick={() => addFood(selFood, grams, selMeal)} style={{ flex: 1, padding: 12 }}>+ Add {grams}g to {selMeal}</button><button className="bg" onClick={() => { setSelFood(null); setGrams(100) }} style={{ padding: "12px 16px" }}>Cancel</button></div>
@@ -611,7 +588,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
               <div key={f.name + i} onClick={() => addFood(f, 100, selMeal)} style={{ flexShrink: 0, padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.06)", cursor: "pointer", textAlign: "center", minWidth: 70 }}>
                 <div style={{ fontSize: 18 }}>{f.emoji}</div>
                 <div style={{ fontSize: 10, color: "#e5e7eb", marginTop: 2 }}>{f.name.length > 10 ? f.name.slice(0, 10) + "…" : f.name}</div>
-                <div style={{ fontSize: 9, color: "#6b7280" }}>{f.cal}cal</div>
+                <div style={{ fontSize: 11, color: "#6b7280" }}>{f.cal}cal</div>
               </div>
             ))}
           </div>
@@ -626,11 +603,11 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
           {FOOD_CATEGORIES.map(c => <span key={c} className={`chip ${selCat === c ? "chip-a" : "chip-i"}`} onClick={() => setSelCat(c)} style={{ flexShrink: 0, fontSize: 11 }}>{c}</span>)}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(90px,1fr))", gap: 8, marginBottom: 12, maxHeight: 300, overflowY: "auto" }}>
-          {filtered.slice(0, 36).map((f, i) => (<div key={f.name + i} className="fc" onClick={() => { setSelFood(f); setGrams(100) }}><div style={{ fontSize: 20 }}>{f.emoji}</div><div style={{ fontSize: 11, fontWeight: 500, color: "#e5e7eb", marginTop: 3 }}>{f.name}</div><div style={{ fontSize: 9, color: "#6b7280" }}>{f.cal}cal/100g</div></div>))}
+          {filtered.slice(0, 36).map((f, i) => (<div key={f.name + i} className="fc" onClick={() => { setSelFood(f); setGrams(100) }}><div style={{ fontSize: 20 }}>{f.emoji}</div><div style={{ fontSize: 11, fontWeight: 500, color: "#e5e7eb", marginTop: 3 }}>{f.name}</div><div style={{ fontSize: 11, color: "#6b7280" }}>{f.cal}cal/100g</div></div>))}
         </div>
         {filtered.length === 0 && search && !apiSearching && apiResults.length === 0 && <div style={{ textAlign: "center", color: "#6b7280", padding: "12px 0", fontSize: 13 }}>No food found for "{search}"</div>}
         {apiSearching && <div style={{ textAlign: "center", padding: "8px 0", fontSize: 12, color: "#06b6d4" }}>Searching global database...</div>}
-        {apiResults.length > 0 && (<div style={{ marginTop: 12 }}><div style={{ fontSize: 12, color: "#06b6d4", fontWeight: 600, marginBottom: 8 }}>More from global database ({apiResults.length})</div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(90px,1fr))", gap: 8, maxHeight: 200, overflowY: "auto" }}>{apiResults.map((f, i) => (<div key={"api" + i} className="fc" onClick={() => { setSelFood(f); setGrams(100); }} style={{ borderColor: "rgba(6,182,212,.15)" }}><div style={{ fontSize: 20 }}>{f.emoji}</div><div style={{ fontSize: 11, fontWeight: 500, color: "#e5e7eb", marginTop: 3 }}>{f.name}</div><div style={{ fontSize: 9, color: "#06b6d4" }}>{f.cal}cal</div></div>))}</div></div>)}
+        {apiResults.length > 0 && (<div style={{ marginTop: 12 }}><div style={{ fontSize: 12, color: "#06b6d4", fontWeight: 600, marginBottom: 8 }}>More from global database ({apiResults.length})</div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(90px,1fr))", gap: 8, maxHeight: 200, overflowY: "auto" }}>{apiResults.map((f, i) => (<div key={"api" + i} className="fc" onClick={() => { setSelFood(f); setGrams(100); }} style={{ borderColor: "rgba(6,182,212,.15)" }}><div style={{ fontSize: 20 }}>{f.emoji}</div><div style={{ fontSize: 11, fontWeight: 500, color: "#e5e7eb", marginTop: 3 }}>{f.name}</div><div style={{ fontSize: 11, color: "#06b6d4" }}>{f.cal}cal</div></div>))}</div></div>)}
         <span onClick={() => setShowCustom(!showCustom)} style={{ fontSize: 12, color: "#10b981", cursor: "pointer", fontWeight: 600 }}>{showCustom ? "Cancel" : "+ Add Custom Food"}</span>
         {showCustom && (<div className="gs fade-in" style={{ marginTop: 10, border: "1px solid rgba(16,185,129,.15)" }}>
           <input className="inp" placeholder="Food name" value={custom.name} onChange={e => setCustom(p => ({ ...p, name: e.target.value }))} style={{ marginBottom: 8 }} />
@@ -659,7 +636,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
             const over = day.cal > target;
             return (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ fontSize: 9, color: day.cal > 0 ? (over ? "#ef4444" : "#10b981") : "#4b5563", fontWeight: 600, marginBottom: 2 }}>{day.cal > 0 ? day.cal : ""}</div>
+                <div style={{ fontSize: 11, color: day.cal > 0 ? (over ? "#ef4444" : "#10b981") : "#4b5563", fontWeight: 600, marginBottom: 2 }}>{day.cal > 0 ? day.cal : ""}</div>
                 <div style={{ width: "100%", background: over ? "rgba(239,68,68,.3)" : day.isToday ? "#10b981" : "rgba(16,185,129,.25)", borderRadius: "4px 4px 0 0", height: `${Math.max(4, pct * 0.7)}px`, transition: "height .5s" }} />
                 <div style={{ fontSize: 10, color: day.isToday ? "#10b981" : "#6b7280", marginTop: 4, fontWeight: day.isToday ? 700 : 400 }}>{day.label}</div>
               </div>
@@ -687,7 +664,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
                     <span style={{ fontSize: 12, fontWeight: 700, color }}>{v}g</span>
                   </Ring>
                   <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>{l}</div>
-                  <div style={{ fontSize: 9, color: "#4b5563" }}>Goal: {t}g</div>
+                  <div style={{ fontSize: 11, color: "#4b5563" }}>Goal: {t}g</div>
                 </div>
               ))}
             </div>

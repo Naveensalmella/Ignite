@@ -130,8 +130,8 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
               return (<div key={b.id} style={{ padding: 10, borderRadius: 10, textAlign: "center", background: earned ? `${color}08` : "rgba(255,255,255,.01)", border: earned ? `1px solid ${color}20` : "1px solid rgba(255,255,255,.03)", opacity: earned ? 1 : 0.3 }}>
                 <div style={{ fontSize: 28, filter: earned ? "none" : "grayscale(1)" }}>{b.icon}</div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: earned ? color : "#4b5563", marginTop: 4 }}>{b.name}</div>
-                <div style={{ fontSize: 9, color: "#6b7280", marginTop: 2 }}>{b.desc}</div>
-                <span style={{ fontSize: 8, color, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{b.rarity}</span>
+                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{b.desc}</div>
+                <span style={{ fontSize: 11, color, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{b.rarity}</span>
               </div>);
             })}
           </div>
@@ -157,7 +157,7 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 16, fontWeight: 700, color: isPast ? r.color : "#4b5563", fontFamily: "Rajdhani,sans-serif" }}>{r.name}</span>
-                {isActive && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 100, background: `${r.color}15`, color: r.color, fontWeight: 700 }}>CURRENT</span>}
+                {isActive && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: `${r.color}15`, color: r.color, fontWeight: 700 }}>CURRENT</span>}
                 {isPast && !isActive && <span style={{ fontSize: 10, color: "#22c55e" }}>✓</span>}
               </div>
               <div style={{ fontSize: 12, color: "#6b7280" }}>Level {r.min}{r.max < 999999 ? `–${r.max}` : "+"}</div>

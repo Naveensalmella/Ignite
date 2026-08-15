@@ -28,7 +28,7 @@ export default function HeaderXPBar({ totalXP = 0, streak = 0 }) {
           <span style={{ fontSize: 11, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif", whiteSpace: "nowrap" }}>
             {rank.name} {streak > 0 && <span style={{ color: "#f59e0b" }}>🔥{streak}</span>}
           </span>
-          <span style={{ fontSize: 9, color: "#6b7280", whiteSpace: "nowrap" }}>{needed} to Lv.{lv + 1}</span>
+          <span style={{ fontSize: 11, color: "#6b7280", whiteSpace: "nowrap" }}>{needed} to Lv.{lv + 1}</span>
         </div>
         <div style={{ height: 4, background: "rgba(255,255,255,.06)", borderRadius: 2, overflow: "hidden" }}>
           <div style={{

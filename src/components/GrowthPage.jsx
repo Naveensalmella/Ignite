@@ -251,7 +251,7 @@ export default function GrowthPage({ pillarProg = {}, setPillarProg = () => { } 
     {/* Overall */}
     <div className="gs" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
       <Ring pct={overallPct} color="#10b981" size={70} stroke={6}>
-        <div style={{ textAlign: "center" }}><div style={{ fontSize: 20, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", lineHeight: 1 }}>{overallPct}%</div><div style={{ fontSize: 8, color: "#6b7280" }}>Growth</div></div>
+        <div style={{ textAlign: "center" }}><div style={{ fontSize: 20, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", lineHeight: 1 }}>{overallPct}%</div><div style={{ fontSize: 11, color: "#6b7280" }}>Growth</div></div>
       </Ring>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Life Growth</div>

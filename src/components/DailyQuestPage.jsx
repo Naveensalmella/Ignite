@@ -86,7 +86,7 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
   return (<div>
     {/* Hero */}
     <div className="gs" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-      <Ring pct={progress} color={progress >= 100 ? "#22c55e" : progress >= 50 ? "#10b981" : "#f59e0b"} size={85} stroke={6}><div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", lineHeight: 1 }}>{progress}%</div><div style={{ fontSize: 9, color: "#6b7280" }}>done</div></div></Ring>
+      <Ring pct={progress} color={progress >= 100 ? "#22c55e" : progress >= 50 ? "#10b981" : "#f59e0b"} size={85} stroke={6}><div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", lineHeight: 1 }}>{progress}%</div><div style={{ fontSize: 11, color: "#6b7280" }}>done</div></div></Ring>
       <div style={{ flex: 1, minWidth: 160 }}>
         <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{completedCount}/{totalCount} Complete</div>
         <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{progress >= 100 ? "All done! Amazing day! 🎉" : `${totalCount - completedCount} remaining`}</div>
@@ -101,7 +101,7 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
           <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, ...(todayTrained ? { background: "linear-gradient(135deg,#22c55e,#10b981)", color: "#060a0c" } : { border: "2px solid #ef4444" }) }}>{todayTrained ? "✓" : ""}</div>
           <div><div style={{ fontSize: 15, fontWeight: 600, color: todayTrained ? "#22c55e" : "#f3f4f6" }}>{todayTrained ? "Training Complete" : "Complete Daily Training"}</div><div style={{ fontSize: 11, color: todayTrained ? "#6b7280" : "#ef4444" }}>{todayTrained ? "Great work today!" : "Required — or lose " + DAILY_PENALTY + " XP"}</div></div>
         </div>
-        <span style={{ fontSize: 9, padding: "3px 8px", borderRadius: 100, background: "rgba(239,68,68,.1)", color: "#ef4444", fontWeight: 700, fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>REQUIRED</span>
+        <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 100, background: "rgba(239,68,68,.1)", color: "#ef4444", fontWeight: 700, fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>REQUIRED</span>
       </div>
     </div>
 
@@ -160,7 +160,7 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
               <div key={h.id} style={{ flex: "1 1 80px", padding: "8px 6px", borderRadius: 10, background: s >= 7 ? "rgba(245,158,11,.06)" : s > 0 ? "rgba(255,255,255,.02)" : "rgba(255,255,255,.01)", border: s >= 7 ? "1px solid rgba(245,158,11,.15)" : "1px solid rgba(255,255,255,.04)", textAlign: "center" }}>
                 <div style={{ fontSize: 16 }}>{h.icon}</div>
                 <div style={{ fontSize: 16, fontWeight: 900, color: s >= 7 ? "#f59e0b" : s > 0 ? "#10b981" : "#4b5563", fontFamily: "Rajdhani,sans-serif" }}>{s}d</div>
-                <div style={{ fontSize: 8, color: "#6b7280", marginTop: 1 }}>{h.name.length > 12 ? h.name.slice(0, 12) + "…" : h.name}</div>
+                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 1 }}>{h.name.length > 12 ? h.name.slice(0, 12) + "…" : h.name}</div>
               </div>
             )
           })}

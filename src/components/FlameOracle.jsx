@@ -51,31 +51,7 @@ async function callAIStream(messages, systemPrompt, onToken) {
     console.warn("Server stream failed:", serverErr.message);
   }
 
-  // Fallback: direct API call (non-streaming)
-  const groqKey = (process.env.NEXT_PUBLIC_GROQ_API_KEY || process.env.REACT_APP_GROQ_API_KEY);
-  const geminiKey = (process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.REACT_APP_GEMINI_API_KEY);
-  if (groqKey) {
-    try {
-      const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${groqKey}` },
-        body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "system", content: systemPrompt }, ...messages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.text }))], max_tokens: 1024, temperature: 0.7 }),
-      });
-      const d = await r.json();
-      if (d.error) throw new Error(d.error.message);
-      return d.choices?.[0]?.message?.content || "No response";
-    } catch (e) { console.warn("Groq failed:", e.message); }
-  }
-  if (geminiKey) {
-    const userMsg = messages[messages.length - 1]?.text || "";
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\${geminiKey}`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: userMsg }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, generationConfig: { maxOutputTokens: 1024, temperature: 0.7 } }),
-    });
-    const d = await r.json();
-    if (d.error) throw new Error(d.error.message);
-    return d.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "No response";
-  }
+  // Server route failed — no client-side fallback (API keys stay server-side)
   throw new Error("NO_KEY");
 }
 
@@ -246,7 +222,7 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
 
     } catch (e) {
       let errMsg;
-      if (e.message === "NO_KEY") errMsg = "⚠️ No API key found.\n\nAdd to .env.local:\nREACT_APP_GROQ_API_KEY=gsk_your_key\n\nGet free: console.groq.com/keys\nThen restart: npm start";
+      if (e.message === "NO_KEY") errMsg = "⚠️ Server connection failed.\n\nMake sure the GROQ_API_KEY is set in your .env.local file and the server is running.";
       else if (e.message.includes("429") || e.message.includes("rate")) errMsg = "⏳ Rate limited. Wait 60 seconds.";
       else errMsg = "❌ " + e.message;
       setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...updatedMessages, { role: "assistant", text: errMsg, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }] } : c));
@@ -284,7 +260,7 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
             ))}
           </div>
         )}
-        <div style={{ fontSize: 9, color: m.role === "user" ? "rgba(255,255,255,.5)" : "#4b5563", marginTop: 4, textAlign: "right" }}>{m.time}</div>
+        <div style={{ fontSize: 11, color: m.role === "user" ? "rgba(255,255,255,.5)" : "#4b5563", marginTop: 4, textAlign: "right" }}>{m.time}</div>
       </div>
     </div>
   );

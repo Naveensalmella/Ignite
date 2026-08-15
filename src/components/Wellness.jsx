@@ -208,7 +208,7 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
             <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 80, marginBottom: 8 }}>
               {sleepHistory.map((day, i) => (
                 <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ fontSize: 9, color: day.hours >= 7 ? "#22c55e" : day.hours >= 5 ? "#f59e0b" : "#ef4444", fontWeight: 600, marginBottom: 2 }}>{day.hours > 0 ? `${day.hours}h` : ""}</div>
+                  <div style={{ fontSize: 11, color: day.hours >= 7 ? "#22c55e" : day.hours >= 5 ? "#f59e0b" : "#ef4444", fontWeight: 600, marginBottom: 2 }}>{day.hours > 0 ? `${day.hours}h` : ""}</div>
                   <div style={{ width: "100%", background: day.hours >= 7 ? "#22c55e" : day.hours >= 5 ? "rgba(245,158,11,.4)" : day.hours > 0 ? "rgba(239,68,68,.3)" : "rgba(255,255,255,.03)", borderRadius: "4px 4px 0 0", height: `${Math.max(4, (day.hours / 10) * 65)}px`, transition: "height .5s" }} />
                   <div style={{ fontSize: 10, color: day.isToday ? "#10b981" : "#6b7280", marginTop: 4, fontWeight: day.isToday ? 700 : 400 }}>{day.label}</div>
                 </div>
@@ -287,7 +287,7 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
                   <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <div style={{ fontSize: 12, marginBottom: 2 }}>{day.mood || ""}</div>
                     <div style={{ width: "100%", background: moodObj ? `${moodObj.color}40` : "rgba(255,255,255,.03)", borderRadius: "4px 4px 0 0", height: `${Math.max(4, day.value * 12)}px`, transition: "height .5s" }} />
-                    <div style={{ fontSize: 7, color: day.isToday ? "#10b981" : "#4b5563", marginTop: 2 }}>{day.day}</div>
+                    <div style={{ fontSize: 11, color: day.isToday ? "#10b981" : "#4b5563", marginTop: 2 }}>{day.day}</div>
                   </div>
                 );
               })}

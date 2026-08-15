@@ -152,7 +152,7 @@ export function searchFoods(query) {
   ).slice(0, 20);
 }
 
-// ── AI NUTRITION LOOKUP (uses Groq — already configured) ──
+// ── AI NUTRITION LOOKUP (via server route — unified Gemini) ──
 let aiCache = {};
 
 export async function searchFoodsAI(query) {
@@ -161,51 +161,19 @@ export async function searchFoodsAI(query) {
   const cacheKey = query.toLowerCase().trim();
   if (aiCache[cacheKey]) return aiCache[cacheKey];
 
-  const groqKey = process.env.REACT_APP_GROQ_API_KEY;
-  const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
-
-  if (!groqKey && !geminiKey) return [];
-
   try {
-    let text = "";
+    const r = await fetch("/api/food-scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: `Nutrition per 100g for: ${query}. Return 3-5 variations if applicable.` }),
+    });
+    const data = await r.json();
 
-    if (groqKey) {
-      const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            { role: "system", content: "You are a nutrition database. Return ONLY a JSON array of foods matching the query. Each item: {\"name\":\"Food Name\",\"cal\":number,\"protein\":number,\"carbs\":number,\"fat\":number,\"fiber\":number}. Values per 100g. Include Indian/regional variations if applicable. Return 3-5 items max. No markdown, no explanation, ONLY the JSON array." },
-            { role: "user", content: `Nutrition per 100g for: ${query}` }
-          ],
-          max_tokens: 500, temperature: 0.3,
-        }),
-      });
-      const d = await r.json();
-      text = d.choices?.[0]?.message?.content || "";
-    } else if (geminiKey) {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: `Return ONLY a JSON array of foods matching "${query}". Each item: {"name":"Food Name","cal":number,"protein":number,"carbs":number,"fat":number,"fiber":number}. Values per 100g. 3-5 items. No markdown.` }] }],
-          generationConfig: { maxOutputTokens: 500, temperature: 0.3 },
-        }),
-      });
-      const d = await r.json();
-      text = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    }
+    if (!data.foods?.length) return [];
 
-    // Parse JSON from response
-    const clean = text.replace(/```json|```/g, "").trim();
-    const match = clean.match(/\[[\s\S]*\]/);
-    if (!match) return [];
-
-    const items = JSON.parse(match[0]);
-    const results = items.map(item => ({
+    const results = data.foods.map(item => ({
       name: item.name || query,
-      emoji: "🍽️",
+      emoji: item.emoji || "🍽️",
       cal: Math.round(item.cal || item.calories || 0),
       protein: Math.round((item.protein || 0) * 10) / 10,
       carbs: Math.round((item.carbs || item.carbohydrates || 0) * 10) / 10,

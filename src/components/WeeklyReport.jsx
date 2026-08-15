@@ -75,7 +75,7 @@ export default function WeeklyReport({ totalXP, streak, workoutLog, foodLog, hab
                             }}>
                                 <div style={{ fontSize: 10, color: "#4b5563" }}>{dayName}</div>
                                 <div style={{ fontSize: 16, marginTop: 2 }}>{worked ? "✅" : "·"}</div>
-                                <div style={{ fontSize: 9, color: "#4b5563" }}>{new Date(d + 'T00:00:00').getDate()}</div>
+                                <div style={{ fontSize: 11, color: "#4b5563" }}>{new Date(d + 'T00:00:00').getDate()}</div>
                             </div>
                         );
                     })}

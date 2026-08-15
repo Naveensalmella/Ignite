@@ -146,7 +146,7 @@ export default function ChallengesPage({ challengeData, setChallengeData, addXP 
                     return (
                       <div key={i} style={{
                         aspectRatio: "1", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 9, fontWeight: 700,
+                        fontSize: 11, fontWeight: 700,
                         background: isChecked ? `${a.color}25` : isToday ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.02)",
                         border: isToday ? `1px solid ${a.color}40` : "1px solid rgba(255,255,255,.04)",
                         color: isChecked ? a.color : isFuture ? "#374151" : "#6b7280",

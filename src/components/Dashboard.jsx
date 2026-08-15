@@ -62,7 +62,7 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
               <Ring pct={prog} color={rank.color || "#10b981"} size={90} stroke={7}>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 28, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{lv}</div>
-                  <div style={{ fontSize: 9, color: "#6b7280" }}>LEVEL</div>
+                  <div style={{ fontSize: 11, color: "#6b7280" }}>LEVEL</div>
                 </div>
               </Ring>
             </div>
@@ -109,7 +109,7 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
                 {Object.keys(xpBreakdown).length > 0 && (
                   <div style={{ display: "flex", gap: 3, marginTop: 4, flexWrap: "wrap" }}>
                     {Object.entries(xpBreakdown).slice(0, 3).map(([cat, amt]) => (
-                      <span key={cat} style={{ fontSize: 8, padding: "1px 5px", borderRadius: 100, background: `${(XP_SOURCES[cat] || XP_SOURCES.Other).color}10`, color: (XP_SOURCES[cat] || XP_SOURCES.Other).color }}>{(XP_SOURCES[cat] || XP_SOURCES.Other).icon}+{amt}</span>
+                      <span key={cat} style={{ fontSize: 10, padding: "2px 6px", borderRadius: 100, background: `${(XP_SOURCES[cat] || XP_SOURCES.Other).color}10`, color: (XP_SOURCES[cat] || XP_SOURCES.Other).color }}>{(XP_SOURCES[cat] || XP_SOURCES.Other).icon}+{amt}</span>
                     ))}
                   </div>
                 )}
@@ -227,7 +227,7 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
                 {badges.slice(0, 6).map(b => (
                   <div key={b.id} style={{ flexShrink: 0, textAlign: "center", width: 56 }}>
                     <div style={{ fontSize: 24 }}>{b.icon}</div>
-                    <div style={{ fontSize: 8, color: "#6b7280", marginTop: 2 }}>{b.name.length > 8 ? b.name.slice(0, 8) + "…" : b.name}</div>
+                    <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{b.name.length > 8 ? b.name.slice(0, 8) + "…" : b.name}</div>
                   </div>
                 ))}
               </div>

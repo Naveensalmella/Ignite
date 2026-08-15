@@ -38,7 +38,7 @@ export default function MasteryPanel({ activity, masteryData, setMasteryData }) 
           <div style={{ fontSize: 22, fontWeight: 900, color: getColor(activity), fontFamily: "Rajdhani,sans-serif" }}>
             {actData.level}/{totalLevels}
           </div>
-          <div style={{ fontSize: 9, color: "#4b5563" }}>Level</div>
+          <div style={{ fontSize: 11, color: "#4b5563" }}>Level</div>
         </div>
       </div>
 
@@ -117,7 +117,7 @@ export default function MasteryPanel({ activity, masteryData, setMasteryData }) 
                   </div>
                   <div style={{ fontSize: 11, color: "#4b5563" }}>{l.focus}</div>
                 </div>
-                {isCurrent && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 100, background: `${getColor(activity)}15`, color: getColor(activity), fontWeight: 700 }}>NOW</span>}
+                {isCurrent && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: `${getColor(activity)}15`, color: getColor(activity), fontWeight: 700 }}>NOW</span>}
                 {isLocked && <span style={{ fontSize: 10, color: "#374151" }}>🔒</span>}
               </div>
             );

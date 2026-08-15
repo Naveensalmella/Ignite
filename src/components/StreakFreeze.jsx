@@ -42,7 +42,7 @@ export default function StreakFreeze({ streak, totalXP, freezeData, setFreezeDat
                 </div>
                 <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 22, fontWeight: 800, color: "#06b6d4", fontFamily: "Rajdhani,sans-serif" }}>{data.freezesAvailable}</div>
-                    <div style={{ fontSize: 9, color: "#4b5563" }}>available</div>
+                    <div style={{ fontSize: 11, color: "#4b5563" }}>available</div>
                 </div>
             </div>
 

@@ -114,7 +114,7 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
             <Ring pct={goalPct} color={goalPct >= 100 ? "#22c55e" : "#06b6d4"} size={64} stroke={6}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 14, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{todayMinutes}</div>
-                <div style={{ fontSize: 8, color: "#6b7280" }}>min</div>
+                <div style={{ fontSize: 11, color: "#6b7280" }}>min</div>
               </div>
             </Ring>
             <div style={{ flex: 1 }}>
@@ -201,7 +201,7 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
             <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 80, marginBottom: 8 }}>
               {weekHistory.map((day, i) => (
                 <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ fontSize: 9, color: day.minutes > 0 ? "#06b6d4" : "#4b5563", fontWeight: 600, marginBottom: 2 }}>{day.minutes > 0 ? `${day.minutes}m` : ""}</div>
+                  <div style={{ fontSize: 11, color: day.minutes > 0 ? "#06b6d4" : "#4b5563", fontWeight: 600, marginBottom: 2 }}>{day.minutes > 0 ? `${day.minutes}m` : ""}</div>
                   <div style={{ width: "100%", background: day.isToday ? "#06b6d4" : day.minutes > 0 ? "rgba(6,182,212,.3)" : "rgba(255,255,255,.03)", borderRadius: "4px 4px 0 0", height: `${Math.max(4, (day.minutes / maxMin) * 65)}px`, transition: "height .5s" }} />
                   <div style={{ fontSize: 10, color: day.isToday ? "#06b6d4" : "#6b7280", marginTop: 4, fontWeight: day.isToday ? 700 : 400 }}>{day.label}</div>
                 </div>

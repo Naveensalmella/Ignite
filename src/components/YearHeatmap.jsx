@@ -64,7 +64,7 @@ export default function YearHeatmap({ workoutLog, title = "Activity" }) {
             {/* Month labels */}
             <div style={{ display: "flex", marginBottom: 4, paddingLeft: 20, gap: 0 }}>
                 {monthLabels.map((ml, i) => (
-                    <div key={i} style={{ position: "relative", left: ml.col * (cellSize + gap) - (i > 0 ? monthLabels[i - 1].col * (cellSize + gap) + 30 : 0), fontSize: 9, color: "#4b5563", minWidth: 30 }}>
+                    <div key={i} style={{ position: "relative", left: ml.col * (cellSize + gap) - (i > 0 ? monthLabels[i - 1].col * (cellSize + gap) + 30 : 0), fontSize: 11, color: "#4b5563", minWidth: 30 }}>
                         {ml.month}
                     </div>
                 ))}
@@ -75,7 +75,7 @@ export default function YearHeatmap({ workoutLog, title = "Activity" }) {
                 {/* Day labels */}
                 <div style={{ display: "flex", flexDirection: "column", gap: gap, paddingTop: 0, flexShrink: 0 }}>
                     {["", "M", "", "W", "", "F", ""].map((d, i) => (
-                        <div key={i} style={{ width: 14, height: cellSize, display: "flex", alignItems: "center", fontSize: 8, color: "#4b5563" }}>{d}</div>
+                        <div key={i} style={{ width: 14, height: cellSize, display: "flex", alignItems: "center", fontSize: 11, color: "#4b5563" }}>{d}</div>
                     ))}
                 </div>
 
@@ -96,11 +96,11 @@ export default function YearHeatmap({ workoutLog, title = "Activity" }) {
 
             {/* Legend */}
             <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, marginTop: 8 }}>
-                <span style={{ fontSize: 9, color: "#4b5563" }}>Less</span>
+                <span style={{ fontSize: 11, color: "#4b5563" }}>Less</span>
                 {[.04, .2, .45, .75, 1].map((o, i) => (
                     <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: i === 0 ? "rgba(255,255,255,.04)" : "#10b981", opacity: i === 0 ? 1 : o }} />
                 ))}
-                <span style={{ fontSize: 9, color: "#4b5563" }}>More</span>
+                <span style={{ fontSize: 11, color: "#4b5563" }}>More</span>
             </div>
         </div>
     );

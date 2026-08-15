@@ -256,7 +256,7 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
                 {[["feed", "📰 Feed"], ["leaderboard", "🏆 Board"], ["friends", `👥 Friends (${friends.length})`], ["challenges", "🏅 Challenges"], ["requests", `📩 Requests`, pendingRequests.length]].map(([k, l, badge]) => (
                     <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => { setTab(k); if (k === "requests") loadFriendsData(); }} style={{ flexShrink: 0, fontSize: 12, position: "relative" }}>
                         {l}
-                        {badge > 0 && <span style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "#ef4444", fontSize: 9, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>{badge}</span>}
+                        {badge > 0 && <span style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "#ef4444", fontSize: 11, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>{badge}</span>}
                     </span>
                 ))}
             </div>
@@ -364,7 +364,7 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
                                                 </div>
                                                 <div style={{ textAlign: "right" }}>
                                                     <div style={{ fontSize: 16, fontWeight: 800, color: rank.color || "#10b981", fontFamily: "Rajdhani,sans-serif" }}>{p.totalXP.toLocaleString()}</div>
-                                                    <div style={{ fontSize: 9, color: "#6b7280" }}>XP</div>
+                                                    <div style={{ fontSize: 11, color: "#6b7280" }}>XP</div>
                                                 </div>
                                             </div>
                                         </div>

@@ -132,7 +132,7 @@ export default function HistoryPanel({ entries = [], title = "History", emptyTex
                                         </div>
                                         {entry.badge && (
                                             <span style={{
-                                                fontSize: 9, padding: "2px 6px", borderRadius: 100,
+                                                fontSize: 11, padding: "2px 6px", borderRadius: 100,
                                                 background: `${entry.badge.color}12`, color: entry.badge.color,
                                                 fontWeight: 600,
                                             }}>{entry.badge.text}</span>

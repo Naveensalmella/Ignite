@@ -50,7 +50,7 @@ export default function BottomNav({ active, setPage }) {
                                         }}>
                                         <Icon size={22} color={active === p.key ? "#10b981" : "#9ca3af"} strokeWidth={active === p.key ? 2.2 : 1.5} />
                                         <span style={{ fontSize: 11, fontWeight: 600, color: active === p.key ? "#10b981" : "#d1d5db" }}>{p.label}</span>
-                                        <span style={{ fontSize: 8, color: "#6b7280", textAlign: "center" }}>{p.desc}</span>
+                                        <span style={{ fontSize: 10, color: "#6b7280", textAlign: "center", lineHeight: 1.3 }}>{p.desc}</span>
                                     </div>
                                 );
                             })}
@@ -67,16 +67,16 @@ export default function BottomNav({ active, setPage }) {
                         return (
                             <button key={tab.key} onClick={() => { setPage(tab.key); setShowMore(false); }}
                                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "2px 14px", background: "none", border: "none", cursor: "pointer", transition: "all .2s" }}>
-                                <Icon size={20} color={isActive ? "#10b981" : "#6b7280"} strokeWidth={isActive ? 2.2 : 1.5} />
-                                <span style={{ fontSize: 9, fontWeight: isActive ? 700 : 400, color: isActive ? "#10b981" : "#6b7280" }}>{tab.label}</span>
+                                <Icon size={22} color={isActive ? "#10b981" : "#6b7280"} strokeWidth={isActive ? 2.2 : 1.5} />
+                                <span style={{ fontSize: 11, fontWeight: isActive ? 700 : 400, color: isActive ? "#10b981" : "#6b7280" }}>{tab.label}</span>
                                 {isActive && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#10b981" }} />}
                             </button>
                         );
                     })}
                     <button onClick={() => setShowMore(!showMore)}
                         style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "2px 14px", background: "none", border: "none", cursor: "pointer", position: "relative" }}>
-                        <Menu size={20} color={(showMore || isMorePage) ? "#10b981" : "#6b7280"} strokeWidth={(showMore || isMorePage) ? 2.2 : 1.5} />
-                        <span style={{ fontSize: 9, fontWeight: (showMore || isMorePage) ? 700 : 400, color: (showMore || isMorePage) ? "#10b981" : "#6b7280" }}>More</span>
+                        <Menu size={22} color={(showMore || isMorePage) ? "#10b981" : "#6b7280"} strokeWidth={(showMore || isMorePage) ? 2.2 : 1.5} />
+                        <span style={{ fontSize: 11, fontWeight: (showMore || isMorePage) ? 700 : 400, color: (showMore || isMorePage) ? "#10b981" : "#6b7280" }}>More</span>
                         {isMorePage && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#10b981" }} />}
                     </button>
                 </div>
