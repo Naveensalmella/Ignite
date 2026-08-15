@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { today } from '@/utils';
 import { EXERCISES } from '../data/exercises';
 import { GYM_PROGRAMS, COMBAT_PROGRAMS, getTodayWorkout } from '../data/trainingPrograms';
+import { localSync } from '@/utils/localSync';
 import ActiveWorkout from './ActiveWorkout';
 
 // ── Challenge Data ──
@@ -444,13 +445,16 @@ export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, pr
     const [selectedProgram, setSelectedProgram] = useState(null);
     const [activeWorkout, setActiveWorkout] = useState(null);
 
-    // Challenge progress — persisted in localStorage
-    const [challengeProgress, setChallengeProgress] = useState(() => {
-        try { return JSON.parse(localStorage.getItem("ignite-challenge-progress")) || {}; } catch { return {}; }
-    });
-    useEffect(() => {
-        try { localStorage.setItem("ignite-challenge-progress", JSON.stringify(challengeProgress)); } catch { }
-    }, [challengeProgress]);
+    // Challenge progress — synced to localStorage + Firestore profile
+    const cpSync = useMemo(() => localSync("ignite-challenge-progress", {}), []);
+    const [challengeProgress, setChallengeProgressRaw] = useState(cpSync.get);
+    const setChallengeProgress = (v) => {
+        setChallengeProgressRaw(prev => {
+            const next = typeof v === "function" ? v(prev) : v;
+            cpSync.set(next);
+            return next;
+        });
+    };
 
     function handleStartChallenge(challenge) {
         const progress = challengeProgress[challenge.id] || { currentDay: 1, completedDays: 0 };

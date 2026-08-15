@@ -8,6 +8,7 @@ let Body3D = null;
 try { Body3D = require('./Body3D').default; } catch { }
 import MuscleMap, { getMusclesForExercise } from './MuscleMap';
 import { getFormTip, getSwapOptions, WARMUP, COOLDOWN } from '../data/exerciseMeta';
+import { localSync } from '@/utils/localSync';
 import { GYM_PROGRAMS, COMBAT_PROGRAMS, getTodayWorkout } from '../data/trainingPrograms';
 import { FITNESS_PROGRAMS, PROGRAM_TAGS, getRecommendedPrograms, adjustForProfile } from '../data/fitnessPrograms';
 import TrainingHome from './TrainingHome';
@@ -72,7 +73,8 @@ export default function TrainingPage({ totalXP = 0, addXP = () => { }, workoutLo
   const [showTip, setShowTip] = useState(true);
   const [phaseExIdx, setPhaseExIdx] = useState(0);
   const [phaseTimer, setPhaseTimer] = useState(0);
-  const [prRecords, setPrRecords] = useState(() => JSON.parse(localStorage.getItem("ignite-prs") || "{}"));
+  const prSync = useMemo(() => localSync("ignite-prs", {}), []);
+  const [prRecords, setPrRecords] = useState(prSync.get);
   const [newPRs, setNewPRs] = useState([]);
   const [difficultyRating, setDifficultyRating] = useState(0);
   const [timedActive, setTimedActive] = useState(false);
@@ -263,7 +265,7 @@ export default function TrainingPage({ totalXP = 0, addXP = () => { }, workoutLo
       updatePS({ exerciseWeights: { ...exerciseWeights, [ex.name]: w } });
       const currentPR = prRecords[ex.name] || 0;
       if (w > currentPR) {
-        setPrRecords(prev => { const u = { ...prev, [ex.name]: w }; localStorage.setItem("ignite-prs", JSON.stringify(u)); return u });
+        setPrRecords(prev => { const u = { ...prev, [ex.name]: w }; prSync.set(u); return u });
         setNewPRs(prev => [...prev, { exercise: ex.name, weight: w, oldPR: currentPR }]);
         victorySound();
       }
@@ -299,8 +301,9 @@ export default function TrainingPage({ totalXP = 0, addXP = () => { }, workoutLo
         updatePS({ combatWeek: combatWeek + 1 });
       }
     }
-    const weekMuscles = JSON.parse(localStorage.getItem("ignite-week-muscles") || "{}");
-    weekMuscles[d] = musclesWorked; localStorage.setItem("ignite-week-muscles", JSON.stringify(weekMuscles));
+    const wmSync = localSync("ignite-week-muscles", {});
+    const weekMuscles = wmSync.get();
+    weekMuscles[d] = musclesWorked; wmSync.set(weekMuscles);
     setPhase("summary"); victorySound();
   };
 
@@ -315,7 +318,7 @@ export default function TrainingPage({ totalXP = 0, addXP = () => { }, workoutLo
 
   // Weekly muscle data
   const weekMuscleData = useMemo(() => {
-    const data = JSON.parse(localStorage.getItem("ignite-week-muscles") || "{}");
+    const data = localSync("ignite-week-muscles", {}).get();
     const all = []; for (let i = 6; i >= 0; i--) { const dt = new Date(); dt.setDate(dt.getDate() - i); const ds = dt.toISOString().split("T")[0]; if (data[ds]) all.push(...data[ds]) }
     return [...new Set(all)];
   }, [workoutLog]);

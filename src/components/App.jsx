@@ -1,56 +1,56 @@
 "use client";
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useEffect, useRef, lazy, Suspense } from 'react';
 
-import { DEFAULT_HABITS, navItems, REQUIRED_DAILY, DAILY_PENALTY, XP } from '@/data/index';
-import { getLevel, getRank, getStreakMult, today } from '@/utils';
+import { DEFAULT_HABITS, navItems, DAILY_PENALTY } from '@/data/index';
+import { getLevel, getRank, today } from '@/utils';
 import store from '@/store';
 import storeV2 from '@/store-v2';
+import useAppStore from '@/stores/useAppStore';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import AuthPage from './AuthPage';
-import Dashboard from './Dashboard';
-import TrainingPage from './TrainingPage';
-import Nutrition from './Nutrition';
-import DailyQuestPage from './DailyQuestPage';
-import MissionsPage from './MissionsPage';
-import FocusTimer from './FocusTimer';
-import Wellness from './Wellness';
-import FinancePage from './FinancePage';
-import GrowthPage from './GrowthPage';
-import FlameOracle from './FlameOracle';
-import ProfilePage from './ProfilePage';
+import { isDayFrozen } from './StreakFreeze';
+import { registerSW, startNotifScheduler } from '@/notifications';
+import { applyAccent } from './AccentPicker';
+import { play } from './soundEngine';
+
+// ── Lazy-loaded page components (code splitting) ──
+const AuthPage = lazy(() => import('./AuthPage'));
+const Dashboard = lazy(() => import('./Dashboard'));
+const TrainingPage = lazy(() => import('./TrainingPage'));
+const Nutrition = lazy(() => import('./Nutrition'));
+const DailyQuestPage = lazy(() => import('./DailyQuestPage'));
+const MissionsPage = lazy(() => import('./MissionsPage'));
+const FocusTimer = lazy(() => import('./FocusTimer'));
+const Wellness = lazy(() => import('./Wellness'));
+const FinancePage = lazy(() => import('./FinancePage'));
+const GrowthPage = lazy(() => import('./GrowthPage'));
+const FlameOracle = lazy(() => import('./FlameOracle'));
+const ProfilePage = lazy(() => import('./ProfilePage'));
+const RoutinePage = lazy(() => import('./RoutinePage'));
+const OnboardingPage = lazy(() => import('./OnboardingPage'));
+const OnboardingTutorial = lazy(() => import('./OnboardingTutorial'));
+const BodyTracker = lazy(() => import('./BodyTracker'));
+const ChallengesPage = lazy(() => import('./ChallengesPage'));
+const WorkoutPrograms = lazy(() => import('./WorkoutPrograms'));
+const SocialPage = lazy(() => import('./SocialPage'));
+const BodyProgress = lazy(() => import('./BodyProgress'));
+const GamingHub = lazy(() => import('./GamingHub'));
+const ShareCard = lazy(() => import('./ShareCard'));
+
+// ── Eagerly loaded (always visible) ──
 import XPToast from './XPToast';
 import LevelUpOverlay from './LevelUpOverlay';
 import HeaderXPBar from './HeaderXPBar';
-import RoutinePage from './RoutinePage';
-import OnboardingPage from './OnboardingPage';
-import OnboardingTutorial from './OnboardingTutorial';
-import BodyTracker from './BodyTracker';
-import ChallengesPage from './ChallengesPage';
 import { ConfettiBlast, LevelUpCelebration } from './Confetti';
-import ShareCard from './ShareCard';
 import PullToRefresh from './PullToRefresh';
-import WorkoutPrograms from './WorkoutPrograms';
-import SocialPage from './SocialPage';
-import BodyProgress from './BodyProgress';
-import GamingHub, { MilestoneOverlay } from './GamingHub';
-import { checkMilestone } from '@/data/gamingSystem';
-import StreakFreeze, { isDayFrozen } from './StreakFreeze';
-import YearHeatmap from './YearHeatmap';
-import WeeklyReport from './WeeklyReport';
-import { SkeletonPage } from './Loading';
-import ErrorBoundary from './ErrorBoundary';
-import { playXP, playLevelUp, playWorkoutComplete } from '@/sounds';
-import { registerSW, startNotifScheduler } from '@/notifications';
-import { applyAccent } from './AccentPicker';
+import { MilestoneOverlay } from './GamingHub';
 import BottomNav from './BottomNav';
 import PageTransition from './PageTransition';
-import { play, hapticTap, hapticSuccess } from './soundEngine';
-// transitions moved to globals.css
+import ErrorBoundary from './ErrorBoundary';
+import { SkeletonPage } from './Loading';
 
-// Global error handler — prevents white screen crashes
+// Global error handler
 if (typeof window !== 'undefined') {
-    // Suppress harmless ResizeObserver error
     const ro = window.onerror;
     window.onerror = (msg, ...args) => {
         if (typeof msg === 'string' && msg.includes('ResizeObserver')) return true;
@@ -60,59 +60,64 @@ if (typeof window !== 'undefined') {
     window.onunhandledrejection = (e) => { console.error("Unhandled promise:", e.reason); };
 }
 
-export default function App({ externalUser = null }) {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [page, setPageRaw] = useState("dashboard");
-    const setPage = (p) => { play("navTap"); setPageRaw(p); };
-    const [sideOpen, setSideOpen] = useState(false);
-    const [moreOpen, setMoreOpen] = useState(false);
-    const [foodLog, setFoodLog] = useState({});
-    const [habits, setHabits] = useState(DEFAULT_HABITS);
-    const [habitLog, setHabitLog] = useState({});
-    const [tasks, setTasks] = useState([]);
-    const [journal, setJournal] = useState({});
-    const [finances, setFinances] = useState([]);
-    const [profile, setProfile] = useState({});
-    const [chatHistory, setChatHistory] = useState([]);
-    const [totalXP, setTotalXP] = useState(0);
-    const [xpEvents, setXpEvents] = useState([]);
-    const [levelUp, setLevelUp] = useState(null);
-    const [isMobile, setIsMobile] = useState(false);
-    const [workoutLog, setWorkoutLog] = useState({});
-    const [streak, setStreak] = useState(0);
-    const [lastCheck, setLastCheck] = useState("");
-    const [pillarProg, setPillarProg] = useState({});
-    const [activityLog, setActivityLog] = useState([]);
-    const [focusLog, setFocusLog] = useState({});
-    const [routineData, setRoutineData] = useState(null);
-    const [bodyData, setBodyData] = useState(null);
-    const [challengeData, setChallengeData] = useState(null);
-    const [confetti, setConfetti] = useState(0);
-    const [levelUpShow, setLevelUpShow] = useState(null);
-    const [programData, setProgramData] = useState(null);
-    const [masteryData, setMasteryData] = useState(null);
-    const [freezeData, setFreezeData] = useState(null);
-    const [programState, setProgramState] = useState({});
-    const [xpLog, setXpLog] = useState({});
-    const [loginData, setLoginData] = useState({});
-    const [activeTitle, setActiveTitle] = useState(null);
-    const [questChainData, setQuestChainData] = useState({});
-    const [bodyPhotos, setBodyPhotos] = useState({});
-    const [milestone, setMilestone] = useState(null);
-    const [shareCard, setShareCard] = useState(null);
-    const [showTutorial, setShowTutorial] = useState(false);
-    const saveTimer = useRef(null);
+// ── Loading fallback for lazy components ──
+function PageLoader() {
+    return <SkeletonPage />;
+}
 
-    const logActivity = (type, detail) => {
-        const entry = { id: Date.now(), type, detail, date: today(), time: new Date().toLocaleTimeString(), timestamp: Date.now() };
-        setActivityLog(p => [entry, ...p].slice(0, 200));
-    };
+export default function App({ externalUser = null }) {
+    // ── Pull state from Zustand store ──
+    const {
+        user, setUser, loading, setLoading,
+        page, setPage, setPageSilent,
+        sideOpen, setSideOpen, moreOpen, setMoreOpen,
+        isMobile, setIsMobile,
+        showExitModal, setShowExitModal,
+        showTutorial, setShowTutorial,
+
+        // Data
+        profile, setProfile, workoutLog, setWorkoutLog, foodLog, setFoodLog,
+        journal, setJournal, habits, setHabits, habitLog, setHabitLog,
+        tasks, setTasks, finances, setFinances, chatHistory, setChatHistory,
+        focusLog, setFocusLog, pillarProg, setPillarProg,
+        activityLog, routineData, setRoutineData,
+        masteryData, setMasteryData, bodyData, setBodyData,
+        challengeData, setChallengeData, programData, setProgramData,
+        freezeData, setFreezeData, programState, setProgramState,
+        xpLog, loginData, setLoginData, activeTitle, setActiveTitle,
+        questChainData, setQuestChainData, bodyPhotos, setBodyPhotos,
+
+        // XP & Gamification
+        totalXP, setTotalXP, streak, setStreak, lastCheck, setLastCheck,
+        xpEvents, confetti, levelUp, setLevelUp, levelUpShow, setLevelUpShow,
+        milestone, setMilestone, shareCard,
+        addXP, getAppState,
+
+        // Actions
+        loadUserData, saveData, logout,
+    } = useAppStore();
+
+    const saveTimer = useRef(null);
 
     // Apply saved accent color + register service worker
     useEffect(() => {
         applyAccent(localStorage.getItem('ignite-accent') || 'emerald');
         registerSW();
+    }, []);
+
+    // ── URL hash sync: read hash on load ──
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const hash = window.location.hash.replace('#', '');
+        if (hash && hash !== page) {
+            setPageSilent(hash);
+        }
+        const onHashChange = () => {
+            const h = window.location.hash.replace('#', '');
+            if (h) setPageSilent(h);
+        };
+        window.addEventListener('hashchange', onHashChange);
+        return () => window.removeEventListener('hashchange', onHashChange);
     }, []);
 
     // Start notification scheduler when user is logged in
@@ -143,7 +148,6 @@ export default function App({ externalUser = null }) {
                     username: firebaseUser.uid,
                 };
                 setUser(u);
-                // Save email to Firestore immediately so friends can find this user
                 try { await store.saveUserData(firebaseUser.uid, { email: firebaseUser.email }, true); } catch { }
                 await loadUserData(u.uid);
             } else {
@@ -154,153 +158,17 @@ export default function App({ externalUser = null }) {
         return () => unsub();
     }, []);
 
-    // Load all data from Firestore (subcollections + fallback to old single-doc)
-    const loadUserData = async (uid) => {
-        try {
-            // 1. Load main profile doc (always needed, has scalar stats)
-            const d = await storeV2.getUserProfile(uid);
-            if (!d) { setShowTutorial(true); return; }
-
-            // Set profile & scalar fields from main doc
-            d.profile && setProfile(d.profile);
-            d.habits && setHabits(d.habits);
-            d.tasks && setTasks(d.tasks);
-            d.pillarProg && setPillarProg(d.pillarProg);
-            d.routineData && setRoutineData(d.routineData);
-            d.masteryData && setMasteryData(d.masteryData);
-            d.bodyData && setBodyData(d.bodyData);
-            d.challengeData && setChallengeData(d.challengeData);
-            d.programData && setProgramData(d.programData);
-            d.freezeData && setFreezeData(d.freezeData);
-            d.programState && setProgramState(d.programState);
-            d.loginData && setLoginData(d.loginData);
-            d.activeTitle && setActiveTitle(d.activeTitle);
-            d.questChainData && setQuestChainData(d.questChainData);
-            if (d.totalXP !== undefined) setTotalXP(d.totalXP);
-            if (d.streak !== undefined) setStreak(d.streak);
-            if (d.lastCheck) setLastCheck(d.lastCheck);
-            if (!d.tutorialDone) setShowTutorial(true);
-
-            // 2. Run migration if needed (copies old data to subcollections)
-            if (!d._migrated) {
-                console.log('[IGNITE] Running one-time data migration...');
-                await storeV2.migrateUserData(uid);
-                console.log('[IGNITE] Migration complete');
-            }
-
-            // 3. Load subcollection data in parallel (fast — small individual docs)
-            const [workouts, food, journals, xp, focus, habits_log, chats, finances_data, activity, photos] = await Promise.all([
-                storeV2.getWorkouts(uid),
-                storeV2.getFoodLog(uid),
-                storeV2.getJournal(uid),
-                storeV2.getXpLog(uid),
-                storeV2.getFocusLog(uid),
-                storeV2.getHabitLog(uid),
-                storeV2.getChatHistory(uid),
-                storeV2.getFinances(uid),
-                storeV2.getActivityLog(uid),
-                storeV2.getBodyPhotos(uid),
-            ]);
-
-            // 4. Use subcollection data if available, else fall back to old main-doc data
-            setWorkoutLog(Object.keys(workouts).length > 0 ? workouts : (d.workoutLog || {}));
-            setFoodLog(Object.keys(food).length > 0 ? food : (d.foodLog || {}));
-            setJournal(Object.keys(journals).length > 0 ? journals : (d.journal || {}));
-            setXpLog(Object.keys(xp).length > 0 ? xp : (d.xpLog || {}));
-            setFocusLog(Object.keys(focus).length > 0 ? focus : (d.focusLog || {}));
-            setHabitLog(Object.keys(habits_log).length > 0 ? habits_log : (d.habitLog || {}));
-            setChatHistory(chats.length > 0 ? chats : (d.chatHistory || []));
-            setFinances(finances_data.length > 0 ? finances_data : (d.finances || []));
-            setActivityLog(activity.length > 0 ? activity : (d.activityLog || []));
-            setBodyPhotos(Object.keys(photos).length > 0 ? photos : (d.bodyPhotos || {}));
-        } catch (e) { console.error("Load error:", e); setShowTutorial(true); }
-    };
-
-    // Save to Firestore (debounced) — writes to BOTH main doc + subcollections
-    const saveData = useCallback(async () => {
-        if (!user) return;
-        try {
-            const uid = user.uid;
-
-            // 1. Save scalar/profile data to main document (small, fast)
-            await storeV2.saveUserProfile(uid, {
-                profile, habits, tasks, totalXP, streak, lastCheck, pillarProg,
-                routineData, masteryData, bodyData, challengeData, programData,
-                freezeData, programState, loginData, activeTitle, questChainData,
-                email: user.email,
-                lastSaved: new Date().toISOString(),
-            });
-
-            // 2. Save subcollection data in parallel
-            const saveOps = [];
-
-            // Workout log — save each date entry
-            if (workoutLog) {
-                for (const [date, data] of Object.entries(workoutLog)) {
-                    if (data) saveOps.push(storeV2.saveWorkout(uid, date, data));
-                }
-            }
-            // Food log
-            if (foodLog) {
-                for (const [date, data] of Object.entries(foodLog)) {
-                    if (data) saveOps.push(storeV2.saveFoodEntry(uid, date, typeof data === 'object' && !Array.isArray(data) ? data : { entries: data }));
-                }
-            }
-            // Journal
-            if (journal) {
-                for (const [date, data] of Object.entries(journal)) {
-                    if (data) saveOps.push(storeV2.saveJournalEntry(uid, date, typeof data === 'object' ? data : { entry: data }));
-                }
-            }
-            // XP log
-            if (xpLog) {
-                for (const [date, data] of Object.entries(xpLog)) {
-                    if (data) saveOps.push(storeV2.saveXpEntry(uid, date, Array.isArray(data) ? { events: data } : data));
-                }
-            }
-            // Focus log
-            if (focusLog) {
-                for (const [date, data] of Object.entries(focusLog)) {
-                    if (data) saveOps.push(storeV2.saveFocusEntry(uid, date, Array.isArray(data) ? { sessions: data } : data));
-                }
-            }
-            // Habit log
-            if (habitLog) {
-                for (const [date, data] of Object.entries(habitLog)) {
-                    if (data) saveOps.push(storeV2.saveHabitEntry(uid, date, typeof data === 'object' ? data : { data }));
-                }
-            }
-            // Chat history
-            if (chatHistory?.length > 0) {
-                saveOps.push(storeV2.saveChatHistory(uid, chatHistory));
-            }
-            // Finances
-            if (finances?.length > 0) {
-                saveOps.push(storeV2.saveFinances(uid, finances));
-            }
-            // Activity log
-            if (activityLog?.length > 0) {
-                saveOps.push(storeV2.saveActivityLog(uid, activityLog));
-            }
-
-            // Note: bodyPhotos saved directly via BodyProgress component (not in bulk save)
-            // This prevents re-uploading base64 images on every debounced save
-
-            await Promise.all(saveOps);
-        } catch (e) { console.error("Save error:", e); }
-    }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile,
-        chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
-        activityLog, focusLog, routineData, masteryData, bodyData,
-        challengeData, programData, freezeData, programState,
-        xpLog, loginData, activeTitle, questChainData]);
-
     // Debounced auto-save
     useEffect(() => {
         if (!user) return;
         if (saveTimer.current) clearTimeout(saveTimer.current);
         saveTimer.current = setTimeout(() => { saveData(); }, 2000);
         return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-    }, [saveData, user]);
+    }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile,
+        chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
+        activityLog, focusLog, routineData, masteryData, bodyData,
+        challengeData, programData, freezeData, programState,
+        xpLog, loginData, activeTitle, questChainData]);
 
     // Streak & penalty check
     useEffect(() => {
@@ -316,7 +184,6 @@ export default function App({ externalUser = null }) {
                 dt.setDate(dt.getDate() + 1);
             }
             if (missed > 0) {
-                // Don't penalize frozen days
                 const actualMissed = missed - (freezeData?.freezesUsed || []).filter(fd => {
                     const fDate = new Date(fd);
                     return fDate > ck && fDate < td;
@@ -325,8 +192,8 @@ export default function App({ externalUser = null }) {
                 if (pen <= 0) { setLastCheck(d); return; }
                 setTotalXP(p => Math.max(0, p - pen));
                 const id = Date.now();
-                setXpEvents(p => [...p, { id, amount: -pen, reason: `${missed} day${missed > 1 ? "s" : ""} missed!` }]);
-                setTimeout(() => setXpEvents(p => p.filter(e => e.id !== id)), 2500);
+                useAppStore.getState().setXpEvents(p => [...p, { id, amount: -pen, reason: `${missed} day${missed > 1 ? "s" : ""} missed!` }]);
+                setTimeout(() => useAppStore.getState().setXpEvents(p => p.filter(e => e.id !== id)), 2500);
             }
         }
         try {
@@ -340,57 +207,10 @@ export default function App({ externalUser = null }) {
         setLastCheck(d);
     }, [user, habitLog, lastCheck]);
 
-    // Add XP with streak multiplier + confetti
-    const addXP = useCallback((amount, reason) => {
-        const mult = getStreakMult(streak);
-        const actual = Math.floor(amount * mult);
-        setConfetti(c => c + 1);
-        setTotalXP(prev => {
-            const oldLv = getLevel(prev);
-            const nxp = prev + actual;
-            const nLv = getLevel(nxp);
-            if (nLv > oldLv) {
-                setTimeout(() => {
-                    setLevelUp({ level: nLv, rank: getRank(nLv) });
-                    setLevelUpShow({ level: nLv, rank: getRank(nLv) });
-                    playLevelUp();
-                }, 300);
-            }
-            // Check milestones
-            try { const ms = checkMilestone(prev, nxp); if (ms) setTimeout(() => setMilestone(ms), 800); } catch { }
-            return nxp;
-        });
-        const id = Date.now() + Math.random();
-        setXpEvents(p => [...p, { id, amount: actual, reason: reason + (mult > 1 ? ` (×${mult})` : "") }]);
-        setTimeout(() => setXpEvents(p => p.filter(e => e.id !== id)), 1600);
-        logActivity("xp", `+${actual} XP: ${reason}`);
-        play('xpGain'); hapticTap();
-        // Show share card for workouts
-        if ((reason || "").includes("Workout")) setTimeout(() => setShareCard({ type: "workout", data: { splitName: reason, calBurned: amount * 2, exercises: [], duration: 1800 } }), 1500);
-        playXP();
-        // Log XP source for breakdown
-        try {
-            const xpDate = today();
-            const xpCat = (reason || "").includes("Workout") || (reason || "").includes("Training") ? "Training" : (reason || "").includes("Food") || (reason || "").includes("Nutrition") ? "Nutrition" : (reason || "").includes("Quest") || (reason || "").includes("Habit") ? "Quest" : (reason || "").includes("Focus") ? "Focus" : (reason || "").includes("Journal") || (reason || "").includes("Mood") ? "Wellness" : (reason || "").includes("Login") ? "Login" : (reason || "").includes("Combo") ? "Combo" : (reason || "").includes("Challenge") ? "Challenge" : "Other";
-            setXpLog(prev => ({ ...(prev || {}), [xpDate]: [...((prev || {})[xpDate] || []), { amount: actual, category: xpCat, reason: reason || "", time: Date.now() }] }));
-        } catch (e) { console.error("XP log error:", e); }
-    }, [streak]);
-
-    // Logout
-    const logout = async () => {
-        try { await saveData(); } catch { }
-        try { await signOut(auth); } catch { }
-        setUser(null); setFoodLog({}); setHabits(DEFAULT_HABITS); setHabitLog({});
-        setTasks([]); setJournal({}); setFinances([]); setProfile({});
-        setChatHistory([]); setTotalXP(0); setWorkoutLog({}); setStreak(0);
-        setPillarProg({}); setActivityLog([]); setFocusLog({}); setRoutineData(null);
-        setMasteryData(null); setBodyData(null); setXpLog({}); setLoginData({}); setActiveTitle(null); setQuestChainData({}); setChallengeData(null); setProgramData(null); setFreezeData(null);
-    };
-
     // AI action handler
     const handleAI = (a) => {
         if (!a) return;
-        try { /* safe parse */
+        try {
             const x = typeof a === "string" ? JSON.parse(a) : a;
             if (x.type === "add_task") setTasks(p => [...p, { id: Date.now(), text: x.text, done: false, priority: x.priority || "medium", created: today() }]);
             if (x.type === "add_habit") setHabits(p => [...p, { id: `h${Date.now()}`, name: x.name, icon: x.icon || "⭐", pillar: x.pillar || "power" }]);
@@ -398,24 +218,21 @@ export default function App({ externalUser = null }) {
         } catch { }
     };
 
-    // Exit confirmation
-    const [showExitModal, setShowExitModal] = useState(false);
+    // Exit confirmation + save-on-exit
     useEffect(() => {
         window.history.pushState({ ignite: true }, "");
         const handlePopState = () => { setShowExitModal(true); window.history.pushState({ ignite: true }, ""); };
         const handleBeforeUnload = (e) => {
-            // Save data immediately before tab closes
-            if (user && saveTimer.current) {
+            if (useAppStore.getState().user && saveTimer.current) {
                 clearTimeout(saveTimer.current);
-                saveData();
+                useAppStore.getState().saveData();
             }
             e.preventDefault(); e.returnValue = ""; return "";
         };
         const handleVisibilityChange = () => {
-            // Save when user switches tabs or minimizes (critical for mobile)
-            if (document.visibilityState === "hidden" && user) {
+            if (document.visibilityState === "hidden" && useAppStore.getState().user) {
                 if (saveTimer.current) clearTimeout(saveTimer.current);
-                saveData();
+                useAppStore.getState().saveData();
             }
         };
         window.addEventListener("popstate", handlePopState);
@@ -435,7 +252,7 @@ export default function App({ externalUser = null }) {
         </div>
     );
 
-    if (!user) return <AuthPage />;
+    if (!user) return <Suspense fallback={<PageLoader />}><AuthPage /></Suspense>;
 
     // Onboarding for new users
     const handleOnboardingComplete = async (profileData) => {
@@ -444,16 +261,16 @@ export default function App({ externalUser = null }) {
     };
 
     if (!profile.onboardingComplete) {
-        return <OnboardingPage onComplete={handleOnboardingComplete} />;
+        return <Suspense fallback={<PageLoader />}><OnboardingPage onComplete={handleOnboardingComplete} /></Suspense>;
     }
 
-    // Tutorial overlay for first-time users
+    // Tutorial overlay
     const handleTutorialComplete = async () => {
         setShowTutorial(false);
         await store.saveUserData(user.uid, { tutorialDone: true });
     };
 
-    const appState = { foodLog: foodLog || {}, habits: habits || [], habitLog: habitLog || {}, tasks: tasks || [], journal: journal || {}, finances: finances || [], profile: profile || {}, user, pillarProg: pillarProg || {}, focusLog: focusLog || {}, workoutLog: workoutLog || {}, oracleChats: chatHistory || [], routineData, masteryData, bodyData, challengeData, freezeData, programState: programState || {}, xpLog: xpLog || {}, loginData: loginData || {}, activeTitle, questChainData: questChainData || {} };
+    const appState = getAppState();
 
     const pages = {
         dashboard: <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} foodLog={foodLog} focusLog={focusLog} habitLog={habitLog} freezeData={freezeData} setFreezeData={setFreezeData} addXP={addXP} xpLog={xpLog} loginData={loginData} setLoginData={setLoginData} />,
@@ -477,7 +294,6 @@ export default function App({ externalUser = null }) {
         programs: <WorkoutPrograms programData={programData} setProgramData={setProgramData} addXP={addXP} />,
     };
 
-    // Get current page label for header
     const allNavItems = [...navItems.filter(n => !n.submenu), ...(navItems.find(n => n.submenu)?.submenu || [])];
     const currentLabel = allNavItems.find(n => n.key === page)?.label || "IGNITE";
 
@@ -487,93 +303,27 @@ export default function App({ externalUser = null }) {
             <MilestoneOverlay milestone={milestone} onClose={() => setMilestone(null)} />
             <BottomNav active={page} setPage={setPage} />
             {levelUp && <LevelUpOverlay level={levelUp.level} rank={levelUp.rank} onClose={() => setLevelUp(null)} />}
-            {showTutorial && <OnboardingTutorial onComplete={handleTutorialComplete} />}
+            {showTutorial && <Suspense fallback={<PageLoader />}><OnboardingTutorial onComplete={handleTutorialComplete} /></Suspense>}
 
             <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#060a0c", overflow: "hidden", position: "relative", width: "100%" }}>
                 <div style={{ position: "fixed", top: "-20%", right: "-10%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle,rgba(16,185,129,.025),transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
-
-                {false && <div />}
-
-                {/* Sidebar */}
-                <nav style={{ display: "none", width: sideOpen ? 240 : 72, minWidth: sideOpen ? 240 : 72, background: "linear-gradient(180deg,rgba(10,10,18,.99),rgba(8,8,14,.99))", borderRight: "1px solid rgba(16,185,129,.06)", display: "flex", flexDirection: "column", transition: "all .3s", zIndex: 50, position: isMobile ? "fixed" : "relative", height: "100%", left: isMobile && !sideOpen ? -72 : 0 }}>
-                    {/* Logo */}
-                    <div onClick={() => null} style={{ padding: "20px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid rgba(255,255,255,.04)" }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0, fontFamily: "Rajdhani,sans-serif" }}>I</div>
-                        {sideOpen && <span style={{ fontSize: 18, fontWeight: 800, fontFamily: "Rajdhani,sans-serif", background: "linear-gradient(135deg,#10b981,#06b6d4,#22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: 4 }}>IGNITE</span>}
-                    </div>
-
-                    {/* Nav Items */}
-                    <div style={{ flex: 1, paddingBottom: 70, overflowY: "auto", padding: "12px 0" }}>
-                        {navItems.map(n => {
-                            if (n.submenu) {
-                                // "More" button with expandable submenu
-                                return (
-                                    <div key={n.key}>
-                                        <div className={`ni ${moreOpen ? "act" : ""}`} onClick={() => setMoreOpen(!moreOpen)}>
-                                            <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>{n.icon}</span>
-                                            {sideOpen && <span>{n.label}</span>}
-                                            {sideOpen && <span style={{ marginLeft: "auto", fontSize: 10, color: "#4b5563" }}>{moreOpen ? "▾" : "▸"}</span>}
-                                        </div>
-                                        {moreOpen && sideOpen && (
-                                            <div style={{ paddingLeft: 16, background: "rgba(255,255,255,.01)" }}>
-                                                {n.submenu.map(sub => (
-                                                    <div key={sub.key} className={`ni ${page === sub.key ? "act" : ""}`}
-                                                        onClick={() => { setPage(sub.key); setSideOpen(false); setMoreOpen(false); }}
-                                                        style={{ padding: "8px 12px", fontSize: 13 }}>
-                                                        <span style={{ fontSize: 16, width: 22, textAlign: "center", flexShrink: 0 }}>{sub.icon}</span>
-                                                        <span>{sub.label}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                        {moreOpen && !sideOpen && (
-                                            <div style={{ position: "absolute", left: 72, top: "auto", background: "#0d1117", border: "1px solid rgba(16,185,129,.08)", borderRadius: 12, padding: 8, zIndex: 60, minWidth: 180, boxShadow: "0 8px 30px rgba(0,0,0,.5)" }}>
-                                                {n.submenu.map(sub => (
-                                                    <div key={sub.key} className={`ni ${page === sub.key ? "act" : ""}`}
-                                                        onClick={() => { setPage(sub.key); setMoreOpen(false); }}
-                                                        style={{ padding: "8px 12px", fontSize: 13, borderRadius: 8 }}>
-                                                        <span style={{ fontSize: 16, width: 22, textAlign: "center" }}>{sub.icon}</span>
-                                                        <span>{sub.label}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            }
-                            // Regular nav item
-                            return (
-                                <div key={n.key} className={`ni ${page === n.key ? "act" : ""}`}
-                                    onClick={() => { setPage(n.key); setSideOpen(false); setMoreOpen(false); }}>
-                                    <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>{n.icon}</span>
-                                    {sideOpen && <span>{n.label}</span>}
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {/* Logout */}
-                    <div className="ni" onClick={logout} style={{ margin: "8px 8px 16px", color: "#ef4444" }}>
-                        <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>⏻</span>
-                        {sideOpen && <span>Log Out</span>}
-                    </div>
-                </nav>
 
                 {/* Main Content */}
                 <main style={{ flex: 1, paddingBottom: 70, overflow: "auto", position: "relative", zIndex: 1 }}>
                     <header style={{ padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(6,10,12,.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(16,185,129,.05)", position: "fixed", top: 0, left: 0, right: 0, zIndex: 30, gap: 12 }}>
                         <div className="app-header">
-                            {isMobile && <span onClick={() => null} style={{ cursor: "pointer", fontSize: 22, color: "#6b7280" }}></span>}
                             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>{currentLabel}</h2>
                         </div>
                         <HeaderXPBar totalXP={totalXP} streak={streak} />
-                        <div onClick={() => setPage("profile")} style={{ display: "none", alignItems: "center", gap: 8, cursor: "pointer", padding: "4px 10px 4px 14px", borderRadius: 100, background: "rgba(16,185,129,.04)", border: "1px solid rgba(16,185,129,.08)", flexShrink: 0 }}>
-                            <span className="do" style={{ fontSize: 12, color: "#34d399" }}>{user.name}</span>
-                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff" }}>{user.name?.[0]?.toUpperCase() || "U"}</div>
-                        </div>
                     </header>
                     <div style={{ padding: "14px min(24px, 4vw)", paddingTop: 72, paddingBottom: 70, maxWidth: 1120, margin: "0 auto", overflowX: "hidden", overflowY: "auto", flex: 1 }}>
-                        <PullToRefresh onRefresh={async () => { if (user) await loadUserData(user.uid); }}><PageTransition pageKey={page}>{pages[page]}</PageTransition></PullToRefresh>
+                        <PullToRefresh onRefresh={async () => { if (user) await loadUserData(user.uid); }}>
+                            <PageTransition pageKey={page}>
+                                <Suspense fallback={<PageLoader />}>
+                                    {pages[page]}
+                                </Suspense>
+                            </PageTransition>
+                        </PullToRefresh>
                     </div>
                 </main>
 
@@ -589,8 +339,8 @@ export default function App({ externalUser = null }) {
                             <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>Leave IGNITE?</div>
                             <p style={{ color: "#6b7280", fontSize: 13, marginTop: 8, marginBottom: 24 }}>Your progress is saved, but your streak depends on you coming back.</p>
                             <div style={{ display: "flex", gap: 10 }}>
-                                <button onClick={() => setShowExitModal(false)} className="bp" style={{ flex: 1, paddingBottom: 70, padding: 14 }}>Stay & Train</button>
-                                <button onClick={() => { setShowExitModal(false); window.history.go(-2); }} className="bg" style={{ flex: 1, paddingBottom: 70, padding: 14, color: "#ef4444" }}>Leave</button>
+                                <button onClick={() => setShowExitModal(false)} className="bp" style={{ flex: 1, padding: 14 }}>Stay & Train</button>
+                                <button onClick={() => { setShowExitModal(false); window.history.go(-2); }} className="bg" style={{ flex: 1, padding: 14, color: "#ef4444" }}>Leave</button>
                             </div>
                         </div>
                     </div>

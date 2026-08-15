@@ -7,6 +7,7 @@ import { DIET_TEMPLATES, generateDayPlan, generateWeekPlan, getPlanDayTotals, ge
 import { today } from '../utils';
 import HistoryPanel from './HistoryPanel';
 import { formatNutritionHistory } from '../historyFormatters';
+import { localSync } from '@/utils/localSync';
 
 const MEALS = ["Breakfast", "Lunch", "Dinner", "Snack"];
 const WATER_GOAL = 8;
@@ -88,7 +89,8 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const [scanning, setScanning] = useState(false);
   const [scanMode, setScanMode] = useState("choose"); // choose | camera | text
   const [textDesc, setTextDesc] = useState("");
-  const [scanHistory, setScanHistory] = useState(() => JSON.parse(localStorage.getItem("ignite-scan-history") || "[]"));
+  const shSync = useMemo(() => localSync("ignite-scan-history", []), []);
+  const [scanHistory, setScanHistory] = useState(shSync.get);
   const [scanResults, setScanResults] = useState(null);
   const [scanError, setScanError] = useState(null);
   const [scanPhoto, setScanPhoto] = useState(null);
@@ -301,7 +303,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     analyzeWithAI(`Analyze this meal and estimate nutrition for each food item separately: "${desc}". Use standard Indian serving sizes. Be specific with calories — don't round to nearest 100.`);
   };
   useEffect(() => () => stopCam(), []);
-  useEffect(() => { localStorage.setItem("ignite-scan-history", JSON.stringify(scanHistory)); }, [scanHistory]);
+  useEffect(() => { shSync.set(scanHistory); }, [scanHistory]);
 
   // API search (debounced — fires 500ms after typing stops)
   useEffect(() => {

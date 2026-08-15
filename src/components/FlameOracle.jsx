@@ -87,10 +87,12 @@ const PAGE_NAMES = { training: "⚔️ Training", nutrition: "🍎 Nutrition", d
 export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodLog = () => { }, setWorkoutLog = () => { }, setPage = () => { }, profile = {}, totalXP = 0, streak = 0, workoutLog = {} }) {
   const d = today();
 
-  // ── Load chats: localStorage first (survives page switches), then Firestore ──
+  // ── Load chats: Firestore (via Zustand) is source of truth, localStorage is fast cache ──
   const initChats = () => {
-    try { const local = JSON.parse(localStorage.getItem("ignite-oracle-chats")); if (Array.isArray(local) && local.length > 0 && local[0]?.messages) return local; } catch { }
+    // Prefer Firestore data (passed via appState from Zustand store)
     try { const s = appState?.oracleChats; if (Array.isArray(s) && s.length > 0 && s[0]?.messages) return s; } catch { }
+    // Fall back to localStorage cache (survives page switches before Firestore loads)
+    try { const local = JSON.parse(localStorage.getItem("ignite-oracle-chats")); if (Array.isArray(local) && local.length > 0 && local[0]?.messages) return local; } catch { }
     return [{ id: Date.now(), title: "New Chat", messages: [], mode: "coach" }];
   };
 
