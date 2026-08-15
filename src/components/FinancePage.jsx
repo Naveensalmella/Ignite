@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo } from 'react';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { today } from '@/utils';
+import { today, toArr } from '@/utils';
 
 const CATEGORIES = {
   income: ["Salary", "Freelance", "Investment", "Gift", "Other Income"],
@@ -23,18 +23,18 @@ export default function FinancePage({ finances = [], setFinances = () => { }, ad
   const addTransaction = () => {
     if (!txAmount || !txCategory) return;
     const tx = { id: Date.now(), type: txType, amount: parseFloat(txAmount), category: txCategory, note: txNote, date: d };
-    setFinances(prev => [tx, ...(prev || [])]);
+    setFinances(prev => [tx, ...toArr(prev)]);
     setTxAmount(""); setTxCategory(""); setTxNote(""); setShowAdd(false);
     addXP(5, "Finance logged");
   };
 
   const deleteTx = (id) => {
     if (!window.confirm("Delete this transaction?")) return;
-    setFinances(prev => (prev || []).filter(t => t.id !== id));
+    setFinances(prev => toArr(prev).filter(t => t.id !== id));
   };
 
   // Monthly data
-  const monthTxs = useMemo(() => (finances || []).filter(t => (t.date || "").startsWith(filterMonth)), [finances, filterMonth]);
+  const monthTxs = useMemo(() => toArr(finances).filter(t => (t.date || "").startsWith(filterMonth)), [finances, filterMonth]);
   const totalIncome = monthTxs.filter(t => t.type === "income").reduce((s, t) => s + (t.amount || 0), 0);
   const totalExpense = monthTxs.filter(t => t.type === "expense").reduce((s, t) => s + (t.amount || 0), 0);
   const savings = totalIncome - totalExpense;
@@ -49,12 +49,12 @@ export default function FinancePage({ finances = [], setFinances = () => { }, ad
   }, [monthTxs]);
 
   // Recent transactions
-  const recent = useMemo(() => (finances || []).slice(0, 20), [finances]);
+  const recent = useMemo(() => toArr(finances).slice(0, 20), [finances]);
 
   // Month selector
   const months = useMemo(() => {
     const set = new Set();
-    (finances || []).forEach(t => { if (t.date) set.add(t.date.slice(0, 7)); });
+    toArr(finances).forEach(t => { if (t.date) set.add(t.date.slice(0, 7)); });
     set.add(d.slice(0, 7));
     return [...set].sort().reverse();
   }, [finances, d]);

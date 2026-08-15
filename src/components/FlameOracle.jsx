@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { hasDayWorkout, getDaySplit, countWorkoutDays } from '@/lib/workoutHelpers';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { getLevel, getRank, today } from '../utils';
+import { getLevel, getRank, today, toArr } from '../utils';
 
 // Streaming AI call — returns tokens one by one
 async function callAIStream(messages, systemPrompt, onToken) {
@@ -133,7 +133,7 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
   const userContext = useMemo(() => {
     const lv = getLevel(totalXP || 0);
     const rank = getRank(lv);
-    const todayFood = appState?.foodLog?.[d] || [];
+    const todayFood = toArr(appState?.foodLog?.[d]);
     const todayWorked = hasDayWorkout(workoutLog, d);
     const todayCal = todayFood.reduce((s, f) => s + (f.cal || 0), 0);
     const todayProtein = todayFood.reduce((s, f) => s + (f.protein || 0), 0);
@@ -235,7 +235,7 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
   // ── Context-aware quick actions ──
   const quickActions = useMemo(() => {
     const todayWorked = hasDayWorkout(workoutLog, d);
-    const todayCal = (appState?.foodLog?.[d] || []).reduce((s, f) => s + (f.cal || 0), 0);
+    const todayCal = toArr(appState?.foodLog?.[d]).reduce((s, f) => s + (f.cal || 0), 0);
     const a = [];
     if (!todayWorked) a.push({ label: "Plan today's workout", icon: "⚔️" });
     else a.push({ label: "Review my workout", icon: "📊" });

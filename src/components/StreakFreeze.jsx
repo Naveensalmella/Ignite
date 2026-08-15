@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { today } from '@/utils';
+import { today, toArr } from '@/utils';
 
 // Streak Freeze — skip 1 day without losing streak
 // Costs 100 XP per freeze. Max 2 freezes stored.
@@ -23,7 +23,7 @@ export default function StreakFreeze({ streak, totalXP, freezeData, setFreezeDat
         setFreezeData({
             ...data,
             freezesAvailable: data.freezesAvailable - 1,
-            freezesUsed: [...data.freezesUsed, d],
+            freezesUsed: [...toArr(data.freezesUsed), d],
         });
         setShowConfirm(false);
     };
@@ -82,5 +82,5 @@ export default function StreakFreeze({ streak, totalXP, freezeData, setFreezeDat
 
 // Helper: check if a day has freeze (use in App.jsx streak logic)
 export function isDayFrozen(freezeData, date) {
-    return (freezeData?.freezesUsed || []).includes(date);
+    return toArr(freezeData?.freezesUsed).includes(date);
 }

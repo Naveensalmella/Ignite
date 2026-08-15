@@ -4,7 +4,7 @@ import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { XP } from '../data';
 import { FOOD_DATABASE, FOOD_CATEGORIES, searchFoods, searchFoodsCombined } from '../data/foodDatabase';
 import { DIET_TEMPLATES, generateDayPlan, generateWeekPlan, getPlanDayTotals, getShoppingList, getSwapOptions as getMealSwaps } from '../data/mealPlanner';
-import { today } from '../utils';
+import { today, toArr } from '../utils';
 import HistoryPanel from './HistoryPanel';
 import { formatNutritionHistory } from '../historyFormatters';
 import { localSync } from '@/utils/localSync';
@@ -68,12 +68,13 @@ const MEAL_TIMES = {
   Dinner: { time: "6:30 - 8:00 PM", tip: "Lighter than lunch, focus on protein + veggies" },
   Snack: { time: "3:00 - 4:30 PM", tip: "150-200 cal max: fruits, nuts, or yogurt" },
 };
-function Ring({ pct, color, size = 48, stroke = 4, children }) { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div className="absolute inset-0 flex items-center justify-center">{children}</div></div>) }
+function Ring({ pct, color, size = 48, stroke = 4, children }) { const p = Number.isFinite(pct) ? pct : 0; const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, p / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div className="absolute inset-0 flex items-center justify-center">{children}</div></div>) }
 
 export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP = () => { }, profile = {} }) {
   const d = today();
-  const todayLog = foodLog[d] || [];
-  const todayWater = foodLog[`water_${d}`] || 0;
+  const todayLog = toArr(foodLog[d]).filter(f => f && typeof f === 'object' && f.name);
+  const rawWater = foodLog[`water_${d}`];
+  const todayWater = typeof rawWater === 'number' ? rawWater : (rawWater?.entries ?? rawWater?.data ?? 0);
   const [tab, setTab] = useState("log");
   const [selMeal, setSelMeal] = useState("Breakfast");
   const [search, setSearch] = useState("");
@@ -98,7 +99,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
 
   // Diet plan state
   const [planType, setPlanType] = useState(PLAN_TYPES[0]);
-  const [savedPlans, setSavedPlans] = useState(foodLog._savedPlans || []);
+  const [savedPlans, setSavedPlans] = useState(toArr(foodLog._savedPlans));
   const [editingPlan, setEditingPlan] = useState(null);
   const [planName, setPlanName] = useState("");
   const [planItems, setPlanItems] = useState({ Breakfast: [], Lunch: [], Dinner: [], Snack: [] });
@@ -131,9 +132,9 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   // Recent/frequent foods
   const recentFoods = useMemo(() => {
     const all = [];
-    const dates = Object.keys(foodLog).filter(k => !k.startsWith("water_") && !k.startsWith("_") && Array.isArray(foodLog[k]));
+    const dates = Object.keys(foodLog).filter(k => !k.startsWith("water_") && !k.startsWith("_") && (Array.isArray(foodLog[k]) || (foodLog[k] && typeof foodLog[k] === 'object')));
     dates.sort().reverse().slice(0, 7).forEach(dt => {
-      (foodLog[dt] || []).forEach(f => {
+      toArr(foodLog[dt]).filter(f => f && f.name).forEach(f => {
         if (!all.find(a => a.name === f.name)) all.push(f);
       });
     });
@@ -161,7 +162,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     for (let i = 6; i >= 0; i--) {
       const dt = new Date(); dt.setDate(dt.getDate() - i);
       const ds = dt.toISOString().split("T")[0];
-      const dayLog = foodLog[ds] || [];
+      const dayLog = toArr(foodLog[ds]);
       days.push({
         date: ds,
         label: dt.toLocaleDateString("en", { weekday: "narrow" }),
@@ -185,7 +186,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const addFood = (food, g = 100, meal = selMeal) => {
     const ratio = g / 100;
     const scaled = { ...food, meal, grams: g, cal: Math.round(food.cal * ratio), protein: Math.round(food.protein * ratio * 10) / 10, carbs: Math.round(food.carbs * ratio * 10) / 10, fat: Math.round(food.fat * ratio * 10) / 10, fiber: Math.round(food.fiber * ratio * 10) / 10, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-    setFoodLog(p => ({ ...p, [d]: [...(p[d] || []), scaled] }));
+    setFoodLog(p => ({ ...p, [d]: [...toArr(p[d]), scaled] }));
     addXP(XP.food, "Food logged");
     setSelFood(null); setGrams(100);
   };
@@ -196,7 +197,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     setCustom({ name: "", cal: "", protein: "", carbs: "", fat: "", fiber: "" }); setShowCustom(false);
   };
 
-  const removeFood = (idx) => setFoodLog(p => ({ ...p, [d]: (p[d] || []).filter((_, i) => i !== idx) }));
+  const removeFood = (idx) => setFoodLog(p => ({ ...p, [d]: toArr(p[d]).filter((_, i) => i !== idx) }));
   const addWater = () => setFoodLog(p => ({ ...p, [`water_${d}`]: (p[`water_${d}`] || 0) + 1 }));
   const removeWater = () => setFoodLog(p => ({ ...p, [`water_${d}`]: Math.max(0, (p[`water_${d}`] || 0) - 1) }));
 
@@ -585,11 +586,11 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         <div className="mb-3">
           <div className="text-[11px] text-gray-500 font-semibold mb-1.5">⚡ Quick Add — Recent</div>
           <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {recentFoods.slice(0, 8).map((f, i) => (
+            {recentFoods.filter(f => f && f.name).slice(0, 8).map((f, i) => (
               <div key={f.name + i} onClick={() => addFood(f, 100, selMeal)} className="shrink-0 px-3 py-2 rounded-[10px] bg-white/[.02] border border-white/[.06] cursor-pointer text-center min-w-[70px]">
-                <div className="text-[18px]">{f.emoji}</div>
+                <div className="text-[18px]">{f.emoji || "🍽️"}</div>
                 <div className="text-[10px] text-gray-200 mt-0.5">{f.name.length > 10 ? f.name.slice(0, 10) + "…" : f.name}</div>
-                <div className="text-[11px] text-gray-500">{f.cal}cal</div>
+                <div className="text-[11px] text-gray-500">{f.cal || 0}cal</div>
               </div>
             ))}
           </div>

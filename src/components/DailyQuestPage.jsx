@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { XP, DAILY_PENALTY } from '@/data/index';
-import { today } from '@/utils';
+import { today, toArr } from '@/utils';
 import HistoryPanel from './HistoryPanel';
 import { formatQuestHistory } from '@/historyFormatters';
 
@@ -29,11 +29,11 @@ const SUGGESTED = [
   { name: "Talk to a friend", icon: "👋", cat: "heart" },
 ];
 
-function Ring({ pct, color, size = 80, stroke = 6, children }) { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
+function Ring({ pct, color, size = 80, stroke = 6, children }) { const p = Number.isFinite(pct) ? pct : 0; const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, p / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
 export default function DailyQuestPage({ habits = [], setHabits = () => { }, habitLog = {}, setHabitLog = () => { }, addXP = () => { }, workoutLog = {} }) {
   const d = today();
-  const checked = habitLog[d] || [];
+  const checked = toArr(habitLog[d]);
   const todayTrained = !!(workoutLog && workoutLog[d]);
   const [newName, setNewName] = useState("");
   const [newCat, setNewCat] = useState("power");
@@ -51,7 +51,7 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
     const dt = new Date();
     for (let i = 0; i < 365; i++) {
       const ds = dt.toISOString().split("T")[0];
-      if ((habitLog[ds] || []).includes(habitId)) { streak++; dt.setDate(dt.getDate() - 1); }
+      if (toArr(habitLog[ds]).includes(habitId)) { streak++; dt.setDate(dt.getDate() - 1); }
       else if (i === 0) { dt.setDate(dt.getDate() - 1); continue; } // today might not be done yet
       else break;
     }
@@ -60,7 +60,7 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
 
   const toggle = (id) => {
     const was = checked.includes(id);
-    setHabitLog(p => { const dl = p[d] || []; return { ...p, [d]: was ? dl.filter(x => x !== id) : [...dl, id] } });
+    setHabitLog(p => { const dl = toArr(p[d]); return { ...p, [d]: was ? dl.filter(x => x !== id) : [...dl, id] } });
     if (!was) addXP(XP.habit, "Quest completed");
   };
 
@@ -78,10 +78,10 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
   const xpEarned = checked.length * XP.habit + (todayTrained ? XP.workout : 0);
 
   // Calendar
-  const calDays = useMemo(() => { const now = new Date(), y = now.getFullYear(), m = now.getMonth(), fd = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate(), days = []; for (let i = 0; i < fd; i++)days.push(null); for (let i = 1; i <= dim; i++) { const ds = `${y}-${String(m + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`; const dh = habitLog[ds] || []; const w = workoutLog && workoutLog[ds]; days.push({ day: i, date: ds, done: w || dh.length >= 3, partial: dh.length > 0 }) } return days }, [habitLog, workoutLog]);
+  const calDays = useMemo(() => { const now = new Date(), y = now.getFullYear(), m = now.getMonth(), fd = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate(), days = []; for (let i = 0; i < fd; i++)days.push(null); for (let i = 1; i <= dim; i++) { const ds = `${y}-${String(m + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`; const dh = toArr(habitLog[ds]); const w = workoutLog && workoutLog[ds]; days.push({ day: i, date: ds, done: w || dh.length >= 3, partial: dh.length > 0 }) } return days }, [habitLog, workoutLog]);
 
   // Stats
-  const stats = useMemo(() => { const allDates = Object.keys(habitLog); return { totalDays: allDates.length, totalQuests: allDates.reduce((s, ds) => s + (habitLog[ds] || []).length, 0), activeDays: allDates.filter(ds => (habitLog[ds] || []).length > 0).length } }, [habitLog]);
+  const stats = useMemo(() => { const allDates = Object.keys(habitLog); return { totalDays: allDates.length, totalQuests: allDates.reduce((s, ds) => s + toArr(habitLog[ds]).length, 0), activeDays: allDates.filter(ds => toArr(habitLog[ds]).length > 0).length } }, [habitLog]);
 
   return (<div>
     {/* Hero */}

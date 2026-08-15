@@ -1,14 +1,15 @@
 "use client";
 import { useState } from "react";
 import { today, pillars } from '@/data/index';
+import { toArr } from '@/utils';
 
 export default function HabitsPage({ habits, setHabits, habitLog, setHabitLog }) {
   const [newH,setNewH]=useState("");const [newP,setNewP]=useState("power");
-  const d=today();const checked=habitLog[d]||[];
-  const toggle=(id)=>setHabitLog(p=>{const dl=p[d]||[];return{...p,[d]:dl.includes(id)?dl.filter(x=>x!==id):[...dl,id]}});
+  const d=today();const checked=toArr(habitLog[d]);
+  const toggle=(id)=>setHabitLog(p=>{const dl=toArr(p[d]);return{...p,[d]:dl.includes(id)?dl.filter(x=>x!==id):[...dl,id]}});
   const addH=()=>{if(!newH.trim())return;setHabits(p=>[...p,{id:`h${Date.now()}`,name:newH,icon:"⭐",pillar:newP}]);setNewH("")};
   const removeH=(id)=>setHabits(p=>p.filter(h=>h.id!==id));
-  const getStreak=(id)=>{let s=0,dt=new Date();for(let i=0;i<365;i++){const ds=dt.toISOString().split("T")[0];if((habitLog[ds]||[]).includes(id)){s++;dt.setDate(dt.getDate()-1)}else break}return s};
+  const getStreak=(id)=>{let s=0,dt=new Date();for(let i=0;i<365;i++){const ds=dt.toISOString().split("T")[0];if(toArr(habitLog[ds]).includes(id)){s++;dt.setDate(dt.getDate()-1)}else break}return s};
   const progress=habits.length>0?Math.round((checked.length/habits.length)*100):0;
 
   return (

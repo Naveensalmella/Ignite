@@ -1,5 +1,54 @@
 import { RANKS, STREAK_MULT } from '@/data/index';
 
+/**
+ * Normalize a day-keyed log object from Firestore.
+ * Firestore sometimes stores arrays as objects with numeric keys.
+ * This converts { "2025-01-01": {0: {...}, 1: {...}} } back to
+ *               { "2025-01-01": [{...}, {...}] }
+ */
+/**
+ * Safely convert a value to an array.
+ * Firestore stores JS arrays as objects with numeric keys — this handles that.
+ */
+export function toArr(v) {
+  if (Array.isArray(v)) return v;
+  if (v && typeof v === 'object') return Object.values(v);
+  return [];
+}
+
+export function normalizeDayLog(log) {
+  if (!log || typeof log !== 'object') return {};
+  const out = {};
+  for (const key of Object.keys(log)) {
+    let val = log[key];
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      // Unwrap Firestore wrapper objects created during save
+      // e.g. { entries: [...] }, { data: [...] }, { entry: "..." }, { events: [...] }, { sessions: [...] }
+      const objKeys = Object.keys(val);
+      if (objKeys.length === 1) {
+        const wrapper = objKeys[0];
+        if (['entries', 'data', 'events', 'sessions'].includes(wrapper)) {
+          val = val[wrapper];
+        }
+      }
+    }
+    if (Array.isArray(val)) {
+      out[key] = val;
+    } else if (val && typeof val === 'object') {
+      // Check if it looks like a Firestore-mangled array (numeric keys)
+      const keys = Object.keys(val);
+      if (keys.length > 0 && keys.every(k => !isNaN(k))) {
+        out[key] = Object.values(val);
+      } else {
+        out[key] = val; // genuine object (e.g. workoutLog day entry)
+      }
+    } else {
+      out[key] = val;
+    }
+  }
+  return out;
+}
+
 // XP curve: gets progressively harder but never caps
 export function xpForLevel(n) {
   if (n <= 1) return 0;

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
-import { getLevel, getRank, today } from '@/utils';
+import { getLevel, getRank, today, toArr } from '@/utils';
 import { GATES, XP } from '@/data/index';
 import { hasDayWorkout, getDayCal, getDayDuration, getDaySplit, getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
 
@@ -19,8 +19,8 @@ export default function AIChat({ appState, onAction, chatHistory, setChatHistory
 
   // Build rich context about the user
   const buildSystemPrompt = () => {
-    const todayHabits = habitLog[d] || [];
-    const todayFood = foodLog[d] || [];
+    const todayHabits = toArr(habitLog[d]);
+    const todayFood = toArr(foodLog[d]);
     const todayJournal = journal[d];
     const totalWorkouts = countWorkoutDays(workoutLog);
     const todayTrained = hasDayWorkout(workoutLog, d);

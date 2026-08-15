@@ -1,14 +1,14 @@
 "use client";
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { getLevel, getRank, today } from '@/utils';
+import { getLevel, getRank, today, toArr } from '@/utils';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { hasDayWorkout, getDayCal, getDayDuration, getDaySplit, getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
 
 function Ring({ pct, color, size = 44, stroke = 4, children }) {
-    const r = (size - stroke) / 2, c = 2 * Math.PI * r;
-    return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>);
+    const p = Number.isFinite(pct) ? pct : 0; const r = (size - stroke) / 2, c = 2 * Math.PI * r;
+    return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, p / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>);
 }
 
 export default function SocialPage({ user = {}, profile = {}, totalXP = 0, streak = 0, workoutLog = {}, addXP = () => { } }) {
@@ -308,10 +308,10 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
                                     <div>
                                         <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.5 }}>{item.text}</div>
                                         <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-                                            <span onClick={() => likePost(item.uid, item.id)} style={{ fontSize: 12, color: (item.likes || []).includes(user.uid) ? "#ef4444" : "#6b7280", cursor: "pointer" }}>
-                                                {(item.likes || []).includes(user.uid) ? "❤️" : "🤍"} {(item.likes || []).length}
+                                            <span onClick={() => likePost(item.uid, item.id)} style={{ fontSize: 12, color: toArr(item.likes).includes(user.uid) ? "#ef4444" : "#6b7280", cursor: "pointer" }}>
+                                                {toArr(item.likes).includes(user.uid) ? "❤️" : "🤍"} {toArr(item.likes).length}
                                             </span>
-                                            <span style={{ fontSize: 12, color: "#6b7280" }}>💬 {(item.comments || []).length}</span>
+                                            <span style={{ fontSize: 12, color: "#6b7280" }}>💬 {toArr(item.comments).length}</span>
                                         </div>
                                     </div>
                                 )}
@@ -447,7 +447,7 @@ export default function SocialPage({ user = {}, profile = {}, totalXP = 0, strea
                                     <div style={{ fontSize: 10, color: "#6b7280" }}>Started {ch.startDate} · {ch.duration} days</div>
                                 </div>
                             </div>
-                            <div style={{ fontSize: 12, color: "#10b981" }}>{(ch.participants || []).length} participants</div>
+                            <div style={{ fontSize: 12, color: "#10b981" }}>{toArr(ch.participants).length} participants</div>
                         </div>
                     )) : (
                         <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 12 }}>No active challenges. Create one above!</div>

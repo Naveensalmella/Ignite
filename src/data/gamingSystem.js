@@ -3,7 +3,7 @@
 // Titles, Milestones, Quest Chains, Login Bonus
 // ══════════════════════════════════════════════════════
 
-import { today } from '@/utils';
+import { today, toArr } from '@/utils';
 import { normalizeDayEntries } from '@/lib/workoutLog';
 
 // ── 1. DAILY XP GOAL ──
@@ -11,14 +11,15 @@ export const DEFAULT_XP_GOAL = 100;
 
 export function getDailyXPProgress(xpLog, goal) {
     const d = today();
-    const todayXP = (xpLog[d] || []).reduce((s, e) => s + (e.amount || 0), 0);
+    const entries = toArr(xpLog[d]);
+    const todayXP = entries.reduce((s, e) => s + (e.amount || 0), 0);
     return { earned: todayXP, goal: goal || DEFAULT_XP_GOAL, pct: Math.min(100, Math.round((todayXP / (goal || DEFAULT_XP_GOAL)) * 100)) };
 }
 
 // ── 2. XP BREAKDOWN (by source) ──
 export function getXPBreakdown(xpLog) {
     const d = today();
-    const entries = xpLog[d] || [];
+    const entries = toArr(xpLog[d]);
     const breakdown = {};
     entries.forEach(e => {
         const cat = e.category || "Other";
@@ -46,9 +47,9 @@ export function getComboStatus(appState, workoutLog) {
     const d = today();
     const activities = [];
     if (normalizeDayEntries(workoutLog[d]).length > 0) activities.push("Training");
-    if ((appState.foodLog?.[d] || []).length > 0) activities.push("Nutrition");
-    if ((appState.habitLog?.[d] || []).length > 0) activities.push("Quests");
-    if ((appState.focusLog?.[d] || []).length > 0) activities.push("Focus");
+    if (toArr(appState.foodLog?.[d]).length > 0) activities.push("Nutrition");
+    if (toArr(appState.habitLog?.[d]).length > 0) activities.push("Quests");
+    if (toArr(appState.focusLog?.[d]).length > 0) activities.push("Focus");
     if (appState.journal?.[d]?.mood || appState.journal?.[d]?.entry) activities.push("Wellness");
 
     const count = activities.length;
@@ -120,19 +121,19 @@ export function getChallengeProgress(challenge, appState, workoutLog, weekStart)
 
     switch (challenge.type) {
         case "workouts": return days.filter(d => normalizeDayEntries(workoutLog[d]).length > 0).length;
-        case "foodDays": return days.filter(d => (appState.foodLog?.[d] || []).length > 0).length;
+        case "foodDays": return days.filter(d => toArr(appState.foodLog?.[d]).length > 0).length;
         case "calBurned": return days.reduce((s, d) => s + normalizeDayEntries(workoutLog[d]).reduce((ss, e) => ss + (e.calBurned || 0), 0), 0);
-        case "quests": return days.reduce((s, d) => s + (appState.habitLog?.[d] || []).length, 0);
-        case "focusSessions": return days.reduce((s, d) => s + (appState.focusLog?.[d] || []).length, 0);
+        case "quests": return days.reduce((s, d) => s + toArr(appState.habitLog?.[d]).length, 0);
+        case "focusSessions": return days.reduce((s, d) => s + toArr(appState.focusLog?.[d]).length, 0);
         case "journalDays": return days.filter(d => appState.journal?.[d]?.entry?.length > 10).length;
         case "waterDays": return days.filter(d => (appState.foodLog?.[`water_${d}`] || 0) >= 8).length;
-        case "weeklyXP": return days.reduce((s, d) => s + (appState.xpLog?.[d] || []).reduce((ss, e) => ss + (e.amount || 0), 0), 0);
+        case "weeklyXP": return days.reduce((s, d) => s + toArr(appState.xpLog?.[d]).reduce((ss, e) => ss + (e.amount || 0), 0), 0);
         case "comboDays": return days.filter(d => {
             let c = 0;
             if (normalizeDayEntries(workoutLog[d]).length > 0) c++;
-            if ((appState.foodLog?.[d] || []).length > 0) c++;
-            if ((appState.habitLog?.[d] || []).length > 0) c++;
-            if ((appState.focusLog?.[d] || []).length > 0) c++;
+            if (toArr(appState.foodLog?.[d]).length > 0) c++;
+            if (toArr(appState.habitLog?.[d]).length > 0) c++;
+            if (toArr(appState.focusLog?.[d]).length > 0) c++;
             return c >= 3;
         }).length;
         default: return 0;
@@ -255,7 +256,7 @@ export const QUEST_CHAINS = [
         id: "focus_marathon", name: "Focus Marathon", icon: "⏱", totalDays: 5,
         desc: "Complete 2+ focus sessions daily for 5 days",
         dailyTask: "Complete 2 focus sessions",
-        checkDay: (d, _, appState) => (appState.focusLog?.[d] || []).length >= 2,
+        checkDay: (d, _, appState) => toArr(appState.focusLog?.[d]).length >= 2,
         rewards: { partial: 10, completion: 250 },
     },
     {
@@ -265,9 +266,9 @@ export const QUEST_CHAINS = [
         checkDay: (d, workoutLog, appState) => {
             let c = 0;
             if (normalizeDayEntries(workoutLog[d]).length > 0) c++;
-            if ((appState.foodLog?.[d] || []).length > 0) c++;
-            if ((appState.habitLog?.[d] || []).length > 0) c++;
-            if ((appState.focusLog?.[d] || []).length > 0) c++;
+            if (toArr(appState.foodLog?.[d]).length > 0) c++;
+            if (toArr(appState.habitLog?.[d]).length > 0) c++;
+            if (toArr(appState.focusLog?.[d]).length > 0) c++;
             if (appState.journal?.[d]?.mood) c++;
             return c >= 4;
         },
@@ -298,7 +299,7 @@ export function getXPHistory(xpLog, days = 14) {
     for (let i = days - 1; i >= 0; i--) {
         const dt = new Date(); dt.setDate(dt.getDate() - i);
         const ds = dt.toISOString().split("T")[0];
-        const dayXP = (xpLog[ds] || []).reduce((s, e) => s + (e.amount || 0), 0);
+        const dayXP = toArr(xpLog[ds]).reduce((s, e) => s + (e.amount || 0), 0);
         history.push({ date: ds, label: dt.toLocaleDateString("en", { weekday: "narrow" }), day: dt.getDate(), xp: dayXP });
     }
     return history;

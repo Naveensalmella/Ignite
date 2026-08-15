@@ -16,13 +16,14 @@ export default function WeeklyReport({ totalXP, streak, workoutLog, foodLog, hab
         const workouts = weekDays.filter(d => hasDayWorkout(workoutLog, d)).length;
         const totalCal = weekDays.reduce((s, d) => s + getDayCal(workoutLog, d), 0);
         const totalDuration = weekDays.reduce((s, d) => s + getDayDuration(workoutLog, d), 0);
-        const foodDays = weekDays.filter(d => (foodLog[d] || []).length > 0).length;
+        const toArr = v => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []);
+        const foodDays = weekDays.filter(d => toArr(foodLog[d]).length > 0).length;
         const totalFoodCal = weekDays.reduce((s, d) => {
-            return s + (foodLog[d] || []).reduce((fs, f) => fs + (f.cal || 0), 0);
+            return s + toArr(foodLog[d]).reduce((fs, f) => fs + (f.cal || 0), 0);
         }, 0);
         const focusMins = weekDays.reduce((s, d) => {
-            const sessions = focusLog[d] || [];
-            return s + (Array.isArray(sessions) ? sessions.reduce((fs, f) => fs + (f.duration || 0), 0) : 0);
+            const sessions = toArr(focusLog[d]);
+            return s + sessions.reduce((fs, f) => fs + (f.duration || 0), 0);
         }, 0);
 
         const level = getLevel(totalXP);

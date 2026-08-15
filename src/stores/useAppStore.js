@@ -1,7 +1,7 @@
 "use client";
 import { create } from 'zustand';
 import { DEFAULT_HABITS, DAILY_PENALTY } from '@/data/index';
-import { getLevel, getRank, getStreakMult, today } from '@/utils';
+import { getLevel, getRank, getStreakMult, today, normalizeDayLog } from '@/utils';
 import { checkMilestone } from '@/data/gamingSystem';
 import storeV2 from '@/store-v2';
 import store from '@/store';
@@ -217,16 +217,17 @@ const useAppStore = create((set, get) => ({
         storeV2.getBodyPhotos(uid),
       ]);
 
+      // Normalize day-keyed logs — Firestore can store arrays as objects
       set({
         workoutLog: Object.keys(workouts).length > 0 ? workouts : (d.workoutLog || {}),
-        foodLog: Object.keys(food).length > 0 ? food : (d.foodLog || {}),
+        foodLog: normalizeDayLog(Object.keys(food).length > 0 ? food : (d.foodLog || {})),
         journal: Object.keys(journals).length > 0 ? journals : (d.journal || {}),
-        xpLog: Object.keys(xp).length > 0 ? xp : (d.xpLog || {}),
-        focusLog: Object.keys(focus).length > 0 ? focus : (d.focusLog || {}),
-        habitLog: Object.keys(habits_log).length > 0 ? habits_log : (d.habitLog || {}),
-        chatHistory: chats.length > 0 ? chats : (d.chatHistory || []),
-        finances: finances_data.length > 0 ? finances_data : (d.finances || []),
-        activityLog: activity.length > 0 ? activity : (d.activityLog || []),
+        xpLog: normalizeDayLog(Object.keys(xp).length > 0 ? xp : (d.xpLog || {})),
+        focusLog: normalizeDayLog(Object.keys(focus).length > 0 ? focus : (d.focusLog || {})),
+        habitLog: normalizeDayLog(Object.keys(habits_log).length > 0 ? habits_log : (d.habitLog || {})),
+        chatHistory: Array.isArray(chats) ? chats : Object.values(chats || {}),
+        finances: Array.isArray(finances_data) ? finances_data : Object.values(finances_data || {}),
+        activityLog: Array.isArray(activity) ? activity : Object.values(activity || {}),
         bodyPhotos: Object.keys(photos).length > 0 ? photos : (d.bodyPhotos || {}),
       });
     } catch (e) { console.error("Load error:", e); set({ showTutorial: true }); }

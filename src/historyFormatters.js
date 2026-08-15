@@ -4,6 +4,7 @@
 // HistoryPanel-compatible entries
 // ═══════════════════════════════════════
 
+import { toArr } from '@/utils';
 const fmt = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 // ── TRAINING ──
@@ -26,17 +27,17 @@ export function formatTrainingHistory(workoutLog) {
             { label: "Exercises", value: `${w.exerciseCount || 0} total` },
         ],
         items: [
-            ...(w.exercises || []).map(name => ({ icon: "💪", text: name })),
-            ...(w.fighting || []).map(name => ({ icon: "⚔️", text: name, sub: "Combat" })),
+            ...toArr(w.exercises).map(name => ({ icon: "💪", text: name })),
+            ...toArr(w.fighting).map(name => ({ icon: "⚔️", text: name, sub: "Combat" })),
         ],
     }));
 }
 
 // ── NUTRITION ──
 export function formatNutritionHistory(foodLog) {
-    const dates = Object.keys(foodLog || {}).filter(k => !k.startsWith("water_") && Array.isArray(foodLog[k]) && foodLog[k].length > 0);
+    const dates = Object.keys(foodLog || {}).filter(k => !k.startsWith("water_") && toArr(foodLog[k]).length > 0);
     return dates.map(date => {
-        const items = foodLog[date] || [];
+        const items = toArr(foodLog[date]);
         const cal = items.reduce((s, f) => s + (f.cal || 0), 0);
         const protein = items.reduce((s, f) => s + (f.protein || 0), 0);
         const carbs = items.reduce((s, f) => s + (f.carbs || 0), 0);
@@ -75,7 +76,7 @@ export function formatNutritionHistory(foodLog) {
 export function formatQuestHistory(habitLog, workoutLog, habits) {
     return Object.entries(habitLog || {}).map(([date, checked]) => {
         const trained = !!(workoutLog && workoutLog[date]);
-        const questNames = (checked || []).map(id => {
+        const questNames = toArr(checked).map(id => {
             const h = (habits || []).find(h => h.id === id);
             return h ? h.name : id;
         });
@@ -102,7 +103,8 @@ export function formatQuestHistory(habitLog, workoutLog, habits) {
 
 // ── FOCUS ──
 export function formatFocusHistory(focusLog) {
-    return Object.entries(focusLog || {}).filter(([_, sessions]) => Array.isArray(sessions) && sessions.length > 0).map(([date, sessions]) => {
+    return Object.entries(focusLog || {}).filter(([_, sessions]) => toArr(sessions).length > 0).map(([date, rawSessions]) => {
+        const sessions = toArr(rawSessions);
         const totalMin = sessions.reduce((s, sess) => s + (sess.duration || 0), 0);
         const totalSessions = sessions.length;
         const tags = [...new Set(sessions.map(s => s.tagLabel || s.tag).filter(Boolean))];
@@ -139,7 +141,7 @@ export function formatWellnessHistory(journal) {
     return Object.entries(journal || {}).filter(([_, e]) => e && (e.mood || e.entry)).map(([date, e]) => {
         const mood = e.mood || 0;
         const hasJournal = e.entry && e.entry.length > 10;
-        const gratCount = (e.gratitude || []).filter(g => g && g.trim()).length;
+        const gratCount = toArr(e.gratitude).filter(g => g && g.trim()).length;
         const wordCount = hasJournal ? e.entry.split(/\s+/).filter(w => w).length : 0;
 
         return {
@@ -158,7 +160,7 @@ export function formatWellnessHistory(journal) {
                 { label: "Gratitude", value: `${gratCount}/3 written` },
             ],
             items: [
-                ...(e.gratitude || []).filter(g => g && g.trim()).map((g, i) => ({
+                ...toArr(e.gratitude).filter(g => g && g.trim()).map((g, i) => ({
                     icon: "🙏", text: g, sub: `Gratitude ${i + 1}`,
                 })),
                 ...(hasJournal ? [{
@@ -175,7 +177,7 @@ export function formatWellnessHistory(journal) {
 export function formatFinanceHistory(finances) {
     // Group by date
     const grouped = {};
-    (finances || []).forEach(f => {
+    toArr(finances).forEach(f => {
         const date = f.date || "unknown";
         if (!grouped[date]) grouped[date] = [];
         grouped[date].push(f);

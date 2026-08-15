@@ -58,7 +58,7 @@ export default function BottomNav({ active, setPage }) {
             )}
 
             {/* Bottom navigation bar */}
-            <nav data-ignite-nav="true" className="fixed bottom-0 left-0 right-0 z-[999] bg-ignite-surface/97 backdrop-blur-xl border-t border-white/[.05] pb-[env(safe-area-inset-bottom,0px)]">
+            <nav data-ignite-nav="true" className="fixed bottom-0 left-0 right-0 z-[999] bg-[rgba(13,17,23,.97)] backdrop-blur-xl border-t border-white/[.05] pb-[env(safe-area-inset-bottom,0px)]">
                 <div className="flex justify-around items-center max-w-[560px] mx-auto pt-2 pb-1.5">
                     {MAIN_TABS.map(tab => {
                         const Icon = tab.Icon;

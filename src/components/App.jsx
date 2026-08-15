@@ -2,7 +2,7 @@
 import { useEffect, useRef, lazy, Suspense } from 'react';
 
 import { DEFAULT_HABITS, navItems, DAILY_PENALTY } from '@/data/index';
-import { getLevel, getRank, today } from '@/utils';
+import { getLevel, getRank, today, toArr } from '@/utils';
 import store from '@/store';
 import storeV2 from '@/store-v2';
 import useAppStore from '@/stores/useAppStore';
@@ -185,7 +185,7 @@ export default function App({ externalUser = null }) {
                 dt.setDate(dt.getDate() + 1);
             }
             if (missed > 0) {
-                const actualMissed = missed - (freezeData?.freezesUsed || []).filter(fd => {
+                const actualMissed = missed - toArr(freezeData?.freezesUsed).filter(fd => {
                     const fDate = new Date(fd);
                     return fDate > ck && fDate < td;
                 }).length;

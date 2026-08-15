@@ -2,12 +2,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { requestWakeLock, releaseWakeLock } from './wakeLock';
 import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { today } from '@/utils';
+import { today, toArr } from '@/utils';
 
 const TAGS = ["Study", "Work", "Code", "Read", "Create", "Exercise", "Other"];
 const POMODORO = { work: 25, shortBreak: 5, longBreak: 15 };
 
-function Ring({ pct, color, size = 56, stroke = 5, children }) { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset 1s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
+function Ring({ pct, color, size = 56, stroke = 5, children }) { const p = Number.isFinite(pct) ? pct : 0; const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, p / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset 1s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
 export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, addXP = () => { } }) {
   const d = today();
@@ -22,7 +22,7 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
   const [freeformElapsed, setFreeformElapsed] = useState(0);
   const intervalRef = useRef(null);
 
-  const todaySessions = focusLog[d] || [];
+  const todaySessions = toArr(focusLog[d]);
   const todayMinutes = todaySessions.reduce((s, sess) => s + (sess.duration || 0), 0);
   const goalPct = Math.min(100, Math.round((todayMinutes / dailyGoal) * 100));
 
@@ -63,7 +63,7 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
 
   const logSession = (durationMin) => {
     const session = { duration: durationMin, tag, start: new Date().toISOString(), type: mode };
-    setFocusLog(prev => ({ ...prev, [d]: [...(prev[d] || []), session] }));
+    setFocusLog(prev => ({ ...prev, [d]: [...toArr(prev[d]), session] }));
     addXP(Math.round(durationMin * 0.5), "Focus session");
   };
 
@@ -89,7 +89,7 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
     for (let i = 6; i >= 0; i--) {
       const dt = new Date(); dt.setDate(dt.getDate() - i);
       const ds = dt.toISOString().split("T")[0];
-      const sessions = focusLog[ds] || [];
+      const sessions = toArr(focusLog[ds]);
       const mins = sessions.reduce((s, sess) => s + (sess.duration || 0), 0);
       days.push({ date: ds, label: dt.toLocaleDateString("en", { weekday: "narrow" }), minutes: mins, sessions: sessions.length, isToday: ds === d });
     }
