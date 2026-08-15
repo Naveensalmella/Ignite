@@ -31,26 +31,24 @@ export default function BottomNav({ active, setPage }) {
 
     return (
         <>
+            {/* More menu overlay */}
             {showMore && (
-                <div style={{ position: "fixed", inset: 0, zIndex: 998, background: "rgba(0,0,0,.6)", backdropFilter: "blur(6px)" }} onClick={() => setShowMore(false)}>
-                    <div style={{ position: "absolute", bottom: 70, left: 8, right: 8, background: "#0d1117", border: "1px solid rgba(255,255,255,.08)", borderRadius: 20, padding: "20px 16px", maxHeight: "70vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                            <span style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>All Pages</span>
-                            <span onClick={() => setShowMore(false)} style={{ cursor: "pointer", padding: "4px" }}><X size={20} color="#6b7280" /></span>
+                <div className="fixed inset-0 z-[998] bg-black/60 backdrop-blur-sm" onClick={() => setShowMore(false)}>
+                    <div className="absolute bottom-[70px] left-2 right-2 bg-ignite-surface border border-white/[.08] rounded-[20px] p-5 max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-base font-bold text-gray-100 font-heading">All Pages</span>
+                            <span onClick={() => setShowMore(false)} className="cursor-pointer p-1"><X size={20} className="text-gray-500" /></span>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                        <div className="grid grid-cols-3 gap-[10px]">
                             {MORE_PAGES.map(p => {
                                 const Icon = p.Icon;
+                                const isActive = active === p.key;
                                 return (
                                     <div key={p.key} onClick={() => { setPage(p.key); setShowMore(false); }}
-                                        style={{
-                                            display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "14px 8px", borderRadius: 14, cursor: "pointer", transition: "all .2s",
-                                            background: active === p.key ? "rgba(16,185,129,.1)" : "rgba(255,255,255,.02)",
-                                            border: active === p.key ? "1px solid rgba(16,185,129,.2)" : "1px solid rgba(255,255,255,.05)"
-                                        }}>
-                                        <Icon size={22} color={active === p.key ? "#10b981" : "#9ca3af"} strokeWidth={active === p.key ? 2.2 : 1.5} />
-                                        <span style={{ fontSize: 11, fontWeight: 600, color: active === p.key ? "#10b981" : "#d1d5db" }}>{p.label}</span>
-                                        <span style={{ fontSize: 10, color: "#6b7280", textAlign: "center", lineHeight: 1.3 }}>{p.desc}</span>
+                                        className={`flex flex-col items-center gap-1.5 p-[14px] px-2 rounded-[14px] cursor-pointer transition-all duration-200 ${isActive ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-white/[.02] border border-white/[.05]"}`}>
+                                        <Icon size={22} color={isActive ? "#10b981" : "#9ca3af"} strokeWidth={isActive ? 2.2 : 1.5} />
+                                        <span className={`text-[11px] font-semibold ${isActive ? "text-emerald-500" : "text-gray-300"}`}>{p.label}</span>
+                                        <span className="text-[10px] text-gray-500 text-center leading-tight">{p.desc}</span>
                                     </div>
                                 );
                             })}
@@ -59,25 +57,30 @@ export default function BottomNav({ active, setPage }) {
                 </div>
             )}
 
-            <nav data-ignite-nav="true" style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 999, background: "rgba(13,17,23,.97)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(255,255,255,.05)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-                <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", maxWidth: 560, margin: "0 auto", padding: "8px 0 6px" }}>
+            {/* Bottom navigation bar */}
+            <nav data-ignite-nav="true" className="fixed bottom-0 left-0 right-0 z-[999] bg-ignite-surface/97 backdrop-blur-xl border-t border-white/[.05] pb-[env(safe-area-inset-bottom,0px)]">
+                <div className="flex justify-around items-center max-w-[560px] mx-auto pt-2 pb-1.5">
                     {MAIN_TABS.map(tab => {
                         const Icon = tab.Icon;
                         const isActive = active === tab.key;
                         return (
                             <button key={tab.key} onClick={() => { setPage(tab.key); setShowMore(false); }}
-                                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "2px 14px", background: "none", border: "none", cursor: "pointer", transition: "all .2s" }}>
-                                <Icon size={22} color={isActive ? "#10b981" : "#6b7280"} strokeWidth={isActive ? 2.2 : 1.5} />
-                                <span style={{ fontSize: 11, fontWeight: isActive ? 700 : 400, color: isActive ? "#10b981" : "#6b7280" }}>{tab.label}</span>
-                                {isActive && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#10b981" }} />}
+                                className="flex flex-col items-center gap-[3px] px-[14px] py-0.5 bg-transparent border-none cursor-pointer transition-all duration-200 relative">
+                                <div className={`transition-transform duration-200 ${isActive ? "scale-110" : ""}`}>
+                                    <Icon size={22} color={isActive ? "#10b981" : "#6b7280"} strokeWidth={isActive ? 2.2 : 1.5} />
+                                </div>
+                                <span className={`text-[11px] ${isActive ? "font-bold text-emerald-500" : "font-normal text-gray-500"}`}>{tab.label}</span>
+                                {isActive && <div className="w-1 h-1 rounded-full bg-emerald-500 animate-fade-in" />}
                             </button>
                         );
                     })}
                     <button onClick={() => setShowMore(!showMore)}
-                        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "2px 14px", background: "none", border: "none", cursor: "pointer", position: "relative" }}>
-                        <Menu size={22} color={(showMore || isMorePage) ? "#10b981" : "#6b7280"} strokeWidth={(showMore || isMorePage) ? 2.2 : 1.5} />
-                        <span style={{ fontSize: 11, fontWeight: (showMore || isMorePage) ? 700 : 400, color: (showMore || isMorePage) ? "#10b981" : "#6b7280" }}>More</span>
-                        {isMorePage && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#10b981" }} />}
+                        className="flex flex-col items-center gap-[3px] px-[14px] py-0.5 bg-transparent border-none cursor-pointer relative">
+                        <div className={`transition-transform duration-200 ${showMore ? "rotate-90" : ""}`}>
+                            <Menu size={22} color={(showMore || isMorePage) ? "#10b981" : "#6b7280"} strokeWidth={(showMore || isMorePage) ? 2.2 : 1.5} />
+                        </div>
+                        <span className={`text-[11px] ${(showMore || isMorePage) ? "font-bold text-emerald-500" : "font-normal text-gray-500"}`}>More</span>
+                        {isMorePage && <div className="w-1 h-1 rounded-full bg-emerald-500" />}
                     </button>
                 </div>
             </nav>

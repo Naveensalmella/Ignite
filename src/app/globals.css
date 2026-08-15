@@ -1,40 +1,85 @@
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/* ═══ Dark mode (default) ═══ */
 :root {
   --accent: #10b981;
   --bg: #07090d;
   --surface: #0d1117;
+  --text-primary: #f3f4f6;
+  --text-secondary: #6b7280;
+  --text-dim: #4b5563;
+  --card-bg: rgba(13, 17, 23, .8);
+  --card-border: rgba(255, 255, 255, .05);
+  --card-border-hover: rgba(255, 255, 255, .1);
+  --input-bg: rgba(255, 255, 255, .03);
+  --input-border: rgba(255, 255, 255, .05);
+  --input-focus-border: rgba(16, 185, 129, .3);
+  --input-focus-bg: rgba(255, 255, 255, .05);
+  --chip-inactive-bg: rgba(255, 255, 255, .03);
+  --chip-inactive-border: rgba(255, 255, 255, .05);
+  --chip-inactive-color: #6b7280;
+  --ghost-bg: rgba(255, 255, 255, .03);
+  --ghost-hover: rgba(255, 255, 255, .05);
+  --ghost-color: #6b7280;
+  --ghost-border: rgba(255, 255, 255, .05);
+}
+
+/* ═══ Light mode ═══ */
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-dim: #9ca3af;
+  --card-bg: rgba(255, 255, 255, .95);
+  --card-border: rgba(0, 0, 0, .06);
+  --card-border-hover: rgba(0, 0, 0, .12);
+  --input-bg: rgba(0, 0, 0, .02);
+  --input-border: rgba(0, 0, 0, .08);
+  --input-focus-border: rgba(16, 185, 129, .4);
+  --input-focus-bg: rgba(0, 0, 0, .03);
+  --chip-inactive-bg: rgba(0, 0, 0, .03);
+  --chip-inactive-border: rgba(0, 0, 0, .06);
+  --chip-inactive-color: #4b5563;
+  --ghost-bg: rgba(0, 0, 0, .03);
+  --ghost-hover: rgba(0, 0, 0, .06);
+  --ghost-color: #4b5563;
+  --ghost-border: rgba(0, 0, 0, .06);
+}
+
+[data-theme="light"] body {
+  color: #111827;
 }
 
 body {
   background: var(--bg);
-  color: #f3f4f6;
+  color: var(--text-primary);
   font-family: "Inter", sans-serif;
   -webkit-tap-highlight-color: transparent;
   margin: 0;
 }
 
 .gs {
-  background: rgba(13, 17, 23, .8);
+  background: var(--card-bg);
   backdrop-filter: blur(8px);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, .05);
+  border: 1px solid var(--card-border);
   padding: 16px;
 }
 
 .gc {
-  background: rgba(13, 17, 23, .8);
+  background: var(--card-bg);
   backdrop-filter: blur(8px);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, .05);
+  border: 1px solid var(--card-border);
   padding: 16px;
   cursor: pointer;
   transition: all .2s;
 }
 
 .gc:hover {
-  border-color: rgba(255, 255, 255, .1);
+  border-color: var(--card-border-hover);
 }
 
 .bp {
@@ -67,24 +112,24 @@ body {
   border-radius: 12px;
   font-weight: 500;
   font-size: 14px;
-  color: #6b7280;
-  background: rgba(255, 255, 255, .03);
-  border: 1px solid rgba(255, 255, 255, .05);
+  color: var(--ghost-color);
+  background: var(--ghost-bg);
+  border: 1px solid var(--ghost-border);
   cursor: pointer;
   transition: all .2s;
 }
 
 .bg:hover {
-  background: rgba(255, 255, 255, .05);
+  background: var(--ghost-hover);
 }
 
 .inp {
   width: 100%;
   padding: 10px 14px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, .03);
-  border: 1px solid rgba(255, 255, 255, .05);
-  color: #f3f4f6;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
   font-size: 14px;
   outline: none;
   transition: all .2s;
@@ -92,12 +137,12 @@ body {
 }
 
 .inp:focus {
-  border-color: rgba(16, 185, 129, .3);
-  background: rgba(255, 255, 255, .05);
+  border-color: var(--input-focus-border);
+  background: var(--input-focus-bg);
 }
 
 .inp::placeholder {
-  color: #4b5563;
+  color: var(--text-dim);
 }
 
 .chip {
@@ -117,13 +162,13 @@ body {
 }
 
 .chip-i {
-  background: rgba(255, 255, 255, .03);
-  color: #6b7280;
-  border-color: rgba(255, 255, 255, .05);
+  background: var(--chip-inactive-bg);
+  color: var(--chip-inactive-color);
+  border-color: var(--chip-inactive-border);
 }
 
 .chip-i:hover {
-  background: rgba(255, 255, 255, .05);
+  background: var(--ghost-hover);
 }
 
 .sl {
@@ -440,4 +485,27 @@ button, .chip, .ni, [role="button"] {
   .badge-text {
     font-size: 11px !important;
   }
+}
+
+/* ═══ Light Mode Overrides ═══ */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, .12);
+}
+
+[data-theme="light"] .app-header {
+  background: rgba(248, 250, 252, .95);
+  border-bottom-color: rgba(0, 0, 0, .06);
+}
+
+[data-theme="light"] .app-header .page-title {
+  color: #111827;
+}
+
+[data-theme="light"] .sl {
+  color: #4b5563;
+}
+
+[data-theme="light"] nav[data-ignite-nav] {
+  background: rgba(255, 255, 255, .97);
+  border-top-color: rgba(0, 0, 0, .06);
 }

@@ -53,26 +53,26 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
   const badges = [];
 
   return (
-    <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
+    <div className="max-w-full overflow-x-hidden">
       <StaggerContainer>
         {/* Hero Card — Level + XP */}
         <StaggerItem>
-          <div className="gs" style={{ marginBottom: 14, padding: 20, textAlign: "center", background: "linear-gradient(180deg, rgba(16,185,129,.06) 0%, rgba(13,17,23,.8) 100%)", border: "1px solid rgba(16,185,129,.1)" }}>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+          <div className="gs mb-[14px] p-5 text-center border border-[rgba(16,185,129,.1)]" style={{ background: "linear-gradient(180deg, rgba(16,185,129,.06) 0%, rgba(13,17,23,.8) 100%)" }}>
+            <div className="flex justify-center mb-3">
               <Ring pct={prog} color={rank.color || "#10b981"} size={90} stroke={7}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{lv}</div>
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>LEVEL</div>
+                <div className="text-center">
+                  <div className="text-[28px] font-black text-gray-100 font-heading">{lv}</div>
+                  <div className="text-[11px] text-gray-500">LEVEL</div>
                 </div>
               </Ring>
             </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: rank.color || "#10b981", fontFamily: "Rajdhani,sans-serif" }}>{rank.name}</div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{totalXP.toLocaleString()} XP · {needed} to Lv.{lv + 1}</div>
+            <div className="text-[18px] font-extrabold font-heading" style={{ color: rank.color || "#10b981" }}>{rank.name}</div>
+            <div className="text-xs text-gray-500 mt-0.5">{totalXP.toLocaleString()} XP · {needed} to Lv.{lv + 1}</div>
             {streak > 0 && (
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, padding: "4px 14px", borderRadius: 100, background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.15)" }}>
-                <span style={{ fontSize: 14 }}>🔥</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b" }}>{streak} day streak</span>
-                {mult > 1 && <span style={{ fontSize: 10, color: "#f59e0b" }}>×{mult}</span>}
+              <div className="inline-flex items-center gap-1 mt-2 px-[14px] py-1 rounded-full bg-[rgba(245,158,11,.08)] border border-[rgba(245,158,11,.15)]">
+                <span className="text-sm">🔥</span>
+                <span className="text-[13px] font-bold text-amber-500">{streak} day streak</span>
+                {mult > 1 && <span className="text-[10px] text-amber-500">×{mult}</span>}
               </div>
             )}
           </div>
@@ -80,16 +80,16 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
 
         {/* Daily Activity */}
         <StaggerItem>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+          <div className="grid grid-cols-3 gap-2 mb-[14px]">
             {[
               { icon: "⚔️", label: "Training", done: todayWorkout, page: "training" },
               { icon: "🍎", label: "Nutrition", done: todayFood, page: "nutrition" },
               { icon: "💛", label: "Wellness", done: !!appState.journal?.[d]?.mood, page: "wellness" },
             ].map(item => (
-              <div key={item.label} onClick={() => setPage(item.page)} className="gc" style={{ padding: 14, textAlign: "center", cursor: "pointer", border: item.done ? "1px solid rgba(34,197,94,.15)" : "1px solid rgba(255,255,255,.05)", background: item.done ? "rgba(34,197,94,.04)" : undefined }}>
-                <div style={{ fontSize: 22, marginBottom: 4 }}>{item.icon}</div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: item.done ? "#22c55e" : "#6b7280" }}>{item.label}</div>
-                <div style={{ fontSize: 10, color: item.done ? "#22c55e" : "#4b5563", marginTop: 2 }}>{item.done ? "✓ Done" : "Pending"}</div>
+              <div key={item.label} onClick={() => setPage(item.page)} className={`gc p-[14px] text-center cursor-pointer border ${item.done ? "border-[rgba(34,197,94,.15)] bg-[rgba(34,197,94,.04)]" : "border-[rgba(255,255,255,.05)]"}`}>
+                <div className="text-[22px] mb-1">{item.icon}</div>
+                <div className={`text-[11px] font-semibold ${item.done ? "text-green-500" : "text-gray-500"}`}>{item.label}</div>
+                <div className={`text-[10px] mt-0.5 ${item.done ? "text-green-500" : "text-gray-600"}`}>{item.done ? "✓ Done" : "Pending"}</div>
               </div>
             ))}
           </div>
@@ -97,19 +97,19 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
 
         {/* Daily XP + Combo Row */}
         <StaggerItem>
-          <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+          <div className="flex gap-[10px] mb-[14px]">
             {/* Daily XP Goal */}
-            <div className="gs" style={{ flex: 1, padding: 14, display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="gs flex-1 p-[14px] flex items-center gap-[10px]">
               <Ring pct={xpProgress.pct} color={xpProgress.pct >= 100 ? "#22c55e" : "#10b981"} size={48} stroke={5}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{xpProgress.earned}</span>
+                <span className="text-[13px] font-extrabold text-gray-100 font-heading">{xpProgress.earned}</span>
               </Ring>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Daily XP</div>
-                <div style={{ fontSize: 10, color: xpProgress.pct >= 100 ? "#22c55e" : "#6b7280" }}>{xpProgress.pct >= 100 ? "✅ Done!" : `${xpProgress.goal - xpProgress.earned} to go`}</div>
+                <div className="text-xs font-bold text-gray-100 font-heading">Daily XP</div>
+                <div className={`text-[10px] ${xpProgress.pct >= 100 ? "text-green-500" : "text-gray-500"}`}>{xpProgress.pct >= 100 ? "✅ Done!" : `${xpProgress.goal - xpProgress.earned} to go`}</div>
                 {Object.keys(xpBreakdown).length > 0 && (
-                  <div style={{ display: "flex", gap: 3, marginTop: 4, flexWrap: "wrap" }}>
+                  <div className="flex gap-[3px] mt-1 flex-wrap">
                     {Object.entries(xpBreakdown).slice(0, 3).map(([cat, amt]) => (
-                      <span key={cat} style={{ fontSize: 10, padding: "2px 6px", borderRadius: 100, background: `${(XP_SOURCES[cat] || XP_SOURCES.Other).color}10`, color: (XP_SOURCES[cat] || XP_SOURCES.Other).color }}>{(XP_SOURCES[cat] || XP_SOURCES.Other).icon}+{amt}</span>
+                      <span key={cat} className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${(XP_SOURCES[cat] || XP_SOURCES.Other).color}10`, color: (XP_SOURCES[cat] || XP_SOURCES.Other).color }}>{(XP_SOURCES[cat] || XP_SOURCES.Other).icon}+{amt}</span>
                     ))}
                   </div>
                 )}
@@ -118,10 +118,10 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
 
             {/* Combo */}
             {combo.count >= 2 && (
-              <div className="gs" style={{ padding: 14, textAlign: "center", border: "1px solid rgba(236,72,153,.12)", background: "rgba(236,72,153,.03)", minWidth: 100 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: "#ec4899", fontFamily: "Rajdhani,sans-serif" }}>{combo.label}</div>
-                <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{combo.count} activities</div>
-                <div style={{ fontSize: 10, color: "#ec4899" }}>+{combo.bonusXP} XP</div>
+              <div className="gs p-[14px] text-center border border-[rgba(236,72,153,.12)] bg-[rgba(236,72,153,.03)] min-w-[100px]">
+                <div className="text-[13px] font-extrabold text-pink-500 font-heading">{combo.label}</div>
+                <div className="text-[10px] text-gray-500 mt-0.5">{combo.count} activities</div>
+                <div className="text-[10px] text-pink-500">+{combo.bonusXP} XP</div>
               </div>
             )}
           </div>
@@ -130,17 +130,17 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
         {/* Login Bonus */}
         {!bonusClaimed && (
           <StaggerItem>
-            <div className="gs" onClick={claimBonus} style={{ marginBottom: 14, padding: 14, cursor: "pointer", border: "1px solid rgba(59,130,246,.15)", background: "rgba(59,130,246,.04)" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="gs mb-[14px] p-[14px] cursor-pointer border border-[rgba(59,130,246,.15)] bg-[rgba(59,130,246,.04)]" onClick={claimBonus}>
+              <div className="flex items-center justify-between">
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#3b82f6", fontFamily: "Rajdhani,sans-serif" }}>📅 Daily Login Bonus — Day {loginBonus.streak}</div>
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>Tap to claim!</div>
+                  <div className="text-[13px] font-bold text-blue-500 font-heading">📅 Daily Login Bonus — Day {loginBonus.streak}</div>
+                  <div className="text-[11px] text-gray-500">Tap to claim!</div>
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: "#3b82f6", fontFamily: "Rajdhani,sans-serif" }}>+{loginBonus.reward}</div>
+                <div className="text-xl font-black text-blue-500 font-heading">+{loginBonus.reward}</div>
               </div>
-              <div style={{ display: "flex", gap: 3, marginTop: 6 }}>
+              <div className="flex gap-[3px] mt-1.5">
                 {[5, 10, 15, 20, 25, 35, 50].map((r, i) => (
-                  <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i < loginBonus.dayIdx ? "#3b82f6" : i === loginBonus.dayIdx ? "#60a5fa" : "rgba(255,255,255,.06)" }} />
+                  <div key={i} className={`flex-1 h-[3px] rounded-sm ${i < loginBonus.dayIdx ? "bg-blue-500" : i === loginBonus.dayIdx ? "bg-blue-400" : "bg-[rgba(255,255,255,.06)]"}`} />
                 ))}
               </div>
             </div>
@@ -149,16 +149,16 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
 
         {/* Quick Actions */}
         <StaggerItem>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 14 }}>
+          <div className="grid grid-cols-4 gap-2 mb-[14px]">
             {[
               { icon: "⚔️", label: "Train", page: "training" },
               { icon: "🎯", label: "Quests", page: "dailyquest" },
               { icon: "⏱", label: "Focus", page: "focus" },
               { icon: "🎮", label: "Gaming", page: "gaming" },
             ].map(item => (
-              <div key={item.label} onClick={() => setPage(item.page)} className="gc" style={{ padding: 12, textAlign: "center", cursor: "pointer" }}>
-                <div style={{ fontSize: 22 }}>{item.icon}</div>
-                <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 4 }}>{item.label}</div>
+              <div key={item.label} onClick={() => setPage(item.page)} className="gc p-3 text-center cursor-pointer">
+                <div className="text-[22px]">{item.icon}</div>
+                <div className="text-[10px] text-gray-400 mt-1">{item.label}</div>
               </div>
             ))}
           </div>
@@ -166,40 +166,40 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
 
         {/* Stats Row */}
         <StaggerItem>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
-            <div className="gc" style={{ padding: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: "#10b981", fontFamily: "Rajdhani,sans-serif" }}>{totalWorkouts}</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>Workouts</div>
+          <div className="grid grid-cols-3 gap-2 mb-[14px]">
+            <div className="gc p-[14px] text-center">
+              <div className="text-[22px] font-black text-emerald-500 font-heading">{totalWorkouts}</div>
+              <div className="text-[10px] text-gray-500">Workouts</div>
             </div>
-            <div className="gc" style={{ padding: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: "#f59e0b", fontFamily: "Rajdhani,sans-serif" }}>{streak}d</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>Streak</div>
+            <div className="gc p-[14px] text-center">
+              <div className="text-[22px] font-black text-amber-500 font-heading">{streak}d</div>
+              <div className="text-[10px] text-gray-500">Streak</div>
             </div>
-            <div className="gc" style={{ padding: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: "#8b5cf6", fontFamily: "Rajdhani,sans-serif" }}>{badges.length}</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>Badges</div>
+            <div className="gc p-[14px] text-center">
+              <div className="text-[22px] font-black text-violet-500 font-heading">{badges.length}</div>
+              <div className="text-[10px] text-gray-500">Badges</div>
             </div>
           </div>
         </StaggerItem>
 
         {/* Daily Score Ring */}
         <StaggerItem>
-          <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div className="gs mb-[14px] p-[14px]">
+            <div className="flex items-center gap-[14px]">
               <Ring pct={overallScore} color={overallScore >= 70 ? "#22c55e" : overallScore >= 40 ? "#f59e0b" : "#ef4444"} size={56} stroke={5}>
-                <span style={{ fontSize: 16, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{overallScore}%</span>
+                <span className="text-base font-black text-gray-100 font-heading">{overallScore}%</span>
               </Ring>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Today's Score</div>
-                <div style={{ fontSize: 11, color: "#6b7280" }}>
+                <div className="text-sm font-bold text-gray-100 font-heading">Today's Score</div>
+                <div className="text-[11px] text-gray-500">
                   {overallScore >= 70 ? "Great day! Keep it up!" : overallScore >= 40 ? "Good start, keep going" : "Complete more activities"}
                 </div>
-                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                <div className="flex gap-1.5 mt-1.5">
                   {[
                     { k: "training", icon: "⚔️" }, { k: "nutrition", icon: "🍎" }, { k: "focus", icon: "⏱" },
                     { k: "quests", icon: "🎯" }, { k: "water", icon: "💧" }, { k: "wellness", icon: "💛" }
                   ].map(s => (
-                    <span key={s.k} style={{ fontSize: 12, opacity: sectionScores[s.k] > 0 ? 1 : 0.25 }}>{s.icon}</span>
+                    <span key={s.k} className={`text-xs ${sectionScores[s.k] > 0 ? "opacity-100" : "opacity-25"}`}>{s.icon}</span>
                   ))}
                 </div>
               </div>
@@ -218,16 +218,16 @@ export default function Dashboard({ appState = {}, setPage = () => { }, totalXP 
         {/* Recent Badges */}
         {badges.length > 0 && (
           <StaggerItem>
-            <div className="gs" style={{ padding: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>🏅 Badges</span>
-                <span onClick={() => setPage("profile")} style={{ fontSize: 11, color: "#10b981", cursor: "pointer" }}>See all →</span>
+            <div className="gs p-[14px]">
+              <div className="flex justify-between items-center mb-[10px]">
+                <span className="text-[13px] font-bold text-gray-100 font-heading">🏅 Badges</span>
+                <span onClick={() => setPage("profile")} className="text-[11px] text-emerald-500 cursor-pointer">See all →</span>
               </div>
-              <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {badges.slice(0, 6).map(b => (
-                  <div key={b.id} style={{ flexShrink: 0, textAlign: "center", width: 56 }}>
-                    <div style={{ fontSize: 24 }}>{b.icon}</div>
-                    <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{b.name.length > 8 ? b.name.slice(0, 8) + "…" : b.name}</div>
+                  <div key={b.id} className="shrink-0 text-center w-14">
+                    <div className="text-2xl">{b.icon}</div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">{b.name.length > 8 ? b.name.slice(0, 8) + "…" : b.name}</div>
                   </div>
                 ))}
               </div>

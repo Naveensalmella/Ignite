@@ -68,7 +68,7 @@ const MEAL_TIMES = {
   Dinner: { time: "6:30 - 8:00 PM", tip: "Lighter than lunch, focus on protein + veggies" },
   Snack: { time: "3:00 - 4:30 PM", tip: "150-200 cal max: fruits, nuts, or yogurt" },
 };
-function Ring({ pct, color, size = 48, stroke = 4, children }) { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
+function Ring({ pct, color, size = 48, stroke = 4, children }) { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div className="absolute inset-0 flex items-center justify-center">{children}</div></div>) }
 
 export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP = () => { }, profile = {} }) {
   const d = today();
@@ -337,48 +337,48 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
 
   // ══ SCAN TAB ══
   if (tab === "scan") {
-    return (<div style={{ maxWidth: "100%", overflowX: "hidden" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div><div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>🤖 AI Food Scanner</div><div style={{ fontSize: 12, color: "#6b7280" }}>Camera, photo, or describe your meal</div></div>
-        <button className="bg" onClick={() => { stopCam(); setTab("log"); setScanResults(null); setScanPhoto(null); setScanError(null); setScanMode("choose") }} style={{ padding: "8px 14px" }}>← Back</button>
+    return (<div className="max-w-full overflow-x-hidden">
+      <div className="flex justify-between items-center mb-4">
+        <div><div className="text-[18px] font-extrabold text-gray-100 font-heading">🤖 AI Food Scanner</div><div className="text-xs text-gray-500">Camera, photo, or describe your meal</div></div>
+        <button className="bg p-[8px_14px]" onClick={() => { stopCam(); setTab("log"); setScanResults(null); setScanPhoto(null); setScanError(null); setScanMode("choose") }}>← Back</button>
       </div>
 
       {/* Mode selector */}
       {scanMode === "choose" && !scanning && !scanResults && (
         <div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
-            <div className="gc" onClick={() => { setScanMode("camera"); setTimeout(startCam, 100) }} style={{ padding: 20, textAlign: "center", cursor: "pointer" }}>
-              <div style={{ fontSize: 32, marginBottom: 6 }}>📸</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#10b981" }}>Camera</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>Point at food</div>
+          <div className="grid grid-cols-3 gap-[10px] mb-4">
+            <div className="gc p-5 text-center cursor-pointer" onClick={() => { setScanMode("camera"); setTimeout(startCam, 100) }}>
+              <div className="text-[32px] mb-1.5">📸</div>
+              <div className="text-[13px] font-bold text-emerald-500">Camera</div>
+              <div className="text-[10px] text-gray-500">Point at food</div>
             </div>
-            <div className="gc" onClick={() => fileRef.current?.click()} style={{ padding: 20, textAlign: "center", cursor: "pointer" }}>
-              <div style={{ fontSize: 32, marginBottom: 6 }}>📁</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#06b6d4" }}>Upload</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>From gallery</div>
+            <div className="gc p-5 text-center cursor-pointer" onClick={() => fileRef.current?.click()}>
+              <div className="text-[32px] mb-1.5">📁</div>
+              <div className="text-[13px] font-bold text-cyan-500">Upload</div>
+              <div className="text-[10px] text-gray-500">From gallery</div>
             </div>
-            <div className="gc" onClick={() => setScanMode("text")} style={{ padding: 20, textAlign: "center", cursor: "pointer" }}>
-              <div style={{ fontSize: 32, marginBottom: 6 }}>✍️</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#8b5cf6" }}>Describe</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>Type your meal</div>
+            <div className="gc p-5 text-center cursor-pointer" onClick={() => setScanMode("text")}>
+              <div className="text-[32px] mb-1.5">✍️</div>
+              <div className="text-[13px] font-bold text-violet-500">Describe</div>
+              <div className="text-[10px] text-gray-500">Type your meal</div>
             </div>
           </div>
-          <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
+          <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
 
           {/* Recent scans */}
           {scanHistory.length > 0 && (
-            <div className="gs" style={{ padding: 14 }}>
+            <div className="gs p-[14px]">
               <div className="sl">Recent Scans</div>
               {scanHistory.slice(0, 5).map((scan, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < Math.min(4, scanHistory.length - 1) ? "1px solid rgba(255,255,255,.03)" : "none" }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ fontSize: 16 }}>{scan.emoji || "🍽️"}</span>
+                <div key={i} className="flex justify-between items-center py-2" style={{ borderBottom: i < Math.min(4, scanHistory.length - 1) ? "1px solid rgba(255,255,255,.03)" : "none" }}>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-[16px]">{scan.emoji || "🍽️"}</span>
                     <div>
-                      <div style={{ fontSize: 13, color: "#f3f4f6" }}>{scan.name}</div>
-                      <div style={{ fontSize: 10, color: "#6b7280" }}>P:{scan.protein}g C:{scan.carbs}g F:{scan.fat}g</div>
+                      <div className="text-[13px] text-gray-100">{scan.name}</div>
+                      <div className="text-[10px] text-gray-500">P:{scan.protein}g C:{scan.carbs}g F:{scan.fat}g</div>
                     </div>
                   </div>
-                  <button className="bp" onClick={() => addFood(scan, 100, selMeal)} style={{ padding: "6px 12px", fontSize: 11 }}>+ Add</button>
+                  <button className="bp px-3 py-1.5 text-[11px]" onClick={() => addFood(scan, 100, selMeal)}>+ Add</button>
                 </div>
               ))}
             </div>
@@ -389,158 +389,157 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       {/* Camera mode */}
       {scanMode === "camera" && !scanPhoto && !scanning && (
         <div>
-          <div style={{ width: "100%", maxWidth: 400, aspectRatio: "1", borderRadius: 16, overflow: "hidden", border: "2px solid rgba(16,185,129,.2)", margin: "0 auto 16px", background: "#111", position: "relative" }}>
-            <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            <div style={{ position: "absolute", inset: 0, border: "3px solid rgba(16,185,129,.3)", borderRadius: 14, pointerEvents: "none" }}>
-              <div style={{ position: "absolute", top: "20%", left: "20%", right: "20%", bottom: "20%", border: "1px dashed rgba(16,185,129,.4)", borderRadius: 8 }} />
+          <div className="w-full max-w-[400px] aspect-square rounded-2xl overflow-hidden border-2 border-emerald-500/20 mx-auto mb-4 bg-[#111] relative">
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+            <div className="absolute inset-0 border-[3px] border-emerald-500/30 rounded-[14px] pointer-events-none">
+              <div className="absolute top-[20%] left-[20%] right-[20%] bottom-[20%] border border-dashed border-emerald-500/40 rounded-lg" />
             </div>
           </div>
-          <canvas ref={canvasRef} style={{ display: "none" }} />
-          <div style={{ display: "flex", gap: 10, maxWidth: 400, margin: "0 auto" }}>
-            <button className="bg" onClick={() => setScanMode("choose")} style={{ padding: "14px 16px" }}>←</button>
-            <button className="bp" onClick={capture} style={{ flex: 1, padding: 14, fontSize: 16 }}>📸 Capture</button>
+          <canvas ref={canvasRef} className="hidden" />
+          <div className="flex gap-[10px] max-w-[400px] mx-auto">
+            <button className="bg p-[14px_16px]" onClick={() => setScanMode("choose")}>←</button>
+            <button className="bp flex-1 p-[14px] text-[16px]" onClick={capture}>📸 Capture</button>
           </div>
-          {scanError && <div style={{ textAlign: "center", color: "#ef4444", fontSize: 13, marginTop: 12 }}>{scanError}</div>}
+          {scanError && <div className="text-center text-red-500 text-[13px] mt-3">{scanError}</div>}
         </div>
       )}
 
       {/* Text describe mode */}
       {scanMode === "text" && !scanning && !scanResults && (
         <div className="fade-in">
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", marginBottom: 8 }}>✍️ Describe what you ate</div>
-            <textarea className="inp" value={textDesc} onChange={e => setTextDesc(e.target.value)}
+          <div className="mb-3">
+            <div className="text-sm font-bold text-gray-100 mb-2">✍️ Describe what you ate</div>
+            <textarea className="inp resize-none w-full text-sm p-3" value={textDesc} onChange={e => setTextDesc(e.target.value)}
               placeholder="Example: 2 rotis with dal and chicken curry, a bowl of rice, and buttermilk"
-              rows={3} style={{ resize: "none", width: "100%", fontSize: 14, padding: 12 }} />
+              rows={3} />
           </div>
-          <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+          <div className="flex gap-1.5 mb-3 flex-wrap">
             {["2 idli with sambar and chutney", "Chicken biryani with raita", "1 plate poha with peanuts", "Paneer butter masala with 3 rotis", "Oats with banana and milk"].map(ex => (
-              <span key={ex} className="chip chip-i" onClick={() => setTextDesc(ex)} style={{ fontSize: 10, cursor: "pointer" }}>{ex}</span>
+              <span key={ex} className="chip chip-i text-[10px] cursor-pointer" onClick={() => setTextDesc(ex)}>{ex}</span>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="bg" onClick={() => setScanMode("choose")} style={{ padding: "12px 16px" }}>←</button>
-            <button className="bp" onClick={() => analyzeText(textDesc)} disabled={!textDesc.trim()} style={{ flex: 1, padding: 12, fontSize: 14 }}>🤖 Analyze Food</button>
+          <div className="flex gap-2">
+            <button className="bg p-[12px_16px]" onClick={() => setScanMode("choose")}>←</button>
+            <button className="bp flex-1 p-3 text-sm" onClick={() => analyzeText(textDesc)} disabled={!textDesc.trim()}>🤖 Analyze Food</button>
           </div>
         </div>
       )}
 
       {/* Photo preview with error/retry (when Vision analysis done but no results) */}
       {scanMode === "camera" && scanPhoto && !scanning && !scanResults && (
-        <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <div style={{ width: 200, height: 200, borderRadius: 16, overflow: "hidden", margin: "0 auto 16px", border: "1px solid rgba(255,255,255,.08)" }}>
-            <img src={scanPhoto} alt="Food" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <div className="text-center py-5">
+          <div className="w-[200px] h-[200px] rounded-2xl overflow-hidden mx-auto mb-4 border border-white/[.08]">
+            <img src={scanPhoto} alt="Food" className="w-full h-full object-cover" />
           </div>
-          {scanError && <div style={{ fontSize: 13, color: "#f59e0b", marginBottom: 12, padding: "0 20px" }}>{scanError}</div>}
-          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-            <button className="bp" onClick={() => analyzeImage(scanPhoto)} style={{ padding: "12px 20px" }}>🔄 Retry Analysis</button>
-            <button className="bg" onClick={() => { setScanMode("text"); setTextDesc(""); }} style={{ padding: "12px 20px" }}>✏️ Describe Instead</button>
-            <button className="bg" onClick={() => { setScanMode("choose"); setScanPhoto(null); setScanError(null); }} style={{ padding: "12px 16px" }}>✕</button>
+          {scanError && <div className="text-[13px] text-amber-500 mb-3 px-5">{scanError}</div>}
+          <div className="flex gap-2 justify-center">
+            <button className="bp p-[12px_20px]" onClick={() => analyzeImage(scanPhoto)}>🔄 Retry Analysis</button>
+            <button className="bg p-[12px_20px]" onClick={() => { setScanMode("text"); setTextDesc(""); }}>✏️ Describe Instead</button>
+            <button className="bg p-[12px_16px]" onClick={() => { setScanMode("choose"); setScanPhoto(null); setScanError(null); }}>✕</button>
           </div>
         </div>
       )}
 
       {/* Scanning animation */}
       {scanning && (
-        <div style={{ textAlign: "center", padding: "40px 0" }}>
-          {scanPhoto && <div style={{ width: 160, height: 160, borderRadius: 16, overflow: "hidden", margin: "0 auto 20px", border: "2px solid rgba(16,185,129,.2)" }}><img src={scanPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>}
-          <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 12 }}>
-            {[0, 1, 2].map(i => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981", animation: `dotPulse 1.2s ${i * .2}s infinite` }} />)}
+        <div className="text-center py-10">
+          {scanPhoto && <div className="w-[160px] h-[160px] rounded-2xl overflow-hidden mx-auto mb-5 border-2 border-emerald-500/20"><img src={scanPhoto} alt="" className="w-full h-full object-cover" /></div>}
+          <div className="flex gap-1.5 justify-center mb-3">
+            {[0, 1, 2].map(i => <div key={i} className="w-[10px] h-[10px] rounded-full bg-emerald-500" style={{ animation: `dotPulse 1.2s ${i * .2}s infinite` }} />)}
           </div>
-          <div style={{ fontSize: 14, color: "#10b981", fontWeight: 600 }}>Analyzing your food with AI...</div>
-          <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Estimating calories, protein, carbs, fat</div>
+          <div className="text-sm text-emerald-500 font-semibold">Analyzing your food with AI...</div>
+          <div className="text-[11px] text-gray-500 mt-1">Estimating calories, protein, carbs, fat</div>
         </div>
       )}
 
       {/* Scan results */}
       {scanResults && (
         <div className="fade-in">
-          {scanPhoto && <div style={{ width: 120, height: 120, borderRadius: 12, overflow: "hidden", margin: "0 auto 12px" }}><img src={scanPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>}
-          <div style={{ textAlign: "center", marginBottom: 14 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#22c55e" }}>✓ {scanResults.length} item{scanResults.length > 1 ? "s" : ""} identified</div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Total: {scanResults.reduce((s, f) => s + (f.cal || 0), 0)} cal</div>
+          {scanPhoto && <div className="w-[120px] h-[120px] rounded-xl overflow-hidden mx-auto mb-3"><img src={scanPhoto} alt="" className="w-full h-full object-cover" /></div>}
+          <div className="text-center mb-[14px]">
+            <div className="text-[18px] font-bold text-green-500">✓ {scanResults.length} item{scanResults.length > 1 ? "s" : ""} identified</div>
+            <div className="text-xs text-gray-500">Total: {scanResults.reduce((s, f) => s + (f.cal || 0), 0)} cal</div>
           </div>
-          <div style={{ display: "flex", gap: 6, marginBottom: 12, justifyContent: "center" }}>{MEALS.map(m => <span key={m} className={`chip ${selMeal === m ? "chip-a" : "chip-i"}`} onClick={() => setSelMeal(m)}>{m}</span>)}</div>
+          <div className="flex gap-1.5 mb-3 justify-center">{MEALS.map(m => <span key={m} className={`chip ${selMeal === m ? "chip-a" : "chip-i"}`} onClick={() => setSelMeal(m)}>{m}</span>)}</div>
 
           {scanResults.map((f, i) => (
-            <div key={i} className="gs" style={{ marginBottom: 8, padding: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: "#f3f4f6" }}>{f.emoji || "🍽️"} {f.name}</div>
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>{f.serving || "1 serving"} · {f.cal}cal</div>
-                  <div style={{ display: "flex", gap: 10, marginTop: 4, fontSize: 10 }}>
-                    <span style={{ color: "#ef4444" }}>P: {f.protein}g</span>
-                    <span style={{ color: "#f59e0b" }}>C: {f.carbs}g</span>
-                    <span style={{ color: "#06b6d4" }}>F: {f.fat}g</span>
-                    <span style={{ color: "#22c55e" }}>Fb: {f.fiber || 0}g</span>
+            <div key={i} className="gs mb-2 p-3">
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  <div className="text-[15px] font-semibold text-gray-100">{f.emoji || "🍽️"} {f.name}</div>
+                  <div className="text-[11px] text-gray-500">{f.serving || "1 serving"} · {f.cal}cal</div>
+                  <div className="flex gap-[10px] mt-1 text-[10px]">
+                    <span className="text-red-500">P: {f.protein}g</span>
+                    <span className="text-amber-500">C: {f.carbs}g</span>
+                    <span className="text-cyan-500">F: {f.fat}g</span>
+                    <span className="text-green-500">Fb: {f.fiber || 0}g</span>
                   </div>
                 </div>
-                <button className="bp" onClick={() => { addFood({ ...f, fiber: f.fiber || 0, category: "AI Scanned" }, 100, selMeal); setScanHistory(p => [f, ...p.filter(x => x.name !== f.name)].slice(0, 20)); }} style={{ padding: "8px 14px", flexShrink: 0 }}>+ Add</button>
+                <button className="bp p-[8px_14px] shrink-0" onClick={() => { addFood({ ...f, fiber: f.fiber || 0, category: "AI Scanned" }, 100, selMeal); setScanHistory(p => [f, ...p.filter(x => x.name !== f.name)].slice(0, 20)); }}>+ Add</button>
               </div>
             </div>
           ))}
 
-          <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-            <button className="bp" onClick={() => { scanResults.forEach(f => { addFood({ ...f, fiber: f.fiber || 0, category: "AI Scanned" }, 100, selMeal); setScanHistory(p => [f, ...p.filter(x => x.name !== f.name)].slice(0, 20)); }); stopCam(); setScanResults(null); setScanPhoto(null); setScanMode("choose"); setTab("log") }}
-              style={{ flex: 1, padding: 12 }}>✅ Add All & Done</button>
-            <button className="bg" onClick={() => { setScanResults(null); setScanPhoto(null); setScanMode("choose") }} style={{ padding: "12px 16px" }}>↻ Rescan</button>
+          <div className="flex gap-[10px] mt-3">
+            <button className="bp flex-1 p-3" onClick={() => { scanResults.forEach(f => { addFood({ ...f, fiber: f.fiber || 0, category: "AI Scanned" }, 100, selMeal); setScanHistory(p => [f, ...p.filter(x => x.name !== f.name)].slice(0, 20)); }); stopCam(); setScanResults(null); setScanPhoto(null); setScanMode("choose"); setTab("log") }}>✅ Add All & Done</button>
+            <button className="bg p-[12px_16px]" onClick={() => { setScanResults(null); setScanPhoto(null); setScanMode("choose") }}>↻ Rescan</button>
           </div>
         </div>
       )}
     </div>);
   }
 
-  return (<div style={{ maxWidth: "100%", overflowX: "hidden" }}>
+  return (<div className="max-w-full overflow-x-hidden">
     {/* Tabs */}
-    <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 16, flexWrap: "wrap" }}>
+    <div className="flex gap-1.5 justify-center mb-4 flex-wrap">
       {[["log", "🍎 Log"], ["weekly", "📊 Weekly"], ["scan", "📸 Scan"], ["plan", "📋 Plans"], ["history", "📅 History"]].map(([k, l]) => (
-        <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => { if (k === "scan") { setTab("scan"); setTimeout(startCam, 100) } else setTab(k) }} style={{ padding: "8px 14px" }}>{l}</span>
+        <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"} p-[8px_14px]`} onClick={() => { if (k === "scan") { setTab("scan"); setTimeout(startCam, 100) } else setTab(k) }}>{l}</span>
       ))}
     </div>
 
     {/* ════ LOG TAB ════ */}
     {tab === "log" && (<div>
       {/* Remaining calories */}
-      <div className="gs" style={{ marginBottom: 16, textAlign: "center", padding: 20 }}>
-        <div style={{ fontSize: 11, color: "#6b7280", fontFamily: "Rajdhani,sans-serif", letterSpacing: 2 }}>REMAINING TODAY</div>
-        <div style={{ fontSize: 42, fontWeight: 900, color: remaining > 0 ? "#10b981" : "#ef4444", fontFamily: "Rajdhani,sans-serif", lineHeight: 1.1 }}>{remaining > 0 ? remaining : 0}</div>
-        <div style={{ fontSize: 12, color: "#6b7280" }}>of {target} cal · Eaten: {totals.cal}</div>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, padding: "4px 14px", borderRadius: 100, background: nutScore.color + "10", border: "1px solid " + nutScore.color + "25" }}>
-          <span style={{ fontSize: 18, fontWeight: 900, color: nutScore.color, fontFamily: "Rajdhani,sans-serif" }}>{nutScore.grade}</span>
-          <span style={{ fontSize: 11, color: nutScore.color }}>{nutScore.desc}</span>
+      <div className="gs mb-4 text-center p-5">
+        <div className="text-[11px] text-gray-500 font-heading tracking-[2px]">REMAINING TODAY</div>
+        <div className={`text-[42px] font-black font-heading leading-[1.1] ${remaining > 0 ? "text-emerald-500" : "text-red-500"}`}>{remaining > 0 ? remaining : 0}</div>
+        <div className="text-xs text-gray-500">of {target} cal · Eaten: {totals.cal}</div>
+        <div className="inline-flex items-center gap-1.5 mt-2 px-[14px] py-1 rounded-full" style={{ background: nutScore.color + "10", border: "1px solid " + nutScore.color + "25" }}>
+          <span className="text-[18px] font-black font-heading" style={{ color: nutScore.color }}>{nutScore.grade}</span>
+          <span className="text-[11px]" style={{ color: nutScore.color }}>{nutScore.desc}</span>
         </div>
-        <div style={{ height: 8, background: "rgba(255,255,255,.04)", borderRadius: 4, overflow: "hidden", marginTop: 10 }}>
-          <div style={{ height: "100%", width: `${Math.min(100, (totals.cal / target) * 100)}%`, background: totals.cal > target ? "#ef4444" : "linear-gradient(90deg,#10b981,#06b6d4)", borderRadius: 4, transition: "width .5s" }} />
+        <div className="h-2 bg-white/[.04] rounded overflow-hidden mt-[10px]">
+          <div className="h-full rounded transition-[width] duration-500" style={{ width: `${Math.min(100, (totals.cal / target) * 100)}%`, background: totals.cal > target ? "#ef4444" : "linear-gradient(90deg,#10b981,#06b6d4)" }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 12 }}>
+        <div className="flex justify-center gap-4 mt-3">
           {[["Protein", totals.protein, proteinG, "#ef4444"], ["Carbs", totals.carbs, carbG, "#f59e0b"], ["Fat", totals.fat, fatG, "#06b6d4"], ["Fiber", totals.fiber, 25, "#22c55e"]].map(([l, v, t, c]) => (
-            <div key={l} style={{ textAlign: "center" }}><Ring pct={(v / t) * 100} color={c} size={40} stroke={3}><span style={{ fontSize: 11, fontWeight: 700, color: c }}>{Math.round(v)}</span></Ring><div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{l}</div></div>
+            <div key={l} className="text-center"><Ring pct={(v / t) * 100} color={c} size={40} stroke={3}><span className="text-[11px] font-bold" style={{ color: c }}>{Math.round(v)}</span></Ring><div className="text-[11px] text-gray-500 mt-0.5">{l}</div></div>
           ))}
         </div>
       </div>
 
       {/* Enhanced Water Tracker */}
-      <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ position: "relative", width: 44, height: 60, borderRadius: "6px 6px 10px 10px", border: "2px solid rgba(6,182,212,.3)", overflow: "hidden", flexShrink: 0 }}>
-            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${Math.min(100, (todayWater / WATER_GOAL) * 100)}%`, background: "linear-gradient(180deg, rgba(6,182,212,.3), rgba(6,182,212,.15))", transition: "height .5s ease", borderRadius: "0 0 8px 8px" }} />
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>💧</div>
+      <div className="gs mb-[14px] p-[14px]">
+        <div className="flex items-center gap-[14px]">
+          <div className="relative w-[44px] h-[60px] rounded-[6px_6px_10px_10px] border-2 border-cyan-500/30 overflow-hidden shrink-0">
+            <div className="absolute bottom-0 left-0 right-0 rounded-[0_0_8px_8px] transition-[height] duration-500 ease-out" style={{ height: `${Math.min(100, (todayWater / WATER_GOAL) * 100)}%`, background: "linear-gradient(180deg, rgba(6,182,212,.3), rgba(6,182,212,.15))" }} />
+            <div className="absolute inset-0 flex items-center justify-center text-[16px]">💧</div>
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="flex-1">
+            <div className="flex justify-between items-center">
               <div>
-                <span style={{ fontSize: 20, fontWeight: 800, color: todayWater >= WATER_GOAL ? "#22c55e" : "#06b6d4", fontFamily: "Rajdhani,sans-serif" }}>{todayWater}</span>
-                <span style={{ fontSize: 13, color: "#6b7280" }}>/{WATER_GOAL} glasses</span>
-                {todayWater >= WATER_GOAL && <span style={{ fontSize: 12, color: "#22c55e", marginLeft: 6 }}>✓ Goal!</span>}
+                <span className={`text-xl font-extrabold font-heading ${todayWater >= WATER_GOAL ? "text-green-500" : "text-cyan-500"}`}>{todayWater}</span>
+                <span className="text-[13px] text-gray-500">/{WATER_GOAL} glasses</span>
+                {todayWater >= WATER_GOAL && <span className="text-xs text-green-500 ml-1.5">✓ Goal!</span>}
               </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                <button className="bg" onClick={removeWater} style={{ padding: "6px 12px", fontSize: 16 }}>−</button>
-                <button className="bp" onClick={addWater} style={{ padding: "6px 14px", fontSize: 16 }}>+</button>
+              <div className="flex gap-1.5">
+                <button className="bg px-3 py-1.5 text-[16px]" onClick={removeWater}>−</button>
+                <button className="bp px-[14px] py-1.5 text-[16px]" onClick={addWater}>+</button>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 3, marginTop: 6 }}>
+            <div className="flex gap-[3px] mt-1.5">
               {Array.from({ length: WATER_GOAL }, (_, i) => (
-                <div key={i} onClick={() => setFoodLog(p => ({ ...p, [`water_${d}`]: i + 1 }))} style={{ flex: 1, height: 6, borderRadius: 3, background: i < todayWater ? "#06b6d4" : "rgba(255,255,255,.06)", transition: "background .3s", cursor: "pointer" }} />
+                <div key={i} onClick={() => setFoodLog(p => ({ ...p, [`water_${d}`]: i + 1 }))} className={`flex-1 h-1.5 rounded-[3px] cursor-pointer transition-colors duration-300 ${i < todayWater ? "bg-cyan-500" : "bg-white/[.06]"}`} />
               ))}
             </div>
           </div>
@@ -548,49 +547,49 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       </div>
 
       {/* Meal selector */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>{MEALS.map(m => { const mc = todayLog.filter(f => f.meal === m); const cal = mc.reduce((s, f) => s + (f.cal || 0), 0); return <span key={m} className={`chip ${selMeal === m ? "chip-a" : "chip-i"}`} onClick={() => setSelMeal(m)}>{m}{mc.length > 0 ? ` (${cal}cal)` : ""}</span> })}</div>
+      <div className="flex gap-1.5 mb-3">{MEALS.map(m => { const mc = todayLog.filter(f => f.meal === m); const cal = mc.reduce((s, f) => s + (f.cal || 0), 0); return <span key={m} className={`chip ${selMeal === m ? "chip-a" : "chip-i"}`} onClick={() => setSelMeal(m)}>{m}{mc.length > 0 ? ` (${cal}cal)` : ""}</span> })}</div>
 
       {/* Meal timing */}
-      <div style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(16,185,129,.03)", border: "1px solid rgba(16,185,129,.08)", marginBottom: 10, display: "flex", gap: 8, alignItems: "center" }}>
-        <span style={{ fontSize: 14 }}>🕐</span>
+      <div className="px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,.03)] border border-[rgba(16,185,129,.08)] mb-[10px] flex gap-2 items-center">
+        <span className="text-sm">🕐</span>
         <div>
-          <span style={{ fontSize: 11, color: "#10b981", fontWeight: 600 }}>{MEAL_TIMES[selMeal]?.time}</span>
-          <span style={{ fontSize: 11, color: "#6b7280" }}> — {MEAL_TIMES[selMeal]?.tip}</span>
+          <span className="text-[11px] text-emerald-500 font-semibold">{MEAL_TIMES[selMeal]?.time}</span>
+          <span className="text-[11px] text-gray-500"> — {MEAL_TIMES[selMeal]?.tip}</span>
         </div>
       </div>
 
       {/* Food quantity picker */}
-      {selFood && (<div className="gs fade-in" style={{ marginBottom: 14, border: "1px solid rgba(16,185,129,.2)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-          <span style={{ fontSize: 28 }}>{selFood.emoji}</span>
-          <div style={{ flex: 1 }}><div style={{ fontSize: 16, fontWeight: 600, color: "#f3f4f6" }}>{selFood.name}</div><div style={{ fontSize: 11, color: "#6b7280" }}>{selFood.category} · Nutrition per 100g</div></div>
+      {selFood && (<div className="gs fade-in mb-[14px] border border-emerald-500/20">
+        <div className="flex items-center gap-3 mb-[10px]">
+          <span className="text-[28px]">{selFood.emoji}</span>
+          <div className="flex-1"><div className="text-[16px] font-semibold text-gray-100">{selFood.name}</div><div className="text-[11px] text-gray-500">{selFood.category} · Nutrition per 100g</div></div>
         </div>
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6 }}>Weight in grams</div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input className="inp" type="number" value={grams} onChange={e => setGrams(Math.max(1, parseInt(e.target.value) || 0))} style={{ width: 80, textAlign: "center", fontSize: 18, fontWeight: 700, padding: 10 }} />
-            <span style={{ color: "#6b7280", fontSize: 14 }}>grams</span>
+        <div className="mb-3">
+          <div className="text-[11px] text-gray-500 mb-1.5">Weight in grams</div>
+          <div className="flex gap-2 items-center">
+            <input className="inp w-20 text-center text-[18px] font-bold p-[10px]" type="number" value={grams} onChange={e => setGrams(Math.max(1, parseInt(e.target.value) || 0))} />
+            <span className="text-gray-500 text-sm">grams</span>
           </div>
-          <div style={{ display: "flex", gap: 6, marginTop: 8 }}>{GRAM_PRESETS.map(g => <span key={g} className={`chip ${grams === g ? "chip-a" : "chip-i"}`} onClick={() => setGrams(g)} style={{ flex: 1, justifyContent: "center", padding: "6px 0" }}>{g}g</span>)}</div>
+          <div className="flex gap-1.5 mt-2">{GRAM_PRESETS.map(g => <span key={g} className={`chip ${grams === g ? "chip-a" : "chip-i"} flex-1 justify-center py-1.5`} onClick={() => setGrams(g)}>{g}g</span>)}</div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(55px,1fr))", gap: 6, marginBottom: 12, textAlign: "center", padding: 10, background: "rgba(255,255,255,.02)", borderRadius: 8 }}>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(55px,1fr))] gap-1.5 mb-3 text-center p-[10px] bg-white/[.02] rounded-lg">
           {[["Cal", Math.round(selFood.cal * grams / 100), "#f59e0b"], ["Protein", Math.round(selFood.protein * grams / 100 * 10) / 10, "#ef4444"], ["Carbs", Math.round(selFood.carbs * grams / 100 * 10) / 10, "#f59e0b"], ["Fat", Math.round(selFood.fat * grams / 100 * 10) / 10, "#06b6d4"], ["Fiber", Math.round(selFood.fiber * grams / 100 * 10) / 10, "#22c55e"]].map(([l, v, c]) => (
-            <div key={l}><div style={{ fontSize: 16, fontWeight: 700, color: c }}>{v}{l === "Cal" ? "" : "g"}</div><div style={{ fontSize: 11, color: "#6b7280" }}>{l}</div></div>
+            <div key={l}><div className="text-[16px] font-bold" style={{ color: c }}>{v}{l === "Cal" ? "" : "g"}</div><div className="text-[11px] text-gray-500">{l}</div></div>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 8 }}><button className="bp" onClick={() => addFood(selFood, grams, selMeal)} style={{ flex: 1, padding: 12 }}>+ Add {grams}g to {selMeal}</button><button className="bg" onClick={() => { setSelFood(null); setGrams(100) }} style={{ padding: "12px 16px" }}>Cancel</button></div>
+        <div className="flex gap-2"><button className="bp flex-1 p-3" onClick={() => addFood(selFood, grams, selMeal)}>+ Add {grams}g to {selMeal}</button><button className="bg p-[12px_16px]" onClick={() => { setSelFood(null); setGrams(100) }}>Cancel</button></div>
       </div>)}
 
       {/* Quick Add — Recent Foods */}
       {!selFood && recentFoods.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, marginBottom: 6 }}>⚡ Quick Add — Recent</div>
-          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
+        <div className="mb-3">
+          <div className="text-[11px] text-gray-500 font-semibold mb-1.5">⚡ Quick Add — Recent</div>
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
             {recentFoods.slice(0, 8).map((f, i) => (
-              <div key={f.name + i} onClick={() => addFood(f, 100, selMeal)} style={{ flexShrink: 0, padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.06)", cursor: "pointer", textAlign: "center", minWidth: 70 }}>
-                <div style={{ fontSize: 18 }}>{f.emoji}</div>
-                <div style={{ fontSize: 10, color: "#e5e7eb", marginTop: 2 }}>{f.name.length > 10 ? f.name.slice(0, 10) + "…" : f.name}</div>
-                <div style={{ fontSize: 11, color: "#6b7280" }}>{f.cal}cal</div>
+              <div key={f.name + i} onClick={() => addFood(f, 100, selMeal)} className="shrink-0 px-3 py-2 rounded-[10px] bg-white/[.02] border border-white/[.06] cursor-pointer text-center min-w-[70px]">
+                <div className="text-[18px]">{f.emoji}</div>
+                <div className="text-[10px] text-gray-200 mt-0.5">{f.name.length > 10 ? f.name.slice(0, 10) + "…" : f.name}</div>
+                <div className="text-[11px] text-gray-500">{f.cal}cal</div>
               </div>
             ))}
           </div>
@@ -599,74 +598,74 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
 
       {/* Search + Category filter */}
       {!selFood && <>
-        <input className="inp" placeholder="Search 199 foods... (biryani, idli, paneer, dal...)" value={search} onChange={e => setSearch(e.target.value)} style={{ marginBottom: 8 }} />
-        <div style={{ display: "flex", gap: 4, marginBottom: 10, overflowX: "auto", paddingBottom: 4 }}>
-          <span className={`chip ${selCat === "All" ? "chip-a" : "chip-i"}`} onClick={() => setSelCat("All")} style={{ flexShrink: 0 }}>All</span>
-          {FOOD_CATEGORIES.map(c => <span key={c} className={`chip ${selCat === c ? "chip-a" : "chip-i"}`} onClick={() => setSelCat(c)} style={{ flexShrink: 0, fontSize: 11 }}>{c}</span>)}
+        <input className="inp mb-2" placeholder="Search 199 foods... (biryani, idli, paneer, dal...)" value={search} onChange={e => setSearch(e.target.value)} />
+        <div className="flex gap-1 mb-[10px] overflow-x-auto pb-1">
+          <span className={`chip ${selCat === "All" ? "chip-a" : "chip-i"} shrink-0`} onClick={() => setSelCat("All")}>All</span>
+          {FOOD_CATEGORIES.map(c => <span key={c} className={`chip ${selCat === c ? "chip-a" : "chip-i"} shrink-0 text-[11px]`} onClick={() => setSelCat(c)}>{c}</span>)}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(90px,1fr))", gap: 8, marginBottom: 12, maxHeight: 300, overflowY: "auto" }}>
-          {filtered.slice(0, 36).map((f, i) => (<div key={f.name + i} className="fc" onClick={() => { setSelFood(f); setGrams(100) }}><div style={{ fontSize: 20 }}>{f.emoji}</div><div style={{ fontSize: 11, fontWeight: 500, color: "#e5e7eb", marginTop: 3 }}>{f.name}</div><div style={{ fontSize: 11, color: "#6b7280" }}>{f.cal}cal/100g</div></div>))}
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2 mb-3 max-h-[300px] overflow-y-auto">
+          {filtered.slice(0, 36).map((f, i) => (<div key={f.name + i} className="fc" onClick={() => { setSelFood(f); setGrams(100) }}><div className="text-xl">{f.emoji}</div><div className="text-[11px] font-medium text-gray-200 mt-[3px]">{f.name}</div><div className="text-[11px] text-gray-500">{f.cal}cal/100g</div></div>))}
         </div>
-        {filtered.length === 0 && search && !apiSearching && apiResults.length === 0 && <div style={{ textAlign: "center", color: "#6b7280", padding: "12px 0", fontSize: 13 }}>No food found for "{search}"</div>}
-        {apiSearching && <div style={{ textAlign: "center", padding: "8px 0", fontSize: 12, color: "#06b6d4" }}>Searching global database...</div>}
-        {apiResults.length > 0 && (<div style={{ marginTop: 12 }}><div style={{ fontSize: 12, color: "#06b6d4", fontWeight: 600, marginBottom: 8 }}>More from global database ({apiResults.length})</div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(90px,1fr))", gap: 8, maxHeight: 200, overflowY: "auto" }}>{apiResults.map((f, i) => (<div key={"api" + i} className="fc" onClick={() => { setSelFood(f); setGrams(100); }} style={{ borderColor: "rgba(6,182,212,.15)" }}><div style={{ fontSize: 20 }}>{f.emoji}</div><div style={{ fontSize: 11, fontWeight: 500, color: "#e5e7eb", marginTop: 3 }}>{f.name}</div><div style={{ fontSize: 11, color: "#06b6d4" }}>{f.cal}cal</div></div>))}</div></div>)}
-        <span onClick={() => setShowCustom(!showCustom)} style={{ fontSize: 12, color: "#10b981", cursor: "pointer", fontWeight: 600 }}>{showCustom ? "Cancel" : "+ Add Custom Food"}</span>
-        {showCustom && (<div className="gs fade-in" style={{ marginTop: 10, border: "1px solid rgba(16,185,129,.15)" }}>
-          <input className="inp" placeholder="Food name" value={custom.name} onChange={e => setCustom(p => ({ ...p, name: e.target.value }))} style={{ marginBottom: 8 }} />
-          <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 4 }}>Nutrition per 100g</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(80px,1fr))", gap: 6, marginBottom: 8 }}>
-            {[["Calories*", "cal"], ["Protein(g)", "protein"], ["Carbs(g)", "carbs"], ["Fat(g)", "fat"], ["Fiber(g)", "fiber"]].map(([l, k]) => (<div key={k}><label style={{ fontSize: 10, color: "#6b7280" }}>{l}</label><input className="inp" type="number" placeholder="0" value={custom[k]} onChange={e => setCustom(p => ({ ...p, [k]: e.target.value }))} style={{ padding: 8, textAlign: "center" }} /></div>))}
+        {filtered.length === 0 && search && !apiSearching && apiResults.length === 0 && <div className="text-center text-gray-500 py-3 text-[13px]">No food found for "{search}"</div>}
+        {apiSearching && <div className="text-center py-2 text-xs text-cyan-500">Searching global database...</div>}
+        {apiResults.length > 0 && (<div className="mt-3"><div className="text-xs text-cyan-500 font-semibold mb-2">More from global database ({apiResults.length})</div><div className="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2 max-h-[200px] overflow-y-auto">{apiResults.map((f, i) => (<div key={"api" + i} className="fc border-cyan-500/[.15]" onClick={() => { setSelFood(f); setGrams(100); }}><div className="text-xl">{f.emoji}</div><div className="text-[11px] font-medium text-gray-200 mt-[3px]">{f.name}</div><div className="text-[11px] text-cyan-500">{f.cal}cal</div></div>))}</div></div>)}
+        <span onClick={() => setShowCustom(!showCustom)} className="text-xs text-emerald-500 cursor-pointer font-semibold">{showCustom ? "Cancel" : "+ Add Custom Food"}</span>
+        {showCustom && (<div className="gs fade-in mt-[10px] border border-emerald-500/[.15]">
+          <input className="inp mb-2" placeholder="Food name" value={custom.name} onChange={e => setCustom(p => ({ ...p, name: e.target.value }))} />
+          <div className="text-[10px] text-gray-500 mb-1">Nutrition per 100g</div>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(80px,1fr))] gap-1.5 mb-2">
+            {[["Calories*", "cal"], ["Protein(g)", "protein"], ["Carbs(g)", "carbs"], ["Fat(g)", "fat"], ["Fiber(g)", "fiber"]].map(([l, k]) => (<div key={k}><label className="text-[10px] text-gray-500">{l}</label><input className="inp p-2 text-center" type="number" placeholder="0" value={custom[k]} onChange={e => setCustom(p => ({ ...p, [k]: e.target.value }))} /></div>))}
           </div>
-          <button className="bp" onClick={addCustomFood} disabled={!custom.name.trim() || !custom.cal} style={{ width: "100%", padding: 10 }}>+ Add</button>
+          <button className="bp w-full p-[10px]" onClick={addCustomFood} disabled={!custom.name.trim() || !custom.cal}>+ Add</button>
         </div>)}
       </>}
 
       {/* Today's log */}
-      {todayLog.length > 0 && (<div className="gs" style={{ marginTop: 14 }}><div className="sl">Today · {todayLog.length} items · {totals.cal}cal</div>
-        {MEALS.map(meal => { const items = todayLog.map((f, i) => ({ ...f, _idx: i })).filter(f => f.meal === meal); if (items.length === 0) return null; return (<div key={meal} style={{ marginBottom: 10 }}><div style={{ fontSize: 12, color: "#10b981", fontWeight: 600, marginBottom: 4 }}>{meal} — {items.reduce((s, f) => s + (f.cal || 0), 0)}cal</div>{items.map(f => (<div key={f._idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}><div style={{ display: "flex", gap: 8, alignItems: "center" }}><span>{f.emoji}</span><div><div style={{ fontSize: 13 }}>{f.name}{f.grams && f.grams !== 100 ? <span style={{ color: "#6b7280" }}> {f.grams}g</span> : ""}</div><div style={{ fontSize: 10, color: "#4b5563" }}>P:{f.protein}g C:{f.carbs}g F:{f.fat}g</div></div></div><div style={{ display: "flex", gap: 8, alignItems: "center" }}><span style={{ fontSize: 13, fontWeight: 600, color: "#f59e0b" }}>{f.cal}cal</span><span onClick={() => removeFood(f._idx)} style={{ cursor: "pointer", color: "#4b5563", fontSize: 14 }}>×</span></div></div>))}</div>); })}
+      {todayLog.length > 0 && (<div className="gs mt-[14px]"><div className="sl">Today · {todayLog.length} items · {totals.cal}cal</div>
+        {MEALS.map(meal => { const items = todayLog.map((f, i) => ({ ...f, _idx: i })).filter(f => f.meal === meal); if (items.length === 0) return null; return (<div key={meal} className="mb-[10px]"><div className="text-xs text-emerald-500 font-semibold mb-1">{meal} — {items.reduce((s, f) => s + (f.cal || 0), 0)}cal</div>{items.map(f => (<div key={f._idx} className="flex justify-between items-center py-1.5 border-b border-white/[.03]"><div className="flex gap-2 items-center"><span>{f.emoji}</span><div><div className="text-[13px]">{f.name}{f.grams && f.grams !== 100 ? <span className="text-gray-500"> {f.grams}g</span> : ""}</div><div className="text-[10px] text-gray-600">P:{f.protein}g C:{f.carbs}g F:{f.fat}g</div></div></div><div className="flex gap-2 items-center"><span className="text-[13px] font-semibold text-amber-500">{f.cal}cal</span><span onClick={() => removeFood(f._idx)} className="cursor-pointer text-gray-600 text-sm">×</span></div></div>))}</div>); })}
       </div>)}
     </div>)}
 
     {/* ════ WEEKLY TAB ════ */}
     {tab === "weekly" && (<div>
       {/* 7-day calorie chart */}
-      <div className="gs" style={{ marginBottom: 16, padding: 16 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>📊 This Week's Calories</div>
-        <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 100, marginBottom: 8 }}>
+      <div className="gs mb-4 p-4">
+        <div className="text-sm font-bold text-gray-100 font-heading mb-3">📊 This Week's Calories</div>
+        <div className="flex gap-1 items-end h-[100px] mb-2">
           {weeklyData.map((day, i) => {
             const pct = target > 0 ? Math.min(120, (day.cal / target) * 100) : 0;
             const over = day.cal > target;
             return (
-              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ fontSize: 11, color: day.cal > 0 ? (over ? "#ef4444" : "#10b981") : "#4b5563", fontWeight: 600, marginBottom: 2 }}>{day.cal > 0 ? day.cal : ""}</div>
-                <div style={{ width: "100%", background: over ? "rgba(239,68,68,.3)" : day.isToday ? "#10b981" : "rgba(16,185,129,.25)", borderRadius: "4px 4px 0 0", height: `${Math.max(4, pct * 0.7)}px`, transition: "height .5s" }} />
-                <div style={{ fontSize: 10, color: day.isToday ? "#10b981" : "#6b7280", marginTop: 4, fontWeight: day.isToday ? 700 : 400 }}>{day.label}</div>
+              <div key={i} className="flex-1 flex flex-col items-center">
+                <div className={`text-[11px] font-semibold mb-0.5 ${day.cal > 0 ? (over ? "text-red-500" : "text-emerald-500") : "text-gray-600"}`}>{day.cal > 0 ? day.cal : ""}</div>
+                <div className="w-full rounded-t transition-[height] duration-500" style={{ background: over ? "rgba(239,68,68,.3)" : day.isToday ? "#10b981" : "rgba(16,185,129,.25)", height: `${Math.max(4, pct * 0.7)}px` }} />
+                <div className={`text-[10px] mt-1 ${day.isToday ? "text-emerald-500 font-bold" : "text-gray-500 font-normal"}`}>{day.label}</div>
               </div>
             );
           })}
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#4b5563" }}>
+        <div className="flex justify-between text-[10px] text-gray-600">
           <span>Target: {target} cal/day</span>
           <span>Avg: {Math.round(weeklyData.reduce((s, d) => s + d.cal, 0) / Math.max(1, weeklyData.filter(d => d.cal > 0).length))} cal/day</span>
         </div>
       </div>
 
       {/* Weekly Macros */}
-      <div className="gs" style={{ marginBottom: 16, padding: 16 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>Weekly Macro Average</div>
+      <div className="gs mb-4 p-4">
+        <div className="text-sm font-bold text-gray-100 font-heading mb-3">Weekly Macro Average</div>
         {(() => {
           const activeDays = weeklyData.filter(d => d.cal > 0);
           const n = Math.max(1, activeDays.length);
           const avg = { protein: Math.round(activeDays.reduce((s, d) => s + d.protein, 0) / n), carbs: Math.round(activeDays.reduce((s, d) => s + d.carbs, 0) / n), fat: Math.round(activeDays.reduce((s, d) => s + d.fat, 0) / n) };
           return (
-            <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
+            <div className="flex justify-center gap-5">
               {[["Protein", avg.protein, proteinG, "#ef4444"], ["Carbs", avg.carbs, carbG, "#f59e0b"], ["Fat", avg.fat, fatG, "#06b6d4"]].map(([l, v, t, color]) => (
-                <div key={l} style={{ textAlign: "center" }}>
+                <div key={l} className="text-center">
                   <Ring pct={(v / t) * 100} color={color} size={56} stroke={5}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color }}>{v}g</span>
+                    <span className="text-xs font-bold" style={{ color }}>{v}g</span>
                   </Ring>
-                  <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>{l}</div>
-                  <div style={{ fontSize: 11, color: "#4b5563" }}>Goal: {t}g</div>
+                  <div className="text-[10px] text-gray-500 mt-1">{l}</div>
+                  <div className="text-[11px] text-gray-600">Goal: {t}g</div>
                 </div>
               ))}
             </div>
@@ -676,29 +675,29 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
 
       {/* Today's Macro by Meal */}
       {todayLog.length > 0 && (
-        <div className="gs" style={{ padding: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>🍽️ Today's Breakdown by Meal</div>
+        <div className="gs p-4">
+          <div className="text-sm font-bold text-gray-100 font-heading mb-3">🍽️ Today's Breakdown by Meal</div>
           {MEALS.map(meal => {
             const m = mealMacros[meal];
             if (!m || m.cal === 0) return null;
             const pct = target > 0 ? Math.round((m.cal / target) * 100) : 0;
             return (
-              <div key={meal} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#f3f4f6" }}>{meal}</span>
-                  <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>{m.cal} cal ({pct}%)</span>
+              <div key={meal} className="mb-[10px]">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[13px] font-semibold text-gray-100">{meal}</span>
+                  <span className="text-xs text-amber-500 font-semibold">{m.cal} cal ({pct}%)</span>
                 </div>
-                <div style={{ height: 6, background: "rgba(255,255,255,.04)", borderRadius: 3, overflow: "hidden", marginBottom: 4 }}>
-                  <div style={{ height: "100%", borderRadius: 3, display: "flex" }}>
-                    <div style={{ width: `${m.protein > 0 ? Math.max(5, (m.protein / (m.protein + m.carbs + m.fat)) * 100) : 0}%`, background: "#ef4444", transition: "width .5s" }} />
-                    <div style={{ width: `${m.carbs > 0 ? Math.max(5, (m.carbs / (m.protein + m.carbs + m.fat)) * 100) : 0}%`, background: "#f59e0b", transition: "width .5s" }} />
-                    <div style={{ width: `${m.fat > 0 ? Math.max(5, (m.fat / (m.protein + m.carbs + m.fat)) * 100) : 0}%`, background: "#06b6d4", transition: "width .5s" }} />
+                <div className="h-1.5 bg-white/[.04] rounded-[3px] overflow-hidden mb-1">
+                  <div className="h-full rounded-[3px] flex">
+                    <div className="bg-red-500 transition-[width] duration-500" style={{ width: `${m.protein > 0 ? Math.max(5, (m.protein / (m.protein + m.carbs + m.fat)) * 100) : 0}%` }} />
+                    <div className="bg-amber-500 transition-[width] duration-500" style={{ width: `${m.carbs > 0 ? Math.max(5, (m.carbs / (m.protein + m.carbs + m.fat)) * 100) : 0}%` }} />
+                    <div className="bg-cyan-500 transition-[width] duration-500" style={{ width: `${m.fat > 0 ? Math.max(5, (m.fat / (m.protein + m.carbs + m.fat)) * 100) : 0}%` }} />
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 10, fontSize: 10, color: "#6b7280" }}>
-                  <span style={{ color: "#ef4444" }}>P: {Math.round(m.protein)}g</span>
-                  <span style={{ color: "#f59e0b" }}>C: {Math.round(m.carbs)}g</span>
-                  <span style={{ color: "#06b6d4" }}>F: {Math.round(m.fat)}g</span>
+                <div className="flex gap-[10px] text-[10px] text-gray-500">
+                  <span className="text-red-500">P: {Math.round(m.protein)}g</span>
+                  <span className="text-amber-500">C: {Math.round(m.carbs)}g</span>
+                  <span className="text-cyan-500">F: {Math.round(m.fat)}g</span>
                 </div>
               </div>
             );
@@ -712,19 +711,19 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     {/* ════ PLANS TAB ════ */}
     {tab === "plan" && (<div>
       {/* Plan sub-tabs */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto" }}>
+      <div className="flex gap-1.5 mb-[14px] overflow-x-auto">
         {[["templates", "🤖 Auto Plan"], ["weekly", "📅 Weekly"], ["shopping", "🛒 Shopping"], ["create", "✏️ Manual"]].map(([k, l]) => (
-          <span key={k} className={`chip ${planTab === k ? "chip-a" : "chip-i"}`} onClick={() => setPlanTab(k)} style={{ flexShrink: 0, fontSize: 12 }}>{l}</span>
+          <span key={k} className={`chip ${planTab === k ? "chip-a" : "chip-i"} shrink-0 text-xs`} onClick={() => setPlanTab(k)}>{l}</span>
         ))}
       </div>
 
       {/* ── AUTO PLAN TAB ── */}
       {planTab === "templates" && (
         <div>
-          <div style={{ textAlign: "center", marginBottom: 14 }}>
-            <div style={{ fontSize: 11, color: "#6b7280", letterSpacing: 2 }}>YOUR DAILY TARGET</div>
-            <div style={{ fontSize: 32, fontWeight: 900, color: "#10b981", fontFamily: "Rajdhani,sans-serif" }}>{target} cal</div>
-            <div style={{ fontSize: 11, color: "#6b7280" }}>P: {proteinG}g · C: {carbG}g · F: {fatG}g</div>
+          <div className="text-center mb-[14px]">
+            <div className="text-[11px] text-gray-500 tracking-[2px]">YOUR DAILY TARGET</div>
+            <div className="text-[32px] font-black text-emerald-500 font-heading">{target} cal</div>
+            <div className="text-[11px] text-gray-500">P: {proteinG}g · C: {carbG}g · F: {fatG}g</div>
           </div>
 
           {/* Template cards */}
@@ -732,20 +731,19 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
             <div>
               <div className="sl">Choose a Diet Style</div>
               {DIET_TEMPLATES.map(t => (
-                <div key={t.id} className="gc" onClick={() => { setSelTemplate(t); const plan = generateDayPlan(t, target); setGeneratedPlan(plan); }}
-                  style={{ padding: 14, marginBottom: 8, cursor: "pointer" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 28 }}>{t.icon}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{t.name}</div>
-                      <div style={{ fontSize: 11, color: "#6b7280" }}>{t.desc}</div>
-                      <div style={{ display: "flex", gap: 8, marginTop: 4, fontSize: 10 }}>
-                        <span style={{ color: "#ef4444" }}>P: {Math.round(t.protPct * 100)}%</span>
-                        <span style={{ color: "#f59e0b" }}>C: {Math.round(t.carbPct * 100)}%</span>
-                        <span style={{ color: "#06b6d4" }}>F: {Math.round(t.fatPct * 100)}%</span>
+                <div key={t.id} className="gc p-[14px] mb-2 cursor-pointer" onClick={() => { setSelTemplate(t); const plan = generateDayPlan(t, target); setGeneratedPlan(plan); }}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[28px]">{t.icon}</span>
+                    <div className="flex-1">
+                      <div className="text-[15px] font-bold text-gray-100 font-heading">{t.name}</div>
+                      <div className="text-[11px] text-gray-500">{t.desc}</div>
+                      <div className="flex gap-2 mt-1 text-[10px]">
+                        <span className="text-red-500">P: {Math.round(t.protPct * 100)}%</span>
+                        <span className="text-amber-500">C: {Math.round(t.carbPct * 100)}%</span>
+                        <span className="text-cyan-500">F: {Math.round(t.fatPct * 100)}%</span>
                       </div>
                     </div>
-                    <span style={{ color: "#4b5563", fontSize: 18 }}>→</span>
+                    <span className="text-gray-600 text-[18px]">→</span>
                   </div>
                 </div>
               ))}
@@ -757,12 +755,12 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
             const totals = getPlanDayTotals(generatedPlan);
             return (
               <div className="fade-in">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div className="flex justify-between items-center mb-3">
                   <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{selTemplate.icon} {selTemplate.name}</div>
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>{totals.cal} cal · P:{Math.round(totals.protein)}g · C:{Math.round(totals.carbs)}g · F:{Math.round(totals.fat)}g</div>
+                    <div className="text-[16px] font-bold text-gray-100 font-heading">{selTemplate.icon} {selTemplate.name}</div>
+                    <div className="text-[11px] text-gray-500">{totals.cal} cal · P:{Math.round(totals.protein)}g · C:{Math.round(totals.carbs)}g · F:{Math.round(totals.fat)}g</div>
                   </div>
-                  <button className="bg" onClick={() => { setSelTemplate(null); setGeneratedPlan(null); }} style={{ padding: "6px 12px", fontSize: 11 }}>← Back</button>
+                  <button className="bg px-3 py-1.5 text-[11px]" onClick={() => { setSelTemplate(null); setGeneratedPlan(null); }}>← Back</button>
                 </div>
 
                 {["Breakfast", "Lunch", "Dinner", "Snack"].map(meal => {
@@ -770,24 +768,24 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
                   if (items.length === 0) return null;
                   const mealCal = items.reduce((s, f) => s + (f.cal || 0), 0);
                   return (
-                    <div key={meal} className="gs" style={{ marginBottom: 10, padding: 12 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "#10b981" }}>{meal}</span>
-                        <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>{mealCal} cal</span>
+                    <div key={meal} className="gs mb-[10px] p-3">
+                      <div className="flex justify-between mb-2">
+                        <span className="text-[13px] font-bold text-emerald-500">{meal}</span>
+                        <span className="text-xs text-amber-500 font-semibold">{mealCal} cal</span>
                       </div>
                       {items.map((f, i) => (
-                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: i < items.length - 1 ? "1px solid rgba(255,255,255,.03)" : "none" }}>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <span style={{ fontSize: 18 }}>{f.emoji}</span>
+                        <div key={i} className="flex justify-between items-center py-1.5" style={{ borderBottom: i < items.length - 1 ? "1px solid rgba(255,255,255,.03)" : "none" }}>
+                          <div className="flex gap-2 items-center">
+                            <span className="text-[18px]">{f.emoji}</span>
                             <div>
-                              <div style={{ fontSize: 13, color: "#f3f4f6" }}>{f.name} <span style={{ color: "#6b7280", fontSize: 11 }}>{f.grams}g</span></div>
-                              <div style={{ fontSize: 10, color: "#4b5563" }}>P:{f.protein}g C:{f.carbs}g F:{f.fat}g</div>
+                              <div className="text-[13px] text-gray-100">{f.name} <span className="text-gray-500 text-[11px]">{f.grams}g</span></div>
+                              <div className="text-[10px] text-gray-600">P:{f.protein}g C:{f.carbs}g F:{f.fat}g</div>
                             </div>
                           </div>
-                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                            <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>{f.cal}cal</span>
+                          <div className="flex gap-1 items-center">
+                            <span className="text-xs text-amber-500 font-semibold">{f.cal}cal</span>
                             <span onClick={() => { const swaps = getMealSwaps(f, meal, selTemplate); if (swaps.length > 0) { const swap = swaps[Math.floor(Math.random() * swaps.length)]; const newPlan = { ...generatedPlan }; const ratio = (f.grams || 100) / 100; newPlan[meal] = [...newPlan[meal]]; newPlan[meal][i] = { ...swap, grams: f.grams || 100, cal: Math.round(swap.cal * ratio), protein: Math.round(swap.protein * ratio * 10) / 10, carbs: Math.round(swap.carbs * ratio * 10) / 10, fat: Math.round(swap.fat * ratio * 10) / 10, fiber: Math.round(swap.fiber * ratio * 10) / 10, meal }; setGeneratedPlan(newPlan); } }}
-                              style={{ cursor: "pointer", fontSize: 12, color: "#6b7280", padding: "2px 6px" }}>🔄</span>
+                              className="cursor-pointer text-xs text-gray-500 px-1.5 py-0.5">🔄</span>
                           </div>
                         </div>
                       ))}
@@ -795,15 +793,12 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
                   );
                 })}
 
-                <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                  <button className="bp" onClick={() => { Object.entries(generatedPlan).forEach(([meal, items]) => items.forEach(f => addFood(f, f.grams || 100, meal))); setTab("log"); }}
-                    style={{ flex: 1, padding: 14, fontSize: 14 }}>✅ Log This Plan Today</button>
-                  <button className="bg" onClick={() => { const plan = generateDayPlan(selTemplate, target); setGeneratedPlan(plan); }}
-                    style={{ padding: "14px 16px", fontSize: 12 }}>🔄 Regenerate</button>
+                <div className="flex gap-2 mt-3">
+                  <button className="bp flex-1 p-[14px] text-sm" onClick={() => { Object.entries(generatedPlan).forEach(([meal, items]) => items.forEach(f => addFood(f, f.grams || 100, meal))); setTab("log"); }}>✅ Log This Plan Today</button>
+                  <button className="bg p-[14px_16px] text-xs" onClick={() => { const plan = generateDayPlan(selTemplate, target); setGeneratedPlan(plan); }}>🔄 Regenerate</button>
                 </div>
 
-                <button className="bg" onClick={() => { const wp = generateWeekPlan(selTemplate, target); setWeekPlan(wp); setShoppingList(getShoppingList(wp)); setPlanTab("weekly"); }}
-                  style={{ width: "100%", marginTop: 8, padding: 12, fontSize: 13 }}>📅 Generate Full Week Plan</button>
+                <button className="bg w-full mt-2 p-3 text-[13px]" onClick={() => { const wp = generateWeekPlan(selTemplate, target); setWeekPlan(wp); setShoppingList(getShoppingList(wp)); setPlanTab("weekly"); }}>📅 Generate Full Week Plan</button>
               </div>
             );
           })()}
@@ -814,13 +809,12 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       {planTab === "weekly" && (
         <div>
           {!weekPlan ? (
-            <div style={{ textAlign: "center", padding: 30, color: "#6b7280", fontSize: 13 }}>Generate a plan from the Auto Plan tab first.</div>
+            <div className="text-center p-[30px] text-gray-500 text-[13px]">Generate a plan from the Auto Plan tab first.</div>
           ) : (
             <div>
-              <div style={{ display: "flex", gap: 4, marginBottom: 12, overflowX: "auto" }}>
+              <div className="flex gap-1 mb-3 overflow-x-auto">
                 {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => (
-                  <span key={day} className={`chip ${selWeekDay === day ? "chip-a" : "chip-i"}`} onClick={() => setSelWeekDay(day)}
-                    style={{ flexShrink: 0, fontSize: 11, padding: "6px 10px" }}>{day.slice(0, 3)}</span>
+                  <span key={day} className={`chip ${selWeekDay === day ? "chip-a" : "chip-i"} shrink-0 text-[11px] px-[10px] py-1.5`} onClick={() => setSelWeekDay(day)}>{day.slice(0, 3)}</span>
                 ))}
               </div>
 
@@ -828,27 +822,26 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
                 const dayTotals = getPlanDayTotals(weekPlan[selWeekDay]);
                 return (
                   <div>
-                    <div style={{ textAlign: "center", marginBottom: 10 }}>
-                      <span style={{ fontSize: 18, fontWeight: 800, color: "#10b981", fontFamily: "Rajdhani,sans-serif" }}>{dayTotals.cal} cal</span>
-                      <span style={{ fontSize: 11, color: "#6b7280" }}> · P:{Math.round(dayTotals.protein)}g C:{Math.round(dayTotals.carbs)}g F:{Math.round(dayTotals.fat)}g</span>
+                    <div className="text-center mb-[10px]">
+                      <span className="text-[18px] font-extrabold text-emerald-500 font-heading">{dayTotals.cal} cal</span>
+                      <span className="text-[11px] text-gray-500"> · P:{Math.round(dayTotals.protein)}g C:{Math.round(dayTotals.carbs)}g F:{Math.round(dayTotals.fat)}g</span>
                     </div>
                     {["Breakfast", "Lunch", "Dinner", "Snack"].map(meal => {
                       const items = weekPlan[selWeekDay][meal] || [];
                       if (items.length === 0) return null;
                       return (
-                        <div key={meal} style={{ marginBottom: 10 }}>
-                          <div style={{ fontSize: 12, color: "#10b981", fontWeight: 600, marginBottom: 4 }}>{meal}</div>
+                        <div key={meal} className="mb-[10px]">
+                          <div className="text-xs text-emerald-500 font-semibold mb-1">{meal}</div>
                           {items.map((f, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12 }}>
-                              <span>{f.emoji} {f.name} <span style={{ color: "#6b7280" }}>{f.grams}g</span></span>
-                              <span style={{ color: "#f59e0b" }}>{f.cal}cal</span>
+                            <div key={i} className="flex justify-between py-1 text-xs">
+                              <span>{f.emoji} {f.name} <span className="text-gray-500">{f.grams}g</span></span>
+                              <span className="text-amber-500">{f.cal}cal</span>
                             </div>
                           ))}
                         </div>
                       );
                     })}
-                    <button className="bp" onClick={() => { Object.entries(weekPlan[selWeekDay]).forEach(([meal, items]) => items.forEach(f => addFood(f, f.grams || 100, meal))); setTab("log"); }}
-                      style={{ width: "100%", padding: 12, marginTop: 8 }}>✅ Log {selWeekDay}'s Plan</button>
+                    <button className="bp w-full p-3 mt-2" onClick={() => { Object.entries(weekPlan[selWeekDay]).forEach(([meal, items]) => items.forEach(f => addFood(f, f.grams || 100, meal))); setTab("log"); }}>✅ Log {selWeekDay}'s Plan</button>
                   </div>
                 );
               })()}
@@ -861,27 +854,27 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       {planTab === "shopping" && (
         <div>
           {shoppingList.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 30, color: "#6b7280", fontSize: 13 }}>Generate a weekly plan first to see your shopping list.</div>
+            <div className="text-center p-[30px] text-gray-500 text-[13px]">Generate a weekly plan first to see your shopping list.</div>
           ) : (
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>🛒 Weekly Shopping List</div>
-                <span style={{ fontSize: 11, color: "#6b7280" }}>{shoppingList.length} items</span>
+              <div className="flex justify-between items-center mb-3">
+                <div className="text-[16px] font-bold text-gray-100 font-heading">🛒 Weekly Shopping List</div>
+                <span className="text-[11px] text-gray-500">{shoppingList.length} items</span>
               </div>
               {shoppingList.map((item, i) => (
                 <div key={i} onClick={() => setCheckedShop(p => ({ ...p, [item.name]: !p[item.name] }))}
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,.03)", cursor: "pointer", opacity: checkedShop[item.name] ? 0.4 : 1 }}>
-                  <div style={{ width: 22, height: 22, borderRadius: 6, border: checkedShop[item.name] ? "1px solid #22c55e" : "1px solid rgba(255,255,255,.1)", background: checkedShop[item.name] ? "rgba(34,197,94,.15)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#22c55e" }}>
+                  className="flex items-center gap-[10px] py-[10px] border-b border-white/[.03] cursor-pointer" style={{ opacity: checkedShop[item.name] ? 0.4 : 1 }}>
+                  <div className={`w-[22px] h-[22px] rounded-md flex items-center justify-center text-xs text-green-500 ${checkedShop[item.name] ? "border border-green-500 bg-green-500/[.15]" : "border border-white/10 bg-transparent"}`}>
                     {checkedShop[item.name] ? "✓" : ""}
                   </div>
-                  <span style={{ fontSize: 16 }}>{item.emoji}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, color: "#f3f4f6", textDecoration: checkedShop[item.name] ? "line-through" : "none" }}>{item.name}</div>
-                    <div style={{ fontSize: 10, color: "#6b7280" }}>{item.grams}g total · Used {item.count}× this week</div>
+                  <span className="text-[16px]">{item.emoji}</span>
+                  <div className="flex-1">
+                    <div className={`text-[13px] text-gray-100 ${checkedShop[item.name] ? "line-through" : ""}`}>{item.name}</div>
+                    <div className="text-[10px] text-gray-500">{item.grams}g total · Used {item.count}× this week</div>
                   </div>
                 </div>
               ))}
-              <div style={{ textAlign: "center", marginTop: 12, fontSize: 11, color: "#6b7280" }}>
+              <div className="text-center mt-3 text-[11px] text-gray-500">
                 {Object.values(checkedShop).filter(Boolean).length}/{shoppingList.length} items checked
               </div>
             </div>
@@ -892,41 +885,41 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       {/* ── MANUAL CREATE TAB ── */}
       {planTab === "create" && (
         <div>
-          {savedPlans.length > 0 && (<div className="gs" style={{ marginBottom: 16 }}>
+          {savedPlans.length > 0 && (<div className="gs mb-4">
             <div className="sl">Saved Plans ({savedPlans.length})</div>
-            {savedPlans.map(plan => (<div key={plan.id} className="gc" style={{ padding: 14, marginBottom: 8 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div><div style={{ fontSize: 15, fontWeight: 600 }}>{plan.name}</div><div style={{ fontSize: 11, color: "#6b7280" }}>{MEALS.map(m => `${(plan.items[m] || []).length} ${m.toLowerCase()}`).join(" · ")}</div></div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button className="bp" onClick={() => loadPlan(plan)} style={{ padding: "6px 12px", fontSize: 11 }}>Edit</button>
-                  <button className="bg" onClick={() => { MEALS.forEach(meal => { (plan.items[meal] || []).forEach(f => { addFood(f, f.grams || 100, meal) }) }); setTab("log"); }} style={{ padding: "6px 12px", fontSize: 11 }}>Log</button>
-                  <button onClick={() => deletePlan(plan.id)} style={{ padding: "6px 8px", background: "transparent", border: "1px solid rgba(239,68,68,.15)", borderRadius: 6, color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>
+            {savedPlans.map(plan => (<div key={plan.id} className="gc p-[14px] mb-2">
+              <div className="flex justify-between items-center">
+                <div><div className="text-[15px] font-semibold">{plan.name}</div><div className="text-[11px] text-gray-500">{MEALS.map(m => `${(plan.items[m] || []).length} ${m.toLowerCase()}`).join(" · ")}</div></div>
+                <div className="flex gap-1.5">
+                  <button className="bp px-3 py-1.5 text-[11px]" onClick={() => loadPlan(plan)}>Edit</button>
+                  <button className="bg px-3 py-1.5 text-[11px]" onClick={() => { MEALS.forEach(meal => { (plan.items[meal] || []).forEach(f => { addFood(f, f.grams || 100, meal) }) }); setTab("log"); }}>Log</button>
+                  <button className="px-1.5 py-1.5 bg-transparent border border-red-500/[.15] rounded-md text-red-500 text-[11px] cursor-pointer" onClick={() => deletePlan(plan.id)}>✕</button>
                 </div>
               </div>
             </div>))}
           </div>)}
 
-          <div className="gs" style={{ marginBottom: 16 }}>
+          <div className="gs mb-4">
             <div className="sl">{editingPlan ? "Edit Plan" : "Create New Plan"}</div>
-            <input className="inp" placeholder="Plan name..." value={planName} onChange={e => setPlanName(e.target.value)} style={{ marginBottom: 10 }} />
-            {MEALS.map(meal => (<div key={meal} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#10b981", marginBottom: 6 }}>{meal}</div>
-              {(planItems[meal] || []).map((f, i) => (<div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
-                <span style={{ fontSize: 13 }}>{f.emoji} {f.name} <span style={{ color: "#6b7280" }}>{f.grams || 100}g</span></span>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span style={{ fontSize: 11, color: "#f59e0b" }}>{Math.round(f.cal * (f.grams || 100) / 100)}cal</span><span onClick={() => removeFromPlan(meal, i)} style={{ cursor: "pointer", color: "#4b5563" }}>×</span></div>
+            <input className="inp mb-[10px]" placeholder="Plan name..." value={planName} onChange={e => setPlanName(e.target.value)} />
+            {MEALS.map(meal => (<div key={meal} className="mb-3">
+              <div className="text-[13px] font-semibold text-emerald-500 mb-1.5">{meal}</div>
+              {(planItems[meal] || []).map((f, i) => (<div key={i} className="flex justify-between items-center py-1 border-b border-white/[.03]">
+                <span className="text-[13px]">{f.emoji} {f.name} <span className="text-gray-500">{f.grams || 100}g</span></span>
+                <div className="flex gap-1.5 items-center"><span className="text-[11px] text-amber-500">{Math.round(f.cal * (f.grams || 100) / 100)}cal</span><span onClick={() => removeFromPlan(meal, i)} className="cursor-pointer text-gray-600">×</span></div>
               </div>))}
-              {(planItems[meal] || []).length === 0 && <div style={{ fontSize: 12, color: "#4b5563", padding: "4px 0" }}>No items</div>}
+              {(planItems[meal] || []).length === 0 && <div className="text-xs text-gray-600 py-1">No items</div>}
             </div>))}
-            <input className="inp" placeholder="Search food to add..." value={planSearch} onChange={e => setPlanSearch(e.target.value)} style={{ marginBottom: 8 }} />
-            {planSearch.length >= 2 && <div style={{ maxHeight: 180, overflowY: "auto", marginBottom: 10 }}>
-              {searchFoods(planSearch).slice(0, 12).map((f, i) => (<div key={f.name + i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,.03)", cursor: "pointer" }}>
-                <span style={{ fontSize: 13 }}>{f.emoji} {f.name} <span style={{ color: "#6b7280" }}>{f.cal}cal/100g</span></span>
-                <div style={{ display: "flex", gap: 4 }}>{MEALS.map(m => <span key={m} onClick={() => addToPlan(f, m)} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 6, background: "rgba(16,185,129,.06)", color: "#10b981", cursor: "pointer", border: "1px solid rgba(16,185,129,.15)" }}>{m[0]}</span>)}</div>
+            <input className="inp mb-2" placeholder="Search food to add..." value={planSearch} onChange={e => setPlanSearch(e.target.value)} />
+            {planSearch.length >= 2 && <div className="max-h-[180px] overflow-y-auto mb-[10px]">
+              {searchFoods(planSearch).slice(0, 12).map((f, i) => (<div key={f.name + i} className="flex justify-between items-center py-1.5 border-b border-white/[.03] cursor-pointer">
+                <span className="text-[13px]">{f.emoji} {f.name} <span className="text-gray-500">{f.cal}cal/100g</span></span>
+                <div className="flex gap-1">{MEALS.map(m => <span key={m} onClick={() => addToPlan(f, m)} className="text-[10px] px-2 py-[3px] rounded-md bg-[rgba(16,185,129,.06)] text-emerald-500 cursor-pointer border border-emerald-500/[.15]">{m[0]}</span>)}</div>
               </div>))}
             </div>}
-            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-              <button className="bp" onClick={savePlan} disabled={!planName.trim()} style={{ flex: 1, padding: 12 }}>💾 Save</button>
-              {editingPlan && <button className="bg" onClick={() => { setEditingPlan(null); setPlanName(""); setPlanItems({ Breakfast: [], Lunch: [], Dinner: [], Snack: [] }) }} style={{ padding: "12px 16px" }}>Cancel</button>}
+            <div className="flex gap-2 mt-[10px]">
+              <button className="bp flex-1 p-3" onClick={savePlan} disabled={!planName.trim()}>💾 Save</button>
+              {editingPlan && <button className="bg p-[12px_16px]" onClick={() => { setEditingPlan(null); setPlanName(""); setPlanItems({ Breakfast: [], Lunch: [], Dinner: [], Snack: [] }) }}>Cancel</button>}
             </div>
           </div>
         </div>

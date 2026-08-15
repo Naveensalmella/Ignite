@@ -48,6 +48,7 @@ import BottomNav from './BottomNav';
 import PageTransition from './PageTransition';
 import ErrorBoundary from './ErrorBoundary';
 import { SkeletonPage } from './Loading';
+import { DashboardSkeleton, TrainingSkeleton, NutritionSkeleton } from './ui/Skeleton';
 
 // Global error handler
 if (typeof window !== 'undefined') {
@@ -243,11 +244,11 @@ export default function App({ externalUser = null }) {
 
     // Loading screen
     if (loading) return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#060a0c" }}>
-            <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 44, marginBottom: 12, animation: "float 2s ease-in-out infinite", filter: "drop-shadow(0 0 15px rgba(16,185,129,.5))" }}>🔥</div>
-                <div style={{ color: "#10b981", fontSize: 22, fontWeight: 900, letterSpacing: 6, fontFamily: "Rajdhani,sans-serif" }}>IGNITE</div>
-                <div style={{ color: "#6b7280", fontSize: 12, marginTop: 8 }}>Loading your data...</div>
+        <div className="flex items-center justify-center h-screen bg-[#060a0c]">
+            <div className="text-center">
+                <div className="text-[44px] mb-3" style={{ animation: "float 2s ease-in-out infinite", filter: "drop-shadow(0 0 15px rgba(16,185,129,.5))" }}>🔥</div>
+                <div className="text-emerald-500 text-[22px] font-black tracking-[6px] font-heading">IGNITE</div>
+                <div className="text-gray-500 text-xs mt-2">Loading your data...</div>
             </div>
         </div>
     );
@@ -305,21 +306,21 @@ export default function App({ externalUser = null }) {
             {levelUp && <LevelUpOverlay level={levelUp.level} rank={levelUp.rank} onClose={() => setLevelUp(null)} />}
             {showTutorial && <Suspense fallback={<PageLoader />}><OnboardingTutorial onComplete={handleTutorialComplete} /></Suspense>}
 
-            <div className="app-shell" style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#060a0c", overflow: "hidden", position: "relative", width: "100%" }}>
-                <div style={{ position: "fixed", top: "-20%", right: "-10%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle,rgba(16,185,129,.025),transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+            <div className="app-shell flex flex-col h-screen bg-[#060a0c] overflow-hidden relative w-full">
+                <div className="fixed -top-[20%] -right-[10%] w-[600px] h-[600px] rounded-full pointer-events-none z-0" style={{ background: "radial-gradient(circle,rgba(16,185,129,.025),transparent 70%)" }} />
 
                 {/* Main Content */}
-                <main style={{ flex: 1, paddingBottom: 70, overflow: "auto", position: "relative", zIndex: 1 }}>
-                    <header style={{ padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(6,10,12,.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(16,185,129,.05)", position: "fixed", top: 0, left: 0, right: 0, zIndex: 30, gap: 12 }}>
+                <main className="flex-1 pb-[70px] overflow-auto relative z-[1]">
+                    <header className="px-6 py-3 flex justify-between items-center bg-[rgba(6,10,12,.92)] backdrop-blur-[20px] border-b border-emerald-500/5 fixed top-0 left-0 right-0 z-30 gap-3">
                         <div className="app-header">
-                            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>{currentLabel}</h2>
+                            <h2 className="text-base font-bold text-gray-100 font-heading tracking-[1px]">{currentLabel}</h2>
                         </div>
                         <HeaderXPBar totalXP={totalXP} streak={streak} />
                     </header>
-                    <div style={{ padding: "14px min(24px, 4vw)", paddingTop: 72, paddingBottom: 70, maxWidth: 1120, margin: "0 auto", overflowX: "hidden", overflowY: "auto", flex: 1 }}>
+                    <div className="px-[min(24px,4vw)] pt-[72px] pb-[70px] max-w-[1120px] mx-auto overflow-x-hidden overflow-y-auto flex-1" style={{ padding: "14px min(24px, 4vw)", paddingTop: 72, paddingBottom: 70 }}>
                         <PullToRefresh onRefresh={async () => { if (user) await loadUserData(user.uid); }}>
                             <PageTransition pageKey={page}>
-                                <Suspense fallback={<PageLoader />}>
+                                <Suspense fallback={page === "dashboard" ? <DashboardSkeleton /> : page === "training" ? <TrainingSkeleton /> : page === "nutrition" ? <NutritionSkeleton /> : <PageLoader />}>
                                     {pages[page]}
                                 </Suspense>
                             </PageTransition>
@@ -333,14 +334,14 @@ export default function App({ externalUser = null }) {
 
                 {/* Exit Modal */}
                 {showExitModal && (
-                    <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(3,4,7,.85)", backdropFilter: "blur(8px)" }}>
-                        <div className="gs fade-in" style={{ maxWidth: 360, width: "90%", textAlign: "center", padding: 28, border: "1px solid rgba(16,185,129,.15)" }}>
-                            <div style={{ fontSize: 40, marginBottom: 12 }}>🔥</div>
-                            <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>Leave IGNITE?</div>
-                            <p style={{ color: "#6b7280", fontSize: 13, marginTop: 8, marginBottom: 24 }}>Your progress is saved, but your streak depends on you coming back.</p>
-                            <div style={{ display: "flex", gap: 10 }}>
-                                <button onClick={() => setShowExitModal(false)} className="bp" style={{ flex: 1, padding: 14 }}>Stay & Train</button>
-                                <button onClick={() => { setShowExitModal(false); window.history.go(-2); }} className="bg" style={{ flex: 1, padding: 14, color: "#ef4444" }}>Leave</button>
+                    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-[rgba(3,4,7,.85)] backdrop-blur-lg">
+                        <div className="gs fade-in max-w-[360px] w-[90%] text-center p-7 border border-emerald-500/15">
+                            <div className="text-[40px] mb-3">🔥</div>
+                            <div className="text-xl font-extrabold text-gray-100 font-heading tracking-[1px]">Leave IGNITE?</div>
+                            <p className="text-gray-500 text-[13px] mt-2 mb-6">Your progress is saved, but your streak depends on you coming back.</p>
+                            <div className="flex gap-[10px]">
+                                <button onClick={() => setShowExitModal(false)} className="bp flex-1 p-[14px]">Stay & Train</button>
+                                <button onClick={() => { setShowExitModal(false); window.history.go(-2); }} className="bg flex-1 p-[14px] !text-red-500">Leave</button>
                             </div>
                         </div>
                     </div>
