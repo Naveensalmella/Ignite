@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { VERSION_LABEL } from '@/version';
 
 export default function SplashScreen({ onComplete }) {
     const [phase, setPhase] = useState(0); // 0=logo, 1=text, 2=fade out
@@ -64,6 +65,19 @@ export default function SplashScreen({ onComplete }) {
                 transition: "all 0.5s ease-out 0.15s",
             }}>
                 Level Up Your Life
+            </div>
+
+            {/* Version */}
+            <div style={{
+                fontSize: 11,
+                color: "#4b5563",
+                fontWeight: 600,
+                letterSpacing: 2,
+                marginTop: 6,
+                opacity: phase >= 1 ? 1 : 0,
+                transition: "opacity 0.5s ease-out 0.3s",
+            }}>
+                {VERSION_LABEL}
             </div>
 
             {/* Loading bar */}

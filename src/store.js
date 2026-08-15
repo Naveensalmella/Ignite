@@ -1,5 +1,6 @@
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { APP_VERSION } from '@/version';
 
 // Firestore-powered storage — syncs across all devices
 // All operations are protected with try-catch and retry
@@ -33,6 +34,8 @@ const store = {
     try {
       // Clean data — remove undefined values that Firestore rejects
       const cleanData = JSON.parse(JSON.stringify(data));
+      cleanData._appVersion = APP_VERSION;
+      cleanData._lastUpdated = new Date().toISOString();
       await setDoc(doc(db, 'users', userId), cleanData, { merge: true });
       return true;
     } catch (e) {
@@ -41,6 +44,8 @@ const store = {
       try {
         await new Promise(r => setTimeout(r, 1000));
         const cleanData = JSON.parse(JSON.stringify(data));
+        cleanData._appVersion = APP_VERSION;
+        cleanData._lastUpdated = new Date().toISOString();
         await setDoc(doc(db, 'users', userId), cleanData, { merge: true });
         return true;
       } catch (e2) {

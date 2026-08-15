@@ -8,6 +8,7 @@ import YearHeatmap from './YearHeatmap';
 import ThemeToggle from './ThemeToggle';
 import DataExport from './DataExport';
 import AccentPicker from './AccentPicker';
+import { VERSION_LABEL } from '@/version';
 import NotificationSettings from './NotificationSettings';
 import { hasDayWorkout, getDayCal, getDayDuration, getDaySplit, getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
 
@@ -184,5 +185,11 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
         </div>
       </div>
     </div>)}
+
+    {/* Version info */}
+    <div style={{ textAlign: "center", padding: "24px 0 8px", opacity: 0.5 }}>
+      <div style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, letterSpacing: 1 }}>IGNITE {VERSION_LABEL}</div>
+      <div style={{ fontSize: 10, color: "#374151", marginTop: 2 }}>Built with 🔥 by Naveen</div>
+    </div>
   </div>);
 }
