@@ -12,7 +12,7 @@ export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { 
 
     const sortedDates = Object.keys(bodyPhotos).sort().reverse();
 
-    // Add photo — uploads to Firebase Storage via store-v2
+    // Add photo — saves to Firestore subcollection via store-v2
     const addPhoto = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -20,29 +20,22 @@ export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { 
         const weight = prompt("Current weight (kg):", "") || "";
         const d = new Date().toISOString().split("T")[0];
 
-        // Read file as data URL
         const reader = new FileReader();
         reader.onload = async (ev) => {
             const dataUrl = ev.target.result;
-            // Optimistic update — show immediately with local data URL
+            // Update UI immediately
             setBodyPhotos(prev => ({
                 ...prev,
                 [d]: { photo: dataUrl, date: d, note, weight }
             }));
 
-            // Upload to Firebase Storage in background
+            // Save to subcollection (each photo = its own Firestore doc)
             if (userId) {
                 setUploading(true);
                 try {
-                    const photoUrl = await storeV2.saveBodyPhoto(userId, d, dataUrl, note, weight);
-                    // Update with Storage URL (replaces base64 in memory)
-                    setBodyPhotos(prev => ({
-                        ...prev,
-                        [d]: { photo: photoUrl, date: d, note, weight }
-                    }));
+                    await storeV2.saveBodyPhoto(userId, d, dataUrl, note, weight);
                 } catch (err) {
-                    console.error("Photo upload failed:", err);
-                    // Keep the base64 version — will retry on next save
+                    console.error("Photo save failed:", err);
                 }
                 setUploading(false);
             }

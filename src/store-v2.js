@@ -1,5 +1,4 @@
-import { db, storage } from '@/lib/firebase';
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db } from '@/lib/firebase';
 import {
   doc, getDoc, setDoc, getDocs, deleteDoc, writeBatch,
   collection, query, orderBy, limit as firestoreLimit
@@ -206,56 +205,24 @@ const storeV2 = {
 
   async saveBodyPhoto(userId, date, photoDataUrl, note, weight) {
     try {
-      // Upload to Firebase Storage
-      const base64Data = photoDataUrl.split(',')[1];
-      const mimeMatch = photoDataUrl.match(/data:(.*?);/);
-      const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-      const ext = mime.includes('png') ? 'png' : 'jpg';
-
-      // Convert base64 to Uint8Array for upload
-      const binary = atob(base64Data);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-
-      const fileRef = storageRef(storage, `users/${userId}/bodyPhotos/${date}.${ext}`);
-      await uploadBytes(fileRef, bytes, { contentType: mime });
-      const photoUrl = await getDownloadURL(fileRef);
-
-      // Save reference in subcollection (NOT the base64 — just the URL)
-      await writeSubDoc(userId, 'bodyPhotos', date, {
-        photoUrl,
-        date,
-        note: note || '',
-        weight: weight || '',
-        uploadedAt: new Date().toISOString(),
-      });
-
-      return photoUrl;
-    } catch (e) {
-      console.error('Body photo upload error:', e);
-      // Fallback: save base64 directly (less ideal but doesn't lose data)
+      // Save base64 photo in its own subcollection document
+      // Each photo is a separate doc — avoids hitting the 1MB main-doc limit
       await writeSubDoc(userId, 'bodyPhotos', date, {
         photo: photoDataUrl,
         date,
         note: note || '',
         weight: weight || '',
+        uploadedAt: new Date().toISOString(),
       });
       return photoDataUrl;
+    } catch (e) {
+      console.error('Body photo save error:', e);
+      return null;
     }
   },
 
   async deleteBodyPhoto(userId, date) {
     try {
-      // Try to delete from Storage (may not exist if legacy base64)
-      try {
-        const jpgRef = storageRef(storage, `users/${userId}/bodyPhotos/${date}.jpg`);
-        await deleteObject(jpgRef);
-      } catch { /* ignore — might be png or legacy */ }
-      try {
-        const pngRef = storageRef(storage, `users/${userId}/bodyPhotos/${date}.png`);
-        await deleteObject(pngRef);
-      } catch { /* ignore */ }
-      // Delete subcollection doc
       await deleteSubDoc(userId, 'bodyPhotos', date);
       return true;
     } catch (e) {
@@ -339,23 +306,18 @@ const storeV2 = {
         results.success.push(`activityLog → activityLog/recent`);
       }
 
-      // 5. Migrate body photos (upload base64 to Storage)
+      // 5. Migrate body photos to subcollection (each photo gets its own doc)
       if (mainDoc.bodyPhotos && typeof mainDoc.bodyPhotos === 'object') {
         for (const [date, entry] of Object.entries(mainDoc.bodyPhotos)) {
           try {
-            if (entry?.photo?.startsWith('data:')) {
-              // Upload to Firebase Storage
-              await this.saveBodyPhoto(userId, date, entry.photo, entry.note, entry.weight);
-              results.success.push(`bodyPhoto ${date} → Storage`);
-            } else if (entry) {
-              // Already a URL or unknown format — just copy metadata
+            if (entry) {
               await writeSubDoc(userId, 'bodyPhotos', date, {
-                photoUrl: entry.photo || entry.photoUrl || '',
+                photo: entry.photo || '',
                 date,
                 note: entry.note || '',
                 weight: entry.weight || '',
               });
-              results.success.push(`bodyPhoto ${date} → subcollection (ref only)`);
+              results.success.push(`bodyPhoto ${date} → subcollection`);
             }
           } catch (e) {
             console.error(`[Migration] Body photo ${date} failed:`, e);
