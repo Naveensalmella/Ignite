@@ -59,7 +59,7 @@ export default function DataExport({ appState: rawAppState = {}, totalXP = 0, st
             const habitLog = appState.habitLog || {};
             const finances = toArr(appState.finances);
 
-            const foodDays = Object.keys(foodLog).filter(k => !k.startsWith("water_") && toArr(foodLog[k]).length > 0).length;
+            const foodDays = Object.keys(foodLog).filter(k => !k.startsWith("water_") && !k.startsWith("_") && toArr(foodLog[k]).length > 0).length;
             const journalDays = Object.values(journal).filter(e => e?.entry?.length > 10).length;
             const focusSessions = Object.values(focusLog).reduce((s, v) => s + toArr(v).length, 0);
             // habitLog[date] is {habitId: bool} (legacy: array of ids) — count completed quests

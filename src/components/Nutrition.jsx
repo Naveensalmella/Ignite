@@ -3,10 +3,11 @@ import { useState, useMemo, useRef, useEffect, Fragment } from 'react';
 import {
   Plus, Minus, X, Droplet, Coffee, Salad, UtensilsCrossed, Utensils, Cookie, Camera, ImageUp, PenLine, Search, Clock,
   ChevronLeft, ChevronRight, RefreshCw, CircleCheck, Sparkles, Save, Pencil, Trash2, Shuffle, Scale, Drumstick, Leaf,
-  Flame, Soup, Wheat, Beef, Coins, Egg, Award, CalendarDays, ShoppingCart, Zap,
+  Flame, Soup, Wheat, Beef, Coins, Egg, Award, CalendarDays, ShoppingCart, Zap, ScanBarcode, WifiOff,
 } from 'lucide-react';
 import { XP } from '../data';
-import { FOOD_DATABASE, FOOD_CATEGORIES, searchFoods, searchFoodsCombined } from '../data/foodDatabase';
+import { FOOD_DATABASE, FOOD_CATEGORIES, searchFoods } from '../data/foodDatabase';
+import { prepareImage, readFile, scanPhoto as scanPhotoAI, describeMeal, lookupFood, lookupBarcode, getBarcodeDetector } from '@/lib/foodScan';
 import { DIET_TEMPLATES, generateDayPlan, generateWeekPlan, getPlanDayTotals, getShoppingList, getSwapOptions as getMealSwaps } from '../data/mealPlanner';
 import { today, dateKey, toArr } from '../utils';
 import HistoryPanel from './HistoryPanel';
@@ -17,6 +18,8 @@ import { Card, Ring, Bar, IconBadge, Pill, ListRow, Tabs, Tile, Check, EmptyStat
 const MEALS = ["Breakfast", "Lunch", "Dinner", "Snack"];
 const WATER_GOAL = 8;
 const GRAM_PRESETS = [50, 100, 150, 200, 250, 300];
+const PORTIONS = [0.5, 1, 1.5, 2];
+const FOOD_XP_PER_DAY = 10; // food XP stops after 10 logs a day, so re-logging can't farm XP
 
 const PLAN_TYPES = [
   { id: "balanced", label: "Balanced", icon: "⚖️", protPct: .25, carbPct: .45, fatPct: .30 },
@@ -135,8 +138,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const [showCustom, setShowCustom] = useState(false);
   const [custom, setCustom] = useState({ name: "", cal: "", protein: "", carbs: "", fat: "", fiber: "" });
   const [selCat, setSelCat] = useState("All");
-  const [apiResults, setApiResults] = useState(null);
-  const [apiSearching, setApiSearching] = useState(false);
+  const [aiLookup, setAiLookup] = useState(null); // { query, loading, items, error }
 
   // Scan state
   const [scanning, setScanning] = useState(false);
@@ -147,10 +149,14 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const [scanResults, setScanResults] = useState(null);
   const [scanError, setScanError] = useState(null);
   const [scanPhoto, setScanPhoto] = useState(null);
-  const videoRef = useRef(null), canvasRef = useRef(null), streamRef = useRef(null), fileRef = useRef(null);
+  const [scanAdded, setScanAdded] = useState({}); // result index → true once logged
+  const [barcode, setBarcode] = useState({ code: "", busy: false, error: null, live: false });
+  const videoRef = useRef(null), streamRef = useRef(null), fileRef = useRef(null), abortRef = useRef(null), detectRef = useRef(null);
 
   // Diet plan state
-  const [planType, setPlanType] = useState(PLAN_TYPES[0]);
+  const defaultStyle = profile?.goal === "muscle" ? "bulking" : profile?.goal === "lose" ? "highprotein" : "balanced";
+  const planType = PLAN_TYPES.find(p => p.id === (foodLog._macroStyle || defaultStyle)) || PLAN_TYPES[0];
+  const setPlanType = (pt) => setFoodLog(p => ({ ...p, _macroStyle: pt.id }));
   const [savedPlans, setSavedPlans] = useState(toArr(foodLog._savedPlans));
   const [editingPlan, setEditingPlan] = useState(null);
   const [planName, setPlanName] = useState("");
@@ -163,9 +169,8 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const [selWeekDay, setSelWeekDay] = useState("Monday");
   const [shoppingList, setShoppingList] = useState([]);
   const [checkedShop, setCheckedShop] = useState({});
-  const [planAdherence, setPlanAdherence] = useState({});
 
-  const { tdee, target } = useMemo(() => calcTDEE(profile || {}), [profile]);
+  const { target } = useMemo(() => calcTDEE(profile || {}), [profile]);
   const proteinG = Math.round((target * planType.protPct) / 4);
   const carbG = Math.round((target * planType.carbPct) / 4);
   const fatG = Math.round((target * planType.fatPct) / 9);
@@ -234,25 +239,41 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     return list;
   }, [search, selCat]);
 
-  // ── Add food with gram-based calculation ──
-  const addFood = (food, g = 100, meal = selMeal) => {
+  // Append entries to today's log in one update; food XP is capped per day.
+  const appendEntries = (entries) => {
+    if (!entries.length) return;
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    let awards = 0;
+    setFoodLog(p => {
+      const prev = p || {};
+      const used = prev._xp?.date === d ? Number(prev._xp.n) || 0 : 0;
+      awards = Math.max(0, Math.min(entries.length, FOOD_XP_PER_DAY - used));
+      return { ...prev, [d]: [...toArr(prev[d]), ...entries.map(e => ({ ...e, time }))], ...(awards ? { _xp: { date: d, n: used + awards } } : {}) };
+    });
+    if (awards) addXP(XP.food * awards, entries.length > 1 ? `${entries.length} foods logged` : "Food logged");
+  };
+
+  // Food values are per 100 g; scale them to the eaten weight.
+  const scaleFood = (food, g = 100, meal = selMeal) => {
     const ratio = g / 100;
-    const scaled = { ...food, meal, grams: g, cal: Math.round(food.cal * ratio), protein: Math.round(food.protein * ratio * 10) / 10, carbs: Math.round(food.carbs * ratio * 10) / 10, fat: Math.round(food.fat * ratio * 10) / 10, fiber: Math.round(food.fiber * ratio * 10) / 10, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-    setFoodLog(p => ({ ...p, [d]: [...toArr(p[d]), scaled] }));
-    addXP(XP.food, "Food logged");
+    const rest = { ...food };
+    delete rest.servingGrams;
+    return { ...rest, meal, grams: g, cal: Math.round(food.cal * ratio), protein: Math.round(food.protein * ratio * 10) / 10, carbs: Math.round(food.carbs * ratio * 10) / 10, fat: Math.round(food.fat * ratio * 10) / 10, fiber: Math.round((food.fiber || 0) * ratio * 10) / 10 };
+  };
+  const addFood = (food, g = 100, meal = selMeal) => {
+    appendEntries([scaleFood(food, g, meal)]);
     setSelFood(null); setGrams(100);
   };
 
-  // Log an entry whose macros are already for its portion (meal-plan items, recent foods).
-  const logPortion = (food, meal = selMeal) => {
-    const entry = { ...food, meal, cal: Math.round(Number(food.cal) || 0), protein: Number(food.protein) || 0, carbs: Number(food.carbs) || 0, fat: Number(food.fat) || 0, fiber: Number(food.fiber) || 0, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
-    setFoodLog(p => ({ ...p, [d]: [...toArr(p[d]), entry] }));
-    addXP(XP.food, "Food logged");
-  };
+  // Log entries whose macros are already for their portion (meal-plan items, recent foods, scans).
+  const portionEntry = (food, meal = selMeal) => ({ ...food, meal, cal: Math.round(Number(food.cal) || 0), protein: Number(food.protein) || 0, carbs: Number(food.carbs) || 0, fat: Number(food.fat) || 0, fiber: Number(food.fiber) || 0 });
+  const logPortion = (food, meal = selMeal) => appendEntries([portionEntry(food, meal)]);
+  const logPlanDay = (plan) => appendEntries(Object.entries(plan || {}).flatMap(([meal, items]) => MEALS.includes(meal) ? toArr(items).map(f => portionEntry(f, meal)) : []));
 
   const addCustomFood = () => {
     if (!custom.name.trim() || !custom.cal) return;
-    addFood({ name: custom.name.trim(), emoji: "🍽️", cal: parseInt(custom.cal) || 0, protein: parseFloat(custom.protein) || 0, carbs: parseFloat(custom.carbs) || 0, fat: parseFloat(custom.fat) || 0, fiber: parseFloat(custom.fiber) || 0, category: "Custom" }, 100, selMeal);
+    const v = (x, max) => Math.min(max, Math.max(0, parseFloat(x) || 0));
+    addFood({ name: custom.name.trim().slice(0, 80), emoji: "🍽️", cal: Math.round(v(custom.cal, 900)), protein: v(custom.protein, 100), carbs: v(custom.carbs, 100), fat: v(custom.fat, 100), fiber: v(custom.fiber, 100), category: "Custom" }, 100, selMeal);
     setCustom({ name: "", cal: "", protein: "", carbs: "", fat: "", fiber: "" }); setShowCustom(false);
   };
 
@@ -261,118 +282,143 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const removeWater = () => setFoodLog(p => ({ ...p, [`water_${d}`]: Math.max(0, (Number(p[`water_${d}`]) || 0) - 1) }));
 
   // ── Scanner ──
-  const startCam = async () => { try { const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 640 } } }); streamRef.current = s; if (videoRef.current) { videoRef.current.srcObject = s; videoRef.current.play() } } catch (e) { setScanError("Camera unavailable. Upload a photo instead.") } };
-  const stopCam = () => { if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null } };
-  const capture = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const cv = canvasRef.current, v = videoRef.current;
-    cv.width = 256; cv.height = 256;
-    const ctx = cv.getContext("2d");
-    const sz = Math.min(v.videoWidth, v.videoHeight);
-    ctx.drawImage(v, (v.videoWidth - sz) / 2, (v.videoHeight - sz) / 2, sz, sz, 0, 0, 256, 256);
-    const url = cv.toDataURL("image/jpeg", .8);
-    setScanPhoto(url);
+  const stopCam = () => {
+    if (detectRef.current) { clearInterval(detectRef.current); detectRef.current = null; }
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+  };
+  const startCam = async () => {
     stopCam();
-    // Send captured photo to Vision AI
+    if (!navigator.mediaDevices?.getUserMedia) { setScanError("This browser can't open the camera. Use Upload instead."); return false; }
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false });
+      streamRef.current = s;
+      if (videoRef.current) { videoRef.current.srcObject = s; await videoRef.current.play().catch(() => { }); }
+      return true;
+    } catch (e) {
+      setScanError(e?.name === "NotAllowedError" ? "Camera permission was blocked. Allow camera access in your browser settings, or use Upload instead." : "Camera unavailable. Use Upload instead.");
+      return false;
+    }
+  };
+  const cancelScan = () => { abortRef.current?.abort(); abortRef.current = null; setScanning(false); };
+
+  const showResult = (data) => {
+    if (data.cancelled) return;
+    if (data.foods?.length > 0) { setScanResults(data.foods.map(f => ({ ...f, mult: 1 }))); setScanAdded({}); setScanError(null); }
+    else setScanError(data.error || "Couldn't identify the food. Try a clearer photo or describe your meal.");
+  };
+
+  const analyzeImage = async (src) => {
+    cancelScan();
+    setScanMode("camera"); setScanError(null); setScanResults(null); setScanning(true);
+    const ctrl = new AbortController(); abortRef.current = ctrl;
+    try {
+      const jpeg = await prepareImage(src, 1024);
+      setScanPhoto(jpeg);
+      showResult(await scanPhotoAI(jpeg, ctrl.signal));
+    } catch (e) {
+      setScanError(e?.message || "Couldn't read that photo.");
+    }
+    if (abortRef.current === ctrl) { abortRef.current = null; setScanning(false); }
+  };
+
+  const capture = () => {
+    const v = videoRef.current;
+    if (!v || !v.videoWidth) { setScanError("The camera isn't ready yet. Wait a second and try again."); return; }
+    const scale = Math.min(1, 1024 / Math.max(v.videoWidth, v.videoHeight));
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(v.videoWidth * scale); cv.height = Math.round(v.videoHeight * scale);
+    cv.getContext("2d").drawImage(v, 0, 0, cv.width, cv.height);
+    const url = cv.toDataURL("image/jpeg", .85);
+    stopCam();
+    setScanPhoto(url);
     analyzeImage(url);
   };
-  const handleFile = (e) => {
-    const f = e.target.files?.[0]; if (!f) return;
-    const r = new FileReader();
-    r.onload = ev => {
-      setScanPhoto(ev.target.result);
-      // Send image directly to Vision AI for analysis
-      analyzeImage(ev.target.result);
-    };
-    r.readAsDataURL(f);
-  };
-  // AI Food Analysis — Direct Groq API (no backend needed)
-  // Analyze food from photo using Vision AI (Groq Vision / Gemini)
-  // Compress image to reduce size before sending to API
-  const compressImage = (base64, maxWidth = 256) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.7));
-      };
-      img.src = base64;
-    });
-  };
-
-  const analyzeImage = async (base64Image) => {
-    setScanning(true); setScanError(null); setScanResults(null);
-    setScanMode("camera");
-    // Compress image to avoid large payloads
-    const compressed = await compressImage(base64Image, 512);
-    try {
-      const response = await fetch("/api/food-scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: compressed }),
-      });
-      const data = await response.json();
-      if (data.foods?.length > 0) {
-        setScanResults(data.foods);
-        setScanError(null);
-      } else if (data.error) {
-        setScanError(data.error);
-      } else {
-        setScanError("Could not identify food. Try a clearer photo or use Describe mode.");
-      }
-    } catch (err) {
-      setScanError("Analysis failed. Check your internet connection and try again.");
-    }
-    setScanning(false);
-  };
-
-  const analyzeWithAI = async (prompt) => {
-    setScanning(true); setScanError(null); setScanResults(null);
-    try {
-      const response = await fetch("/api/food-scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: prompt }),
-      });
-      const data = await response.json();
-      if (data.foods?.length > 0) {
-        setScanResults(data.foods);
-      } else if (data.error) {
-        setScanError(data.error);
-      } else {
-        setScanError("Could not identify food. Try describing it differently.");
-      }
-    } catch (e) {
-      setScanError("Analysis failed. Check your internet connection and try again.");
-    }
-    setScanning(false);
+  const handleFile = async (e) => {
+    const f = e.target.files?.[0];
+    e.target.value = ""; // picking the same photo again should still fire
+    if (!f) return;
+    setTab("scan");
+    try { analyzeImage(await readFile(f)); } catch (err) { setScanMode("choose"); setScanError(err.message); }
   };
 
   const analyzeText = async (desc) => {
     if (!desc.trim()) return;
-    analyzeWithAI(`Analyze this meal and estimate nutrition for each food item separately: "${desc}". Use standard Indian serving sizes. Be specific with calories — don't round to nearest 100.`);
+    cancelScan();
+    setScanPhoto(null); setScanError(null); setScanResults(null); setScanning(true);
+    const ctrl = new AbortController(); abortRef.current = ctrl;
+    showResult(await describeMeal(desc.trim().slice(0, 300), ctrl.signal));
+    if (abortRef.current === ctrl) { abortRef.current = null; setScanning(false); }
   };
-  useEffect(() => () => stopCam(), []);
+
+  const setResultPortion = (i, mult) => setScanResults(r => r.map((f, j) => j === i ? { ...f, mult } : f));
+  const scaledResult = (f) => {
+    const m = f.mult || 1;
+    const rest = { ...f };
+    delete rest.mult;
+    return { ...rest, emoji: f.emoji || "🍽️", category: "AI Scanned", grams: f.grams ? Math.round(f.grams * m) : undefined, cal: Math.round(f.cal * m), protein: Math.round(f.protein * m * 10) / 10, carbs: Math.round(f.carbs * m * 10) / 10, fat: Math.round(f.fat * m * 10) / 10, fiber: Math.round((f.fiber || 0) * m * 10) / 10, serving: m === 1 ? f.serving : `${m}× ${f.serving || "serving"}` };
+  };
+  const remember = (foods) => setScanHistory(p => [...foods, ...p.filter(x => !foods.some(f => f.name === x.name))].slice(0, 20));
+  const addScanItem = (i) => {
+    const f = scaledResult(scanResults[i]);
+    appendEntries([portionEntry(f, selMeal)]);
+    remember([f]);
+    setScanAdded(a => ({ ...a, [i]: true }));
+  };
+  const addAllScan = () => {
+    const items = scanResults.map((f, i) => [scaledResult(f), i]).filter(([, i]) => !scanAdded[i]).map(([f]) => f);
+    appendEntries(items.map(f => portionEntry(f, selMeal)));
+    remember(items);
+    resetScan(); setTab("log");
+  };
+  const resetScan = () => { cancelScan(); stopCam(); setScanResults(null); setScanPhoto(null); setScanError(null); setScanAdded({}); setScanMode("choose"); };
+
+  // ── Barcode ──
+  const pickBarcodeFood = (food) => {
+    stopCam();
+    setBarcode({ code: "", busy: false, error: null, live: false });
+    setSelFood(food); setGrams(food.servingGrams || 100);
+    setScanMode("choose"); setTab("add");
+  };
+  const findBarcode = async (code) => {
+    setBarcode(b => ({ ...b, code, busy: true, error: null }));
+    const res = await lookupBarcode(code);
+    if (res.food) pickBarcodeFood(res.food);
+    else setBarcode(b => ({ ...b, busy: false, error: res.error }));
+  };
+  const startBarcode = async () => {
+    setScanError(null); setTab("scan"); setScanMode("barcode");
+    setBarcode({ code: "", busy: false, error: null, live: false });
+    let detector;
+    try { detector = await getBarcodeDetector(); } catch { setBarcode(b => ({ ...b, error: "Live barcode scanning isn't available here. Type the number under the barcode instead." })); return; }
+    if (!(await startCam())) return;
+    setBarcode(b => ({ ...b, live: true }));
+    let busy = false;
+    detectRef.current = setInterval(async () => {
+      const v = videoRef.current;
+      if (busy || !v || !v.videoWidth) return;
+      busy = true;
+      try {
+        const codes = await detector.detect(v);
+        const raw = codes.find(c => /^\d{8,14}$/.test(c.rawValue))?.rawValue;
+        if (raw) { stopCam(); setBarcode(b => ({ ...b, live: false })); findBarcode(raw); }
+      } catch { /* a frame that couldn't be read */ }
+      busy = false;
+    }, 350);
+  };
+
+  useEffect(() => () => { stopCam(); abortRef.current?.abort(); }, []);
   useEffect(() => { shSync.set(scanHistory); }, [scanHistory, shSync]);
 
-  // API search (debounced — fires 500ms after typing stops; stale responses are ignored)
-  useEffect(() => {
-    if (!search || search.length < 3) return;
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      setApiSearching(true);
-      let api = [];
-      try { ({ api } = await searchFoodsCombined(search)); } catch { api = []; }
-      if (!cancelled) { setApiResults({ query: search, items: toArr(api) }); setApiSearching(false); }
-    }, 500);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [search]);
-  const apiItems = search.length >= 3 && apiResults?.query === search ? apiResults.items : [];
+  // AI lookup for foods that aren't in the built-in list — only when the user asks,
+  // so typing in the search box never spends AI quota.
+  const runAiLookup = async (q) => {
+    const query = q.trim().slice(0, 60);
+    if (query.length < 2) return;
+    setAiLookup({ query, loading: true, items: [], error: null });
+    const res = await lookupFood(query);
+    setAiLookup({ query, loading: false, items: res.foods || [], error: res.foods?.length ? null : (res.error || `Couldn't find nutrition for "${query}".`) });
+  };
+  const aiItems = aiLookup && aiLookup.query === search.trim().slice(0, 60) ? aiLookup : null;
 
   // ── Save/Load Plans ──
   const savePlan = () => {
@@ -389,43 +435,58 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const addToPlan = (food, meal) => { setPlanItems(p => ({ ...p, [meal]: [...(p[meal] || []), { ...food, grams: 100 }] })) };
   const removeFromPlan = (meal, idx) => { setPlanItems(p => ({ ...p, [meal]: (p[meal] || []).filter((_, i) => i !== idx) })) };
 
-  // Scanner entry points (presentation helpers — open the scanner view in the right mode)
-  const openScanCamera = () => { setScanError(null); setTab("scan"); setScanMode("camera"); setTimeout(startCam, 100) };
-  const openScanText = () => { setTab("scan"); setScanMode("text") };
-  const onPickFile = (e) => { setScanMode("choose"); setTab("scan"); handleFile(e) };
+  // Scanner entry points (open the scanner view in the right mode)
+  const openScanCamera = () => { resetScan(); setTab("scan"); setScanMode("camera"); setTimeout(startCam, 50) };
+  const openScanText = () => { resetScan(); setTab("scan"); setScanMode("text") };
+  const offline = typeof navigator !== "undefined" && navigator.onLine === false;
 
   const accentFrame = { border: "2px solid color-mix(in srgb, var(--accent) 30%, transparent)", background: "var(--ghost-bg)" };
 
   // ══ SCAN VIEW ══
   if (tab === "scan") {
-    const backToAdd = () => { stopCam(); setTab("add"); setScanResults(null); setScanPhoto(null); setScanError(null); setScanMode("choose") };
+    const backToAdd = () => { resetScan(); setBarcode({ code: "", busy: false, error: null, live: false }); setTab("add"); };
+    const backToChoose = () => { cancelScan(); stopCam(); setScanError(null); setScanMode("choose"); setBarcode({ code: "", busy: false, error: null, live: false }); };
+    const visibleResults = scanResults || [];
+    const resultTotal = visibleResults.reduce((s, f) => s + Math.round(f.cal * (f.mult || 1)), 0);
     return (<div className="page fade-in">
       <Card>
         <div className="flex items-center gap-3">
           <button type="button" className="icon-btn shrink-0" aria-label="Back to Add food" onClick={backToAdd}><ChevronLeft size={20} /></button>
           <div className="flex-1 min-w-0">
-            <div className="text-[18px] font-extrabold" style={{ color: "var(--text-primary)" }}>AI food scanner</div>
-            <div className="text-[13px]" style={{ color: "var(--text-dim)" }}>Camera, photo, or describe your meal</div>
+            <div className="text-[18px] font-extrabold" style={{ color: "var(--text-primary)" }}>Food scanner</div>
+            <div className="text-[13px]" style={{ color: "var(--text-dim)" }}>Photo, barcode, or describe your meal</div>
           </div>
           <IconBadge icon={Sparkles} tone="violet" size={38} />
         </div>
       </Card>
 
+      {offline && (
+        <Card tone="amber">
+          <div className="flex items-center gap-3 text-[13px]" style={{ color: "var(--text-secondary)" }}>
+            <WifiOff size={18} className="shrink-0" aria-hidden="true" />
+            <span>You&apos;re offline. AI scanning needs internet — you can still add foods from the food list or as a custom food.</span>
+          </div>
+        </Card>
+      )}
+
       {/* Mode selector */}
       {scanMode === "choose" && !scanning && !scanResults && (<>
-        <div className="tile-grid">
-          <Tile icon={Camera} tone="sky" label="Camera" sub="Point at food" onClick={() => { setScanMode("camera"); setTimeout(startCam, 100) }} />
+        <div className="tile-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+          <Tile icon={Camera} tone="sky" label="Camera" sub="Point at food" onClick={() => { setScanError(null); setScanMode("camera"); setTimeout(startCam, 50) }} />
           <Tile icon={ImageUp} tone="teal" label="Upload" sub="From gallery" onClick={() => fileRef.current?.click()} />
-          <Tile icon={PenLine} tone="violet" label="Describe" sub="Type your meal" onClick={() => setScanMode("text")} />
+          <Tile icon={ScanBarcode} tone="amber" label="Barcode" sub="Packaged food" onClick={startBarcode} />
+          <Tile icon={PenLine} tone="violet" label="Describe" sub="Type your meal" onClick={() => { setScanError(null); setScanMode("text") }} />
         </div>
         <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+        {scanError && <Card><div className="text-[13px]" style={{ color: "var(--danger)" }}>{scanError}</div></Card>}
+        <div className="text-[12px] px-1" style={{ color: "var(--text-dim)" }}>Tip: photograph food from above, in good light, with the whole plate in view.</div>
 
         {/* Recent scans */}
         {scanHistory.length > 0 && (
           <Card title="Recent scans" sub={`Adds to ${selMeal}`}>
-            {scanHistory.slice(0, 5).map((scan, i) => (
-              <div key={i} className={i ? "border-t" : ""} style={{ borderColor: "var(--line)" }}>
-                <FoodLine emoji={scan.emoji} name={scan.name} sub={macroLine(scan)}
+            {scanHistory.slice(0, 6).map((scan, i) => (
+              <div key={scan.name + i} className={i ? "border-t" : ""} style={{ borderColor: "var(--line)" }}>
+                <FoodLine emoji={scan.emoji} name={scan.name} sub={`${scan.serving ? scan.serving + " · " : ""}${macroLine(scan)}`} cal={scan.cal}
                   right={<button type="button" className="bg px-3 py-1.5 text-[12.5px] shrink-0" onClick={() => logPortion(scan, selMeal)}><Plus size={14} />Add</button>} />
               </div>
             ))}
@@ -433,18 +494,41 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         )}
       </>)}
 
-      {/* Camera mode */}
-      {scanMode === "camera" && !scanPhoto && !scanning && (
+      {/* Live camera (photo or barcode) */}
+      {(scanMode === "camera" || scanMode === "barcode") && !scanPhoto && !scanning && !scanResults && (
         <Card>
           <div className="w-full max-w-[400px] aspect-square rounded-2xl overflow-hidden mx-auto mb-4 relative" style={accentFrame}>
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-            <div className="absolute top-[20%] left-[20%] right-[20%] bottom-[20%] rounded-lg pointer-events-none" style={{ border: "1px dashed color-mix(in srgb, var(--accent) 50%, transparent)" }} />
+            {scanMode === "barcode"
+              ? <div className="absolute left-[10%] right-[10%] top-[38%] bottom-[38%] rounded-lg pointer-events-none" style={{ border: "2px solid var(--accent)" }} />
+              : <div className="absolute top-[12%] left-[12%] right-[12%] bottom-[12%] rounded-lg pointer-events-none" style={{ border: "1px dashed color-mix(in srgb, var(--accent) 50%, transparent)" }} />}
           </div>
-          <canvas ref={canvasRef} className="hidden" />
-          <div className="flex gap-2.5 max-w-[400px] mx-auto">
-            <button type="button" className="icon-btn w-12 h-12 shrink-0" aria-label="Back" onClick={() => setScanMode("choose")}><ChevronLeft size={20} /></button>
-            <button type="button" className="bp flex-1 text-[15px]" onClick={capture}><Camera size={18} />Capture</button>
-          </div>
+          {scanMode === "camera" ? (
+            <div className="flex gap-2.5 max-w-[400px] mx-auto">
+              <button type="button" className="icon-btn w-12 h-12 shrink-0" aria-label="Back" onClick={backToChoose}><ChevronLeft size={20} /></button>
+              <button type="button" className="bp flex-1 text-[15px]" onClick={capture}><Camera size={18} />Capture</button>
+            </div>
+          ) : (
+            <div className="max-w-[400px] mx-auto">
+              <div className="text-center text-[13px] mb-3" style={{ color: "var(--text-secondary)" }}>
+                {barcode.busy ? "Looking up product…" : barcode.live ? "Hold the barcode inside the box" : "Or type the number under the barcode"}
+              </div>
+              <form className="flex gap-2" onSubmit={e => { e.preventDefault(); findBarcode(barcode.code); }}>
+                <button type="button" className="icon-btn w-11 h-11 shrink-0" aria-label="Back" onClick={backToChoose}><ChevronLeft size={20} /></button>
+                <input className="inp flex-1 text-center num" inputMode="numeric" placeholder="e.g. 8901058000290" aria-label="Barcode number" value={barcode.code} onChange={e => setBarcode(b => ({ ...b, code: e.target.value.replace(/\D/g, "").slice(0, 14) }))} />
+                <button type="submit" className="bp shrink-0" disabled={barcode.busy || barcode.code.length < 8}>Find</button>
+              </form>
+              {barcode.error && (
+                <div className="text-center text-[13px] mt-3" style={{ color: "var(--warn)" }}>
+                  {barcode.error}
+                  <div className="flex gap-2 justify-center mt-2">
+                    {!barcode.live && <button type="button" className="bg text-[12.5px]" onClick={startBarcode}><RefreshCw size={14} />Scan again</button>}
+                    <button type="button" className="bg text-[12.5px]" onClick={() => { backToAdd(); setShowCustom(true); }}><Plus size={14} />Custom food</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           {scanError && <div className="text-center text-[13px] mt-3" style={{ color: "var(--danger)" }}>{scanError}</div>}
         </Card>
       )}
@@ -452,7 +536,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       {/* Text describe mode */}
       {scanMode === "text" && !scanning && !scanResults && (
         <Card title="Describe what you ate" className="fade-in">
-          <textarea className="inp resize-none w-full text-sm p-3" value={textDesc} onChange={e => setTextDesc(e.target.value)}
+          <textarea className="inp resize-none w-full text-sm p-3" value={textDesc} maxLength={300} onChange={e => setTextDesc(e.target.value)}
             placeholder="Example: 2 rotis with dal and chicken curry, a bowl of rice, and buttermilk"
             rows={3} />
           <div className="text-[12px] mt-3 mb-1.5" style={{ color: "var(--text-dim)" }}>Try an example</div>
@@ -461,60 +545,72 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
               <button type="button" key={ex} className="chip chip-i text-[12px]" onClick={() => setTextDesc(ex)}>{ex}</button>
             ))}
           </div>
+          {scanError && <div className="text-[13px] mb-3" style={{ color: "var(--warn)" }}>{scanError}</div>}
           <div className="flex gap-2">
-            <button type="button" className="icon-btn w-11 h-11 shrink-0" aria-label="Back" onClick={() => setScanMode("choose")}><ChevronLeft size={20} /></button>
-            <button type="button" className="bp flex-1" onClick={() => analyzeText(textDesc)} disabled={!textDesc.trim()}><Sparkles size={17} />Analyze food</button>
+            <button type="button" className="icon-btn w-11 h-11 shrink-0" aria-label="Back" onClick={backToChoose}><ChevronLeft size={20} /></button>
+            <button type="button" className="bp flex-1" onClick={() => analyzeText(textDesc)} disabled={!textDesc.trim() || offline}><Sparkles size={17} />Analyze food</button>
           </div>
         </Card>
       )}
 
-      {/* Photo preview with error/retry (when Vision analysis done but no results) */}
+      {/* Photo preview with error/retry (analysis finished without results) */}
       {scanMode === "camera" && scanPhoto && !scanning && !scanResults && (
         <Card className="text-center">
           <div className="w-[200px] h-[200px] rounded-2xl overflow-hidden mx-auto mb-4" style={{ border: "1px solid var(--line)" }}>
-            <img src={scanPhoto} alt="Food" className="w-full h-full object-cover" />
+            <img src={scanPhoto} alt="Your food" className="w-full h-full object-cover" />
           </div>
           {scanError && <div className="text-[13px] mb-3 px-3" style={{ color: "var(--warn)" }}>{scanError}</div>}
           <div className="flex gap-2 justify-center flex-wrap">
-            <button type="button" className="bp" onClick={() => analyzeImage(scanPhoto)}><RefreshCw size={16} />Retry analysis</button>
-            <button type="button" className="bg" onClick={() => { setScanMode("text"); setTextDesc(""); }}><PenLine size={16} />Describe instead</button>
-            <button type="button" className="icon-btn w-11 h-11" aria-label="Close" onClick={() => { setScanMode("choose"); setScanPhoto(null); setScanError(null); }}><X size={18} /></button>
+            <button type="button" className="bp" onClick={() => analyzeImage(scanPhoto)} disabled={offline}><RefreshCw size={16} />Try again</button>
+            <button type="button" className="bg" onClick={() => { setScanPhoto(null); setScanError(null); setScanMode("text"); }}><PenLine size={16} />Describe instead</button>
+            <button type="button" className="icon-btn w-11 h-11" aria-label="Close" onClick={backToChoose}><X size={18} /></button>
           </div>
         </Card>
       )}
 
-      {/* Scanning animation */}
+      {/* Analysing */}
       {scanning && (
         <Card className="text-center py-8">
           {scanPhoto && <div className="w-[160px] h-[160px] rounded-2xl overflow-hidden mx-auto mb-5" style={accentFrame}><img src={scanPhoto} alt="" className="w-full h-full object-cover" /></div>}
-          <div className="flex gap-1.5 justify-center mb-3">
+          <div className="flex gap-1.5 justify-center mb-3" aria-hidden="true">
             {[0, 1, 2].map(i => <div key={i} className="w-[10px] h-[10px] rounded-full" style={{ background: "var(--accent)", animation: `dotPulse 1.2s ${i * .2}s infinite` }} />)}
           </div>
-          <div className="text-sm font-semibold" style={{ color: "var(--accent)" }}>Analyzing your food with AI...</div>
-          <div className="text-[12px] mt-1" style={{ color: "var(--text-dim)" }}>Estimating calories, protein, carbs, fat</div>
+          <div className="text-sm font-semibold" role="status" style={{ color: "var(--accent)" }}>Analyzing your food…</div>
+          <div className="text-[12px] mt-1" style={{ color: "var(--text-dim)" }}>Estimating calories, protein, carbs and fat</div>
+          <button type="button" className="bg mt-4" onClick={() => { cancelScan(); setScanError(null); }}><X size={15} />Cancel</button>
         </Card>
       )}
 
-      {/* Scan results */}
+      {/* Results */}
       {scanResults && (
         <Card className="fade-in">
-          {scanPhoto && <div className="w-[120px] h-[120px] rounded-xl overflow-hidden mx-auto mb-3"><img src={scanPhoto} alt="" className="w-full h-full object-cover" /></div>}
+          {scanPhoto && <div className="w-[120px] h-[120px] rounded-xl overflow-hidden mx-auto mb-3"><img src={scanPhoto} alt="Your food" className="w-full h-full object-cover" /></div>}
           <div className="text-center mb-3">
-            <div className="text-[17px] font-bold inline-flex items-center gap-1.5" style={{ color: "var(--ok)" }}><CircleCheck size={19} />{scanResults.length} item{scanResults.length > 1 ? "s" : ""} identified</div>
-            <div className="text-[12.5px] num" style={{ color: "var(--text-dim)" }}>Total: {scanResults.reduce((s, f) => s + (f.cal || 0), 0)} kcal</div>
+            <div className="text-[17px] font-bold inline-flex items-center gap-1.5" style={{ color: "var(--ok)" }}><CircleCheck size={19} />{visibleResults.length} item{visibleResults.length > 1 ? "s" : ""} found</div>
+            <div className="text-[12.5px] num" style={{ color: "var(--text-dim)" }}>Total: {resultTotal} kcal · AI estimate — adjust the portion if needed</div>
           </div>
           <Tabs tabs={MEALS.map(m => [m, m])} value={selMeal} onChange={setSelMeal} label="Meal" className="mb-3" />
 
-          {scanResults.map((f, i) => (
-            <div key={i} className={i ? "border-t" : ""} style={{ borderColor: "var(--line)" }}>
-              <FoodLine emoji={f.emoji} name={f.name} sub={`${f.serving || "1 serving"} · ${macroLine(f)} · Fb ${f.fiber || 0}g`} cal={f.cal}
-                right={<button type="button" className="bg px-3 py-1.5 text-[12.5px] shrink-0" onClick={() => { addFood({ ...f, fiber: f.fiber || 0, category: "AI Scanned" }, 100, selMeal); setScanHistory(p => [f, ...p.filter(x => x.name !== f.name)].slice(0, 20)); }}><Plus size={14} />Add</button>} />
-            </div>
-          ))}
+          {visibleResults.map((f, i) => {
+            const sf = scaledResult(f);
+            return (
+              <div key={i} className={`py-1 ${i ? "border-t" : ""}`} style={{ borderColor: "var(--line)", opacity: scanAdded[i] ? 0.55 : 1 }}>
+                <FoodLine emoji={f.emoji} name={f.name} sub={`${sf.serving || "1 serving"}${sf.grams ? ` (~${sf.grams} g)` : ""} · ${macroLine(sf)}`} cal={sf.cal}
+                  right={scanAdded[i]
+                    ? <span className="text-[12.5px] font-semibold shrink-0 inline-flex items-center gap-1" style={{ color: "var(--ok)" }}><CircleCheck size={14} />Added</span>
+                    : <button type="button" className="bg px-3 py-1.5 text-[12.5px] shrink-0" onClick={() => addScanItem(i)}><Plus size={14} />Add</button>} />
+                {!scanAdded[i] && (
+                  <div className="flex gap-1 pl-9 pb-1" role="group" aria-label={`Portion of ${f.name}`}>
+                    {PORTIONS.map(m => <button type="button" key={m} className={`chip ${(f.mult || 1) === m ? "chip-a" : "chip-i"} text-[12px] py-1`} aria-pressed={(f.mult || 1) === m} onClick={() => setResultPortion(i, m)}>{m === 0.5 ? "½" : m === 1.5 ? "1½" : m}×</button>)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           <div className="flex gap-2.5 mt-4">
-            <button type="button" className="bp flex-1" onClick={() => { scanResults.forEach(f => { addFood({ ...f, fiber: f.fiber || 0, category: "AI Scanned" }, 100, selMeal); setScanHistory(p => [f, ...p.filter(x => x.name !== f.name)].slice(0, 20)); }); stopCam(); setScanResults(null); setScanPhoto(null); setScanMode("choose"); setTab("log") }}><CircleCheck size={17} />Add all & done</button>
-            <button type="button" className="bg" onClick={() => { setScanResults(null); setScanPhoto(null); setScanMode("choose") }}><RefreshCw size={16} />Rescan</button>
+            <button type="button" className="bp flex-1" onClick={addAllScan}><CircleCheck size={17} />{Object.keys(scanAdded).length ? "Add the rest & done" : "Add all & done"}</button>
+            <button type="button" className="bg" onClick={resetScan}><RefreshCw size={16} />New scan</button>
           </div>
         </Card>
       )}
@@ -622,10 +718,10 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         </div>
         <div className="text-[12px] mb-1.5" style={{ color: "var(--text-dim)" }}>Weight in grams</div>
         <div className="flex gap-2 items-center">
-          <input className="inp w-24 text-center text-[18px] font-bold" type="number" aria-label="Grams" value={grams} onChange={e => setGrams(Math.max(1, parseInt(e.target.value) || 0))} />
+          <input className="inp w-24 text-center text-[18px] font-bold" type="number" aria-label="Grams" value={grams} onChange={e => setGrams(Math.min(3000, Math.max(1, parseInt(e.target.value) || 0)))} />
           <span className="text-sm" style={{ color: "var(--text-dim)" }}>grams</span>
         </div>
-        <div className="chip-row mt-2">{GRAM_PRESETS.map(g => <button type="button" key={g} className={`chip ${grams === g ? "chip-a" : "chip-i"} flex-1 justify-center`} onClick={() => setGrams(g)}>{g}g</button>)}</div>
+        <div className="chip-row mt-2">{selFood.servingGrams && !GRAM_PRESETS.includes(selFood.servingGrams) && <button type="button" className={`chip ${grams === selFood.servingGrams ? "chip-a" : "chip-i"} flex-1 justify-center`} onClick={() => setGrams(selFood.servingGrams)}>1 serving ({selFood.servingGrams}g)</button>}{GRAM_PRESETS.map(g => <button type="button" key={g} className={`chip ${grams === g ? "chip-a" : "chip-i"} flex-1 justify-center`} onClick={() => setGrams(g)}>{g}g</button>)}</div>
         <div className="grid grid-cols-5 gap-1 my-3 text-center p-2.5 rounded-xl" style={{ background: "var(--ghost-bg)" }}>
           {[["Cal", Math.round(selFood.cal * grams / 100), "var(--tone-amber)"], ["Protein", Math.round(selFood.protein * grams / 100 * 10) / 10, C_PROT], ["Carbs", Math.round(selFood.carbs * grams / 100 * 10) / 10, C_CARB], ["Fat", Math.round(selFood.fat * grams / 100 * 10) / 10, C_FAT], ["Fiber", Math.round(selFood.fiber * grams / 100 * 10) / 10, C_FIBER]].map(([l, v, c]) => (
             <div key={l} className="min-w-0"><div className="text-[15px] font-bold num" style={{ color: c }}>{v}{l === "Cal" ? "" : "g"}</div><div className="text-[11px]" style={{ color: "var(--text-dim)" }}>{l}</div></div>
@@ -636,14 +732,15 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
 
       {!selFood && <>
         {/* AI scanner shortcuts */}
-        <div className="tile-grid">
+        <div className="tile-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
           <Tile icon={Camera} tone="sky" label="Scan" sub="Camera" onClick={openScanCamera} />
-          <Tile icon={ImageUp} tone="teal" label="Photo" sub="From gallery" onClick={() => fileRef.current?.click()} />
+          <Tile icon={ImageUp} tone="teal" label="Photo" sub="From gallery" onClick={() => { resetScan(); fileRef.current?.click(); }} />
+          <Tile icon={ScanBarcode} tone="amber" label="Barcode" sub="Packaged" onClick={() => { resetScan(); startBarcode(); }} />
           <Tile icon={PenLine} tone="violet" label="Describe" sub="AI estimate" onClick={openScanText} />
         </div>
-        <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} className="hidden" />
+        <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
         {scanHistory.length > 0 && (
-          <button type="button" className="link-btn self-start px-1" onClick={() => { setScanMode("choose"); setTab("scan"); }}>Recent AI scans ({scanHistory.length})<ChevronRight size={15} /></button>
+          <button type="button" className="link-btn self-start px-1" onClick={() => { resetScan(); setTab("scan"); }}>Recent AI scans ({scanHistory.length})<ChevronRight size={15} /></button>
         )}
 
         {/* Quick Add — Recent Foods */}
@@ -665,7 +762,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         <Card title="Food database" sub="per 100g">
           <div className="relative mb-2.5">
             <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-dim)" }} aria-hidden="true" />
-            <input className="inp pl-10" placeholder="Search 199 foods... (biryani, idli, paneer, dal...)" aria-label="Search foods" value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="inp pl-10" placeholder={`Search ${FOOD_DATABASE.length} foods… (biryani, idli, paneer, dal)`} aria-label="Search foods" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <div className="chip-row mb-3">
             <button type="button" className={`chip ${selCat === "All" ? "chip-a" : "chip-i"} shrink-0`} onClick={() => setSelCat("All")}>All</button>
@@ -674,9 +771,13 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
           <div className="grid grid-cols-[repeat(auto-fill,minmax(92px,1fr))] gap-2 max-h-[320px] overflow-y-auto">
             {filtered.slice(0, 36).map((f, i) => (<button type="button" key={f.name + i} className="fc" onClick={() => { setSelFood(f); setGrams(100) }}><div className="text-xl" aria-hidden="true">{f.emoji}</div><div className="text-[11.5px] font-medium mt-[3px]" style={{ color: "var(--text-primary)" }}>{f.name}</div><div className="text-[11px] num" style={{ color: "var(--text-dim)" }}>{f.cal} kcal</div></button>))}
           </div>
-          {filtered.length === 0 && search && !apiSearching && apiItems.length === 0 && <div className="text-center py-3 text-[13px]" style={{ color: "var(--text-dim)" }}>No food found for &quot;{search}&quot;</div>}
-          {apiSearching && <div className="text-center py-2 text-[12.5px]" style={{ color: "var(--accent)" }}>Searching global database...</div>}
-          {apiItems.length > 0 && (<div className="mt-3"><SubHead>More from global database ({apiItems.length})</SubHead><div className="grid grid-cols-[repeat(auto-fill,minmax(92px,1fr))] gap-2 max-h-[200px] overflow-y-auto">{apiItems.map((f, i) => (<button type="button" key={"api" + i} className="fc" onClick={() => { setSelFood(f); setGrams(100); }}><div className="text-xl" aria-hidden="true">{f.emoji}</div><div className="text-[11.5px] font-medium mt-[3px]" style={{ color: "var(--text-primary)" }}>{f.name}</div><div className="text-[11px] num" style={{ color: "var(--accent)" }}>{f.cal} kcal</div></button>))}</div></div>)}
+          {filtered.length === 0 && search && <div className="text-center pt-3 text-[13px]" style={{ color: "var(--text-dim)" }}>No match for &quot;{search}&quot; in the food list.</div>}
+          {search.trim().length >= 2 && filtered.length < 6 && !aiItems && (
+            <button type="button" className="bg w-full mt-3" disabled={offline} onClick={() => runAiLookup(search)}><Sparkles size={15} />Look up &quot;{search.trim().slice(0, 30)}&quot; with AI</button>
+          )}
+          {aiItems?.loading && <div className="text-center py-2 text-[12.5px]" role="status" style={{ color: "var(--accent)" }}>Looking it up…</div>}
+          {aiItems?.error && <div className="text-center py-2 text-[12.5px]" style={{ color: "var(--warn)" }}>{aiItems.error}</div>}
+          {aiItems?.items.length > 0 && (<div className="mt-3"><SubHead>AI lookup · per 100g</SubHead><div className="grid grid-cols-[repeat(auto-fill,minmax(92px,1fr))] gap-2 max-h-[200px] overflow-y-auto">{aiItems.items.map((f, i) => (<button type="button" key={"ai" + i} className="fc" onClick={() => { setSelFood(f); setGrams(100); }}><div className="text-xl" aria-hidden="true">{f.emoji}</div><div className="text-[11.5px] font-medium mt-[3px]" style={{ color: "var(--text-primary)" }}>{f.name}</div><div className="text-[11px] num" style={{ color: "var(--accent)" }}>{f.cal} kcal</div></button>))}</div></div>)}
           <div className="mt-3.5">
             <button type="button" onClick={() => setShowCustom(!showCustom)} className="link-btn">{showCustom ? <><X size={15} />Cancel custom food</> : <><Plus size={15} />Add custom food</>}</button>
           </div>
@@ -794,6 +895,10 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
           </div>
           <MacroSplit p={`${proteinG}g`} c={`${carbG}g`} f={`${fatG}g`} />
         </div>
+        <div className="text-[12px] mt-3 mb-1.5" style={{ color: "var(--text-dim)" }}>Macro style{!foodLog._macroStyle ? " · picked from your goal" : ""}</div>
+        <div className="chip-row" role="group" aria-label="Macro style">
+          {PLAN_TYPES.map(pt => <button type="button" key={pt.id} className={`chip ${planType.id === pt.id ? "chip-a" : "chip-i"} shrink-0`} aria-pressed={planType.id === pt.id} onClick={() => setPlanType(pt)}>{pt.label}</button>)}
+        </div>
       </Card>
 
       <Tabs tabs={[["templates", "Auto"], ["weekly", "Week"], ["shopping", "Shopping"], ["create", "My plans"]]} value={planTab} onChange={setPlanTab} label="Plan sections" />
@@ -850,7 +955,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
               })}
 
               <div className="flex gap-2 mt-4">
-                <button type="button" className="bp flex-1" onClick={() => { Object.entries(generatedPlan).forEach(([meal, items]) => toArr(items).forEach(f => logPortion(f, meal))); setTab("log"); }}><CircleCheck size={17} />Log this plan today</button>
+                <button type="button" className="bp flex-1" onClick={() => { logPlanDay(generatedPlan); setTab("log"); }}><CircleCheck size={17} />Log this plan today</button>
                 <button type="button" className="icon-btn w-11 h-11 shrink-0" aria-label="Regenerate plan" title="Regenerate" onClick={() => { const plan = generateDayPlan(selTemplate, target); setGeneratedPlan(plan); }}><RefreshCw size={17} /></button>
               </div>
               <button type="button" className="bg w-full mt-2" onClick={() => { const wp = generateWeekPlan(selTemplate, target); setWeekPlan(wp); setShoppingList(getShoppingList(wp)); setPlanTab("weekly"); }}><CalendarDays size={16} />Generate full week plan</button>
@@ -890,7 +995,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
                         </div>
                       );
                     })}
-                    <button type="button" className="bp w-full mt-4" onClick={() => { Object.entries(weekPlan[selWeekDay]).forEach(([meal, items]) => toArr(items).forEach(f => logPortion(f, meal))); setTab("log"); }}><CircleCheck size={17} />Log {selWeekDay}&apos;s plan</button>
+                    <button type="button" className="bp w-full mt-4" onClick={() => { logPlanDay(weekPlan[selWeekDay]); setTab("log"); }}><CircleCheck size={17} />Log {selWeekDay}&apos;s plan</button>
                   </div>
                 );
               })()}
@@ -929,7 +1034,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
                   <div className="row-sub">{MEALS.map(m => `${(plan.items[m] || []).length} ${m.toLowerCase()}`).join(" · ")}</div>
                 </div>
                 <button type="button" className={SM_BTN} aria-label={`Edit ${plan.name}`} onClick={() => loadPlan(plan)}><Pencil size={15} /></button>
-                <button type="button" className="bg px-3.5 py-2 text-[12.5px] shrink-0" onClick={() => { MEALS.forEach(meal => { (plan.items[meal] || []).forEach(f => { addFood(f, f.grams || 100, meal) }) }); setTab("log"); }}>Log</button>
+                <button type="button" className="bg px-3.5 py-2 text-[12.5px] shrink-0" onClick={() => { appendEntries(MEALS.flatMap(meal => toArr(plan.items[meal]).map(f => scaleFood(f, f.grams || 100, meal)))); setTab("log"); }}>Log</button>
                 <button type="button" className={SM_BTN} style={{ color: "var(--danger)" }} aria-label={`Delete ${plan.name}`} onClick={() => deletePlan(plan.id)}><Trash2 size={15} /></button>
               </div>
             ))}

@@ -112,7 +112,7 @@ export function checkBadges({ totalXP, level, streak, workoutLog, foodLog, journ
   if (level >= 109) earned.push("rank_sovereign");
 
   // Nutrition
-  const foodDays = Object.keys(foodLog || {}).filter(k => !k.startsWith("water_") && toArr(foodLog[k]).length > 0).length;
+  const foodDays = Object.keys(foodLog || {}).filter(k => !k.startsWith("water_") && !k.startsWith("_") && toArr(foodLog[k]).length > 0).length;
   if (foodDays >= 7) earned.push("fuel_7");
   if (foodDays >= 30) earned.push("fuel_30");
   // Check if any day has 8+ water

@@ -57,7 +57,7 @@ export function formatTrainingHistory(workoutLog) {
 
 // ── NUTRITION ──
 export function formatNutritionHistory(foodLog) {
-    const dates = Object.keys(foodLog || {}).filter(k => !k.startsWith("water_") && toArr(foodLog[k]).length > 0);
+    const dates = Object.keys(foodLog || {}).filter(k => !k.startsWith("water_") && !k.startsWith("_") && toArr(foodLog[k]).length > 0);
     return dates.map(date => {
         const items = toArr(foodLog[date]).filter(f => f && typeof f === "object");
         const cal = Math.round(items.reduce((s, f) => s + num(f.cal), 0));

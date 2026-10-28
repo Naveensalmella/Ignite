@@ -22,6 +22,7 @@ import { clearGate } from "@/lib/system/actions";
 import BodyMap from "./training/BodyMap";
 import { getExerciseInfo, toWorkoutExercise } from "@/lib/exerciseVisuals";
 import { MUSCLES, MUSCLE_LABELS } from "@/lib/muscles";
+import { aiJson } from "@/lib/aiClient";
 import {
     allSessions, weekSummary, muscleRecovery, recoveryState, RECOVERY_COLORS, RECOVERY_LABELS,
     personalRecords, exerciseHistory, recommendWorkout,
@@ -98,12 +99,9 @@ function AIGenerator({ onReady }) {
     async function generate(text = prompt) {
         if (!text.trim() || loading) return;
         setLoading(true); setError("");
-        try {
-            const r = await fetch("/api/generate-workout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: text }) });
-            const data = await r.json();
-            if (data.workout && toArr(data.workout.exercises).length) onReady({ id: `ai_${Date.now()}`, source: "ai", name: data.workout.name || "AI Workout", exercises: toArr(data.workout.exercises) });
-            else setError(data.error || "Couldn't generate a workout. Try describing it differently.");
-        } catch { setError("Couldn't reach the AI. Check your connection and try again."); }
+        const data = await aiJson("/api/generate-workout", { prompt: text });
+        if (data.workout && toArr(data.workout.exercises).length) onReady({ id: `ai_${Date.now()}`, source: "ai", name: data.workout.name || "AI Workout", exercises: toArr(data.workout.exercises) });
+        else setError(data.error || "Couldn't generate a workout. Try describing it differently.");
         setLoading(false);
     }
     return (

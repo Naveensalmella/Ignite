@@ -49,11 +49,14 @@ npm run dev                  # http://localhost:3000
 | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | | Firebase web config |
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | | Firebase web config |
 | `NEXT_PUBLIC_FIREBASE_APP_ID` | ✅ | Firebase web config |
-| `GROQ_API_KEY` | for AI coach / workout generator | Server-side only |
-| `GEMINI_API_KEY` | for food scanner | Server-side only |
+| `GROQ_API_KEY` | for AI coach / workout generator (also a food-scan backup) | Server-side only |
+| `GEMINI_API_KEY` | for food scanner | Server-side only — free key at aistudio.google.com |
+| `OPENROUTER_API_KEY` | optional | Extra free food-scan backup (OpenRouter `:free` vision models) |
 | `GROQ_MODEL` | optional | Override the chat model (default `openai/gpt-oss-120b`, falls back automatically) |
-| `GEMINI_MODEL` | optional | Override the vision model (falls back automatically if a model is retired) |
-| `EXERCISEDB_API_KEY` | optional | `/api/exercises` proxy |
+| `GEMINI_MODEL` | optional | Override the food model; comma-separate several (falls back automatically) |
+| `GROQ_VISION_MODEL`, `OPENROUTER_MODEL` | optional | Override the backup food models |
+
+The food scanner tries Gemini Flash → Gemini Flash-Lite → Groq vision → OpenRouter, so one free quota running out doesn't stop it. Typed meals are matched against the built-in food list first, results are cached on the device, and packaged foods can be scanned by barcode (Open Food Facts, free, no key). AI routes need a signed-in user and have per-user limits.
 
 If the Firebase variables are missing the app shows a "Setup needed" screen instead of crashing.
 On **Vercel**, add the same variables under *Project → Settings → Environment Variables*; every push to the deployed branch redeploys automatically.
@@ -107,7 +110,7 @@ All day-based data uses the user's **local** calendar date.
 ## Project layout
 
 ```
-src/app/            Next.js entry (layout, page) and API routes (chat, food-scan, generate-workout, exercise-gif)
+src/app/            Next.js entry (layout, page) and API routes (chat, food-scan, generate-workout)
 src/components/     App shell (App.jsx, BottomNav.jsx) and every page
 src/components/training/  Training hub pieces: MoveFigure, BodyMap, ExerciseDemo, library, programs, progress
 src/stores/         Zustand store — loading, auto-save, XP, streak logic

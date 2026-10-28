@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { groqRequest, AIError, clip } from '@/lib/ai';
+import { groqRequest, publicError, clip } from '@/lib/ai';
+import { requireUser, rateLimit, readJson } from '@/lib/apiAuth';
+
+export const maxDuration = 60;
 
 const BODY_PARTS = ["chest", "back", "shoulders", "arms", "core", "legs", "glutes", "cardio"];
 
@@ -24,9 +27,13 @@ const num = (v: unknown, min: number, max: number, fallback: number) => {
 };
 
 export async function POST(req: NextRequest) {
-  let prompt = "";
-  try { ({ prompt } = await req.json()); } catch { return NextResponse.json({ error: "Invalid request" }, { status: 400 }); }
-  prompt = clip(prompt, 500).trim();
+  const uid = await requireUser(req);
+  if (uid instanceof Response) return uid;
+  const limited = rateLimit(uid, "workout", { perMinute: 4, perDay: 40 });
+  if (limited) return limited;
+  const body = await readJson<{ prompt?: unknown }>(req, 4_000);
+  if (body instanceof Response) return body;
+  const prompt = clip(body.prompt, 500).trim();
   if (!prompt) return NextResponse.json({ error: "Describe the workout you want" }, { status: 400 });
 
   try {
@@ -34,7 +41,7 @@ export async function POST(req: NextRequest) {
       temperature: 0.3,
       max_tokens: 1024,
       messages: [{ role: "system", content: SYSTEM }, { role: "user", content: prompt }],
-    });
+    }, req.signal);
     const data = await r.json();
     const text: string = data.choices?.[0]?.message?.content || "";
     const clean = text.replace(/<think>[\s\S]*?<\/think>/g, "").replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
@@ -61,7 +68,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ workout: { name: clip(parsed.name || "AI Workout", 80), exercises } });
   } catch (e) {
-    const err = e as AIError;
-    return NextResponse.json({ error: err.message || "AI request failed" }, { status: err.status || 500 });
+    const { message, status } = publicError(e, "Couldn't generate a workout right now. Please try again.");
+    return NextResponse.json({ error: message }, { status });
   }
 }

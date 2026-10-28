@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Sparkles, History, SquarePen, X, ChevronRight, Volume2, VolumeX, Mic, ArrowUp, Dumbbell, Apple, Flower2, Zap } from 'lucide-react';
+import { Sparkles, History, SquarePen, X, ChevronRight, Plus, Check, Volume2, VolumeX, Mic, ArrowUp, Dumbbell, Apple, Flower2, Zap } from 'lucide-react';
 import { Tabs } from './ui/kit';
 import { hasDayWorkout, getDaySplit, countWorkoutDays } from '@/lib/workoutHelpers';
 import { getLevel, today, toArr } from '../utils';
@@ -9,18 +9,16 @@ import { playerRank } from '@/lib/system/ranks';
 import { statSheet } from '@/lib/system/stats';
 import { questItems, questDay, questStatus } from '@/lib/system/quests';
 import { classById } from '@/lib/system/progression';
+import { aiFetch } from '@/lib/aiClient';
 
 // Streaming AI call — calls onToken with the full text so far; resolves with the final text.
 async function callAIStream(messages, mode, userContext, onToken) {
   let r;
   try {
-    r = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, mode, userContext }),
-    });
-  } catch {
-    throw new Error("You seem to be offline. Check your connection and try again.");
+    r = await aiFetch("/api/chat", { messages, mode, userContext }, { timeoutMs: 90000 });
+  } catch (e) {
+    if (e?.name === "TimeoutError") throw new Error("The coach took too long to answer. Please try again.");
+    throw new Error(e?.offline ? e.message : "You seem to be offline. Check your connection and try again.");
   }
 
   if (!r.ok || !r.headers.get("content-type")?.includes("text/event-stream")) {
@@ -170,25 +168,29 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
 
   const newChat = () => { const c = newChatObj(mode); setChats(p => [c, ...p]); setActiveChatId(c.id); setShowSidebar(false); };
   const switchChat = (id) => { setActiveChatId(id); setShowSidebar(false); };
-  const deleteChat = (id) => { const rem = chats.filter(c => c.id !== id); if (rem.length === 0) { clearAllChats(); return; } setChats(rem); if (activeId === id) setActiveChatId(rem[0].id); };
+  const deleteChat = (id) => { const c = chats.find(x => x.id === id); if (c?.messages?.length && !window.confirm(`Delete "${c.title || "this chat"}"?`)) return; const rem = chats.filter(c => c.id !== id); if (rem.length === 0) { clearAllChats(); return; } setChats(rem); if (activeId === id) setActiveChatId(rem[0].id); };
   const clearAllChats = () => {
     if (chats.some(c => c.messages?.length) && !window.confirm("Delete all chats?")) return;
     const c = newChatObj(mode); setChats([c]); setActiveChatId(c.id); setShowSidebar(false);
   };
 
-  // ── Process commands — NEVER auto-navigate, show buttons instead ──
+  // ── Commands in the reply never act on their own: food and pages become buttons
+  // the user taps. Values are bounded and pages are limited to known ones. ──
   const processActions = (text) => {
-    const actions = [];
-    const foodMatches = [...text.matchAll(/\[ADD_FOOD:(.+?)\|(\d+)\|(\d+)\|(\d+)\|(\d+)\]/g)];
-    for (const match of foodMatches) {
-      const [, name, cal, protein, carbs, fat] = match;
-      setFoodLog(prev => ({ ...prev, [d]: [...toArr(prev[d]), { name, emoji: "🍽️", cal: parseInt(cal), protein: parseInt(protein), carbs: parseInt(carbs), fat: parseInt(fat), fiber: 0, meal: "Snack", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), category: "AI Logged" }] }));
-      actions.push(`✅ Logged: ${name} (${cal} cal)`);
-    }
-    // Extract navigation but DON'T auto-navigate — return page name for button rendering
-    const navMatches = [...text.matchAll(/\[NAVIGATE:(.+?)\]/g)];
-    const navPages = navMatches.map(m => m[1]);
-    return { actions, navPages };
+    const clamp = (v, max) => Math.min(max, Math.max(0, parseInt(v) || 0));
+    const foods = [...text.matchAll(/\[ADD_FOOD:(.+?)\|(\d+)\|(\d+)\|(\d+)\|(\d+)\]/g)]
+      .filter(([, name, cal]) => name.trim() && +cal > 0 && +cal <= 2500) // drop implausible numbers instead of logging them
+      .slice(0, 6)
+      .map(([, name, cal, protein, carbs, fat]) => ({ name: name.trim().slice(0, 60), cal: +cal, protein: clamp(protein, 200), carbs: clamp(carbs, 400), fat: clamp(fat, 200) }));
+    const navPages = [...new Set([...text.matchAll(/\[NAVIGATE:(.+?)\]/g)].map(m => m[1].trim().toLowerCase()))].filter(p => PAGE_NAMES[p]).slice(0, 3);
+    return { foods, navPages };
+  };
+  const logCoachFood = (chatId, msgIndex, foodIndex) => {
+    const chat = chats.find(c => c.id === chatId);
+    const f = chat?.messages?.[msgIndex]?.foods?.[foodIndex];
+    if (!f || f.logged) return;
+    setFoodLog(prev => ({ ...prev, [d]: [...toArr(prev[d]), { name: f.name, emoji: "🍽️", cal: f.cal, protein: f.protein, carbs: f.carbs, fat: f.fat, fiber: 0, meal: "Snack", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), category: "AI Logged" }] }));
+    setChats(prev => prev.map(c => c.id !== chatId ? c : { ...c, messages: c.messages.map((m, mi) => mi !== msgIndex ? m : { ...m, foods: m.foods.map((x, fi) => fi === foodIndex ? { ...x, logged: true } : x) }) }));
   };
 
   // ── Voice input ──
@@ -216,7 +218,7 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
     });
 
     try {
-      const context = `${curMode.personality}\n\n${userContext}\n\nCOMMANDS (use ONLY when appropriate):\n- Log food: [ADD_FOOD:name|cal|protein|carbs|fat] — use when the user says they ATE something\n- Navigate: [NAVIGATE:page] — ONLY when the user EXPLICITLY asks to open/go to a page. Valid: status,quests,training,nutrition,inventory,focus,wellness,routine,profile,social\n\nCall the user by name.`;
+      const context = `${curMode.personality}\n\n${userContext}\n\nCOMMANDS (use ONLY when appropriate):\n- Offer to log food: [ADD_FOOD:name|cal|protein|carbs|fat] — use when the user says they ATE something (the user confirms it with a button; mention that they can tap to log it)\n- Navigate: [NAVIGATE:page] — ONLY when the user EXPLICITLY asks to open/go to a page. Valid: status,quests,training,nutrition,inventory,focus,wellness,routine,profile,social\n\nCall the user by name.`;
 
       // Stream response in real-time
       setIsTyping(true);
@@ -230,11 +232,10 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
       });
 
       setIsTyping(false);
-      const { actions, navPages } = processActions(aiText);
-      let cleanText = aiText.replace(/\[ADD_FOOD:.*?\]/g, "").replace(/\[NAVIGATE:.*?\]/g, "").trim();
-      if (actions.length > 0) cleanText += "\n\n" + actions.join("\n");
+      const { foods, navPages } = processActions(aiText);
+      const cleanText = aiText.replace(/\[ADD_FOOD:.*?\]/g, "").replace(/\[NAVIGATE:.*?\]/g, "").trim();
 
-      const msgData = { role: "assistant", text: cleanText, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), mode: curMode.id, navPages: navPages.length > 0 ? navPages : undefined };
+      const msgData = { role: "assistant", text: cleanText, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), mode: curMode.id, ...(navPages.length > 0 ? { navPages } : {}), ...(foods.length > 0 ? { foods } : {}) };
       const finalMessages = [...updatedMessages, msgData];
       setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: finalMessages } : c));
       if (voiceOn) speakText(cleanText);
@@ -272,11 +273,21 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
         ? { background: "var(--accent)", color: "var(--accent-ink)", borderRadius: "18px 18px 6px 18px" }
         : { background: "var(--card-bg)", color: "var(--text-primary)", border: "1px solid var(--card-border)", boxShadow: "var(--card-shadow)", borderRadius: "18px 18px 18px 6px" }}>
         <div className="text-[14px] leading-relaxed whitespace-pre-wrap">{m.text}</div>
+        {/* Food the coach suggests logging — nothing is added until the user taps */}
+        {m.foods?.length > 0 && (
+          <div className="flex flex-col gap-1.5 mt-2">
+            {m.foods.map((f, fi) => (
+              <button key={fi} type="button" className={`chip ${f.logged ? "chip-i" : "chip-a"} justify-between`} disabled={f.logged} onClick={() => logCoachFood(activeId, i, fi)}>
+                <span className="truncate">{f.logged ? "Logged" : "Log"}: {f.name} · {f.cal} kcal</span>{f.logged ? <Check size={13} /> : <Plus size={13} />}
+              </button>
+            ))}
+          </div>
+        )}
         {/* Navigation buttons — user taps to navigate, never auto */}
         {m.navPages && m.navPages.length > 0 && (
           <div className="flex gap-1.5 flex-wrap mt-2">
-            {m.navPages.map((page, pi) => (
-              <button key={pi} type="button" className="chip chip-a" onClick={() => setPage(page)}>Open {PAGE_NAMES[page] || page} <ChevronRight size={13} /></button>
+            {m.navPages.filter(page => PAGE_NAMES[page]).map((page, pi) => (
+              <button key={pi} type="button" className="chip chip-a" onClick={() => setPage(page)}>Open {PAGE_NAMES[page]} <ChevronRight size={13} /></button>
             ))}
           </div>
         )}

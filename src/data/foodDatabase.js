@@ -143,64 +143,36 @@ export const FOOD_DATABASE = [
 
 export const FOOD_CATEGORIES = [...new Set(FOOD_DATABASE.map(f => f.category))];
 
-// ── LOCAL SEARCH (instant) ──
+// ── LOCAL SEARCH (instant, offline) ──
+// Common Indian/English alternative names, so "chapati", "dahi" or "anda" still match.
+const SYNONYMS = {
+  chapati: "roti", chapathi: "roti", phulka: "roti", fulka: "roti", dahi: "curd", yogurt: "curd", yoghurt: "curd",
+  anda: "egg", eggs: "egg", murgh: "chicken", murg: "chicken", chawal: "rice", bhat: "rice", aloo: "potato",
+  alu: "potato", gobi: "cauliflower", palak: "spinach", channa: "chole", chana: "chole", chickpea: "chole",
+  rajmah: "rajma", daal: "dal", dhal: "dal", lentil: "dal", lentils: "dal", paratha: "paratha", parantha: "paratha",
+  doodh: "milk", chai: "tea", kela: "banana", seb: "apple", aam: "mango", moong: "moong", mung: "moong",
+  biriyani: "biryani", briyani: "biryani", panner: "paneer", idly: "idli", dosai: "dosa", sambhar: "sambar",
+};
+const normWord = (w) => SYNONYMS[w] || (w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w);
+const words = (s) => s.toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(Boolean).map(normWord);
+
 export function searchFoods(query) {
-  if (!query || query.length < 2) return [];
-  const q = query.toLowerCase().trim();
-  return FOOD_DATABASE.filter(f =>
-    f.name.toLowerCase().includes(q) || f.category.toLowerCase().includes(q)
-  ).slice(0, 20);
-}
-
-// ── AI NUTRITION LOOKUP (via server route — unified Gemini) ──
-let aiCache = {};
-
-export async function searchFoodsAI(query) {
-  if (!query || query.length < 3) return [];
-
-  const cacheKey = query.toLowerCase().trim();
-  if (aiCache[cacheKey]) return aiCache[cacheKey];
-
-  try {
-    const r = await fetch("/api/food-scan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: `Nutrition per 100g for: ${query}. Return 3-5 variations if applicable.` }),
-    });
-    const data = await r.json();
-
-    if (!data.foods?.length) return [];
-
-    const results = data.foods.map(item => ({
-      name: item.name || query,
-      emoji: item.emoji || "🍽️",
-      cal: Math.round(item.cal || item.calories || 0),
-      protein: Math.round((item.protein || 0) * 10) / 10,
-      carbs: Math.round((item.carbs || item.carbohydrates || 0) * 10) / 10,
-      fat: Math.round((item.fat || 0) * 10) / 10,
-      fiber: Math.round((item.fiber || 0) * 10) / 10,
-      category: "AI Lookup",
-      source: "ai",
-    }));
-
-    aiCache[cacheKey] = results;
-    return results;
-  } catch (e) {
-    console.warn("AI nutrition lookup error:", e);
-    return [];
+  const qWords = words(query || "");
+  if (qWords.length === 0) return [];
+  const scored = [];
+  for (const f of FOOD_DATABASE) {
+    const name = f.name.toLowerCase();
+    const nameWords = words(f.name);
+    let score = 0;
+    for (const q of qWords) {
+      if (nameWords.some(w => w === q)) score += 3;
+      else if (nameWords.some(w => w.startsWith(q))) score += 2;
+      else if (name.includes(q) || f.category.toLowerCase().includes(q)) score += 1;
+      else { score = 0; break; } // every word must match something
+    }
+    if (score > 0) scored.push([score + (name.startsWith(qWords[0]) ? 1 : 0), f]);
   }
-}
-
-// ── COMBINED SEARCH ──
-export async function searchFoodsCombined(query) {
-  if (!query || query.length < 2) return { local: [], api: [] };
-  const local = searchFoods(query);
-  if (local.length >= 5 || query.length < 3) return { local, api: [] };
-
-  const api = await searchFoodsAI(query);
-  const localNames = new Set(local.map(f => f.name.toLowerCase()));
-  const uniqueApi = api.filter(f => !localNames.has(f.name.toLowerCase()));
-  return { local, api: uniqueApi };
+  return scored.sort((a, b) => b[0] - a[0]).slice(0, 30).map(x => x[1]);
 }
 
 export function getFoodsByCategory(category) {

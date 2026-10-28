@@ -1,6 +1,8 @@
 // IGNITE service worker — offline shell + notifications.
 // Bump CACHE when the caching strategy changes; old caches are deleted on activate.
-const CACHE = "ignite-v3";
+const CACHE = "ignite-v4";
+const STATIC = "ignite-static-v1"; // hashed assets: grows per deploy, so it's trimmed
+const STATIC_MAX = 250;
 const OFFLINE_URLS = ["/", "/manifest.json", "/ignite-logo.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -14,7 +16,7 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== STATIC).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -38,28 +40,38 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Hashed build assets and exercise demo photos never change — serve from cache first.
-  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/exercises/")) {
+  // Hashed build assets, exercise photos and vendored files never change — cache first.
+  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/exercises/") || url.pathname.startsWith("/vendor/")) {
     e.respondWith(
-      caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
+      caches.open(STATIC).then((c) => c.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).then((res) => {
+        if (res.ok) { c.put(url.pathname, res.clone()).then(() => trim(c)); }
         return res;
-      }))
+      })))
     );
     return;
   }
 
   // Pages and other files: network first (always fresh), cache as offline fallback.
+  // The app is one page, so every navigation is stored under "/" (no ?query copies).
+  const key = req.mode === "navigate" ? "/" : url.pathname;
   e.respondWith(
     fetch(req)
       .then((res) => {
-        if (res.ok && res.type === "basic") { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
+        if (res.ok && res.type === "basic") { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(key, copy)); }
         return res;
       })
-      .catch(() => caches.match(req).then((hit) => hit || (req.mode === "navigate" ? caches.match("/") : undefined)))
+      .catch(() => caches.match(key))
       .then((res) => res || new Response("Offline", { status: 503, statusText: "Offline" }))
   );
 });
+
+// Drop the oldest hashed assets once the static cache passes STATIC_MAX entries.
+let trimming = false;
+function trim(c) {
+  if (trimming) return;
+  trimming = true;
+  c.keys().then((keys) => Promise.all(keys.slice(0, Math.max(0, keys.length - STATIC_MAX)).map((k) => c.delete(k)))).finally(() => { trimming = false; });
+}
 
 // ── Push Notifications ──
 self.addEventListener("push", (e) => {
@@ -81,8 +93,11 @@ self.addEventListener("notificationclick", (e) => {
   const target = (e.notification.data && e.notification.data.url) || "/";
   e.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+      const url = new URL(target, self.location.origin);
+      if (url.origin !== self.location.origin) return self.clients.openWindow("/");
       const open = wins.find((w) => new URL(w.url).origin === self.location.origin);
-      return open ? open.focus() : self.clients.openWindow(target);
+      if (!open) return self.clients.openWindow(url.href);
+      return open.focus().then((w) => (url.hash && w.navigate ? w.navigate(url.href) : w));
     })
   );
 });
