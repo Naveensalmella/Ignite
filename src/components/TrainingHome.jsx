@@ -16,6 +16,8 @@ import ExerciseLibrary from "./training/ExerciseLibrary";
 import WorkoutPreview, { estimateWorkout } from "./training/WorkoutPreview";
 import ProgramsTab, { ProgramSheet, ALL_PROGRAMS, programProgress, programSession } from "./training/ProgramsTab";
 import ProgressView from "./training/ProgressView";
+import GatesBoard from "./system/GatesBoard";
+import { clearGate } from "@/lib/system/actions";
 import BodyMap from "./training/BodyMap";
 import { getExerciseInfo, toWorkoutExercise } from "@/lib/exerciseVisuals";
 import { MUSCLES, MUSCLE_LABELS } from "@/lib/muscles";
@@ -122,7 +124,7 @@ function AIGenerator({ onReady }) {
 // ══════════════════════════════════════════════════════════════
 export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, profile = {}, programState = {}, setProgramState = () => { } }) {
     const ps = useMemo(() => programState || {}, [programState]);
-    const [tab, setTab] = useState(() => { try { return localStorage.getItem("ignite-training-tab") || "workouts"; } catch { return "workouts"; } });
+    const [tab, setTab] = useState(() => { try { return localStorage.getItem("ignite-training-tab") || "gates"; } catch { return "gates"; } });
     const [preview, setPreview] = useState(null);       // { workout, editing }
     const [active, setActive] = useState(null);
     const [program, setProgram] = useState(null);
@@ -199,6 +201,7 @@ export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, pr
             return { ...prev, [d]: [...day, entry] };
         });
         addXP?.(xp, "Workout Complete");
+        if (result.workout.gate) setTimeout(() => clearGate(result.workout.gate, result.log), 400);
         if (result.workout.challengeId) {
             setChallengeProgress(prev => {
                 const old = prev[result.workout.challengeId] || { currentDay: 1, completedDays: 0 };
@@ -209,7 +212,7 @@ export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, pr
             setProgramState(prev => ({ ...(prev || {}), completedDays: [...toArr(prev?.completedDays), d] }));
         }
         setActive(null);
-        setTab("progress");
+        setTab(result.workout.gate ? "gates" : "progress");
     }
 
     function startChallenge(ch) {
@@ -287,7 +290,7 @@ export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, pr
 
             {/* ── Tabs ── */}
             <div className="tr-tabs" role="tablist">
-                {[["workouts", "Workouts"], ["programs", "Programs"], ["library", "Exercises"], ["progress", "Progress"]].map(([k, l]) => (
+                {[["gates", "Gates"], ["workouts", "Workouts"], ["programs", "Programs"], ["library", "Exercises"], ["progress", "Progress"]].map(([k, l]) => (
                     <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "is-active" : ""} onClick={() => setTab(k)}>{l}</button>
                 ))}
             </div>
@@ -390,6 +393,7 @@ export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, pr
                 </div>
             )}
 
+            {tab === "gates" && <GatesBoard onEnter={start} />}
             {tab === "programs" && <ProgramsTab programState={ps} profile={profile} onOpen={setProgram} />}
             {tab === "library" && <ExerciseLibrary onOpen={setExercise} />}
             {tab === "progress" && <ProgressView sessions={sessions} prs={prs} onOpenExercise={setExercise} />}

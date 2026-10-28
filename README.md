@@ -10,6 +10,10 @@ Built with **Next.js 16 (App Router)**, **React 19**, **Zustand**, **Tailwind CS
 | **Status** (home) | The Status Window: level, Hunter rank, job, title, XP, Gold, and five stats — STR, AGI, VIT, INT, PER — earned from your real activity, plus Ability Points (+3 per level) to allocate |
 | **Quests** | The System's **Daily Quest** (push-ups, sit-ups, squats, run — scaled to your level, fully editable, resets at midnight), the **Penalty Zone** (a missed Daily Quest means a 5-minute survival workout; XP is halved until it's cleared — nothing is ever taken away), **Rank Assessments** (E → D → C → B → A → S → National Level), habits and long-term missions |
 | **Inventory & Shop** | Spend Gold on System items (Streak Shield, XP Potion, Penalty Pardon, Random Box, Stat Reset Scroll) or on real-life rewards you define yourself; achievements and titles |
+| **Gates & Dungeons** | Three new Gates every day (one below your rank, one at it, and a Red Gate above it that needs a Gate Key): themed dungeon workouts — Goblin Den, Ant Island, Demon Castle… — with waves and a boss round. Clear 60% of the sets for XP, Gold and loot |
+| **Skills & Titles** | Skills unlock from your stats (e.g. Bloodlust at STR 20: +10% workout XP); titles are earned from feats (“Wolf Slayer”, “One Who Overcame Adversity”…) and the equipped one grants a bonus |
+| **Shadow Army** | Keep a habit for 14 days and ARISE it as a shadow (Igris, Iron, Tank…). Shadows rank up with your best streak — Soldier → Knight → Elite Knight → Commander → Marshal → Grand Marshal — add an XP bonus while active, and go dormant when the habit breaks |
+| **Job Change** | At Level 40, a 7-day Job Change Quest; then choose Fighter, Assassin, Tank, Mage-Scholar or Ranger-Monk — or the hidden Shadow Monarch class |
 | **Training** | Visual demo for **every** exercise (start/end photos or an animated athlete), 900+ exercise library, workout player with set/weight logging, rest timer and PR detection, muscle-recovery map, 22 programs (strength, combat, running, yoga, HIIT, mind), custom workouts, AI workout builder, progress analytics |
 | **Nutrition** | Food log with 190+ Indian/global foods, AI photo & text food scanner, water tracker, macro targets, meal plans & shopping list |
 | **The System** (AI) | Streaming AI guide in the System's voice, 4 specialties; knows your rank, stats and quest status; can log food from chat |
@@ -101,7 +105,7 @@ src/components/training/  Training hub pieces: MoveFigure, BodyMap, ExerciseDemo
 src/stores/         Zustand store — loading, auto-save, XP, streak logic
 src/store-v2.js     Firestore read/write layer
 src/lib/            Firebase init, AI helpers, workout helpers
-src/lib/system/     The System: Hunter ranks & assessments, stats engine, Daily Quest, shop items, actions
+src/lib/system/     The System: ranks & assessments, stats, Daily Quest, Gates, skills/titles/jobs/shadows (progression.js), shop, actions
 src/components/system/  Status window, Quests, Inventory & Shop, [SYSTEM] notifications, Awakening
 src/data/           Food database, exercises, programs, gamification data
 public/             PWA manifest, service worker, icons

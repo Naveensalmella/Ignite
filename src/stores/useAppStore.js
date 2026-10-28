@@ -10,6 +10,7 @@ import { playLevelUp } from '@/sounds';
 import { playerRank, availableTrial } from '@/lib/system/ranks';
 import { AP_PER_LEVEL } from '@/lib/system/stats';
 import { pruneQuestLog } from '@/lib/system/quests';
+import { xpMultiplier, goldMultiplier } from '@/lib/system/progression';
 
 // Fields stored on the main users/{uid} document.
 const PROFILE_FIELDS = [
@@ -187,11 +188,13 @@ const useAppStore = create((set, get) => ({
 
   // ── Add XP (streak multiplier, XP Potion, Penalty halving, gold, ability points, level-up) ──
   addXP: (amount, reason = "") => {
-    const { streak, logActivity, pushXpEvent, system } = get();
+    const { streak, logActivity, pushXpEvent, system, activeTitle } = get();
     const mult = getStreakMult(streak);
     const boosted = (Number(system?.buffs?.xpBoostUntil) || 0) > Date.now();
     const penalized = !!system?.penalty?.active;
-    const actual = Math.floor((Number(amount) || 0) * mult * (boosted ? 2 : 1) * (penalized ? 0.5 : 1));
+    // Skills, equipped title, job class and Shadow Army
+    const bonus = system?.awakened ? xpMultiplier(system, activeTitle, reason) : 1;
+    const actual = Math.floor((Number(amount) || 0) * mult * bonus * (boosted ? 2 : 1) * (penalized ? 0.5 : 1));
     if (actual <= 0) return;
 
     const prevXP = get().totalXP || 0;
@@ -205,7 +208,7 @@ const useAppStore = create((set, get) => ({
     if (system?.awakened) {
       const apLevel = Number(system.apLevel) || oldLv;
       gainedAP = newLv > apLevel ? (newLv - apLevel) * AP_PER_LEVEL : 0;
-      const gold = Math.max(1, Math.round(actual / 5));
+      const gold = Math.max(1, Math.round((actual / 5) * goldMultiplier(system, activeTitle)));
       set(s => ({
         system: {
           ...s.system,
@@ -235,7 +238,7 @@ const useAppStore = create((set, get) => ({
       const ms = checkMilestone(prevXP, nextXP);
       if (ms) setTimeout(() => set({ milestone: ms }), 800);
     } catch { /* milestone data is optional */ }
-    const tags = `${mult > 1 ? ` ×${mult}` : ''}${boosted ? ' 🧪×2' : ''}${penalized ? ' (penalty ½)' : ''}`;
+    const tags = `${mult > 1 ? ` ×${mult}` : ''}${bonus > 1 ? ` +${Math.round((bonus - 1) * 100)}%` : ''}${boosted ? ' 🧪×2' : ''}${penalized ? ' (penalty ½)' : ''}`;
     pushXpEvent(actual, reason + tags, 1600);
     logActivity("xp", `+${actual} XP: ${reason}`);
     play('xpGain');

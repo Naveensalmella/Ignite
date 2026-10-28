@@ -6,14 +6,16 @@ import useAppStore from "@/stores/useAppStore";
 import SysWin, { GoldAmount } from "./SysWin";
 import { SkeletonPage } from "../Loading";
 import { SHOP_ITEMS, itemById, REWARD_PREFIX } from "@/lib/system/items";
-import { buy, buyReward, consumeItem, saveRewards } from "@/lib/system/actions";
+import { buy, buyReward, consumeItem, saveRewards, equipTitle } from "@/lib/system/actions";
+import { TITLES, describeEffect } from "@/lib/system/progression";
 import { today, toArr } from "@/utils";
 
 const GamingHub = lazy(() => import("../GamingHub"));
-const TABS = [["inventory", "Inventory"], ["shop", "Shop"], ["achievements", "Achievements"]];
+const TABS = [["inventory", "Items"], ["shop", "Shop"], ["titles", "Titles"], ["achievements", "Badges"]];
 
 /** Why an item can't be used right now (null = usable). */
 function blocker(id, system, freezeData) {
+    if (id === "key") return "Used automatically when you clear a Red Gate (Training → Gates).";
     if (id === "shield" && toArr(freezeData?.freezesUsed).includes(today())) return "Today is already protected.";
     if (id === "pardon" && !system?.penalty?.active) return "No active Penalty Quest.";
     if (id === "reset" && !Object.values(system?.allocated || {}).some(n => Number(n) > 0)) return "No allocated points to refund.";
@@ -73,6 +75,31 @@ function RewardForm({ onAdd }) {
             <input className="inp !w-24" type="number" min="10" step="10" value={price} onChange={e => setPrice(e.target.value)} aria-label="Price in gold" />
             <button type="submit" className="sys-btn" disabled={!name.trim()}><Plus size={15} /> Add</button>
         </form>
+    );
+}
+
+function TitlesTab({ system, activeTitle }) {
+    const owned = new Set(toArr(system?.titles));
+    return (
+        <SysWin title="Titles">
+            <p className="text-[12.5px] text-center -mt-1 mb-3" style={{ color: "var(--text-secondary)" }}>Titles are earned once and kept forever. Equip one to gain its bonus.</p>
+            <div className="flex flex-col">
+                {TITLES.map(t => {
+                    const has = owned.has(t.id);
+                    const on = activeTitle === t.name;
+                    return (
+                        <div key={t.id} className="quest-row" style={{ opacity: has ? 1 : 0.55 }}>
+                            <span className="text-[22px] w-8 text-center">{has ? "🏷️" : "🔒"}</span>
+                            <div className="flex-1 min-w-0">
+                                <div className="quest-name" style={on ? { color: "#fde68a" } : undefined}>“{t.name}”</div>
+                                <div className="text-[12px]" style={{ color: "var(--text-secondary)" }}>{has ? describeEffect(t.effect) : t.how}</div>
+                            </div>
+                            {has && <button type="button" className="sys-btn !py-1.5 !px-3 !text-[12px]" onClick={() => equipTitle(t.name)}>{on ? "Unequip" : "Equip"}</button>}
+                        </div>
+                    );
+                })}
+            </div>
+        </SysWin>
     );
 }
 
@@ -138,6 +165,7 @@ export default function InventoryPage({ initialTab = "inventory" }) {
 
             {tab === "inventory" && <InventoryTab system={system} freezeData={s.freezeData} goShop={() => setTab("shop")} />}
             {tab === "shop" && <ShopTab system={system} />}
+            {tab === "titles" && <TitlesTab system={system} activeTitle={s.activeTitle} />}
             {tab === "achievements" && (
                 <Suspense fallback={<SkeletonPage />}>
                     <GamingHub appState={s.getAppState()} totalXP={s.totalXP} streak={s.streak} workoutLog={s.workoutLog} addXP={s.addXP}

@@ -8,9 +8,12 @@ import MoveFigure from "../training/MoveFigure";
 import Sheet from "../training/Sheet";
 import { getLevel, today } from "@/utils";
 import { play } from "../soundEngine";
-import { questItems, questDay, questStatus, questRewards, msToMidnight, PENALTY_MOVES, PENALTY_SECONDS, PENALTY_INTERVAL, QUEST_TEMPLATE, templateTarget } from "@/lib/system/quests";
+import { questItems, questDay, questStatus, questRewards, msToMidnight, PENALTY_MOVES, PENALTY_SECONDS as PENALTY_BASE_SECONDS, PENALTY_INTERVAL, QUEST_TEMPLATE, templateTarget } from "@/lib/system/quests";
 import { availableTrial, TRIALS, trialRewards, rankById } from "@/lib/system/ranks";
-import { awaken, setQuestProgress, saveQuestItems, survivePenalty, consumeItem, startTrial, toggleTrialTask, submitTrial, failTrial } from "@/lib/system/actions";
+import { effectSum, CLASSES, JOB_LEVEL, JOB_DAYS, jobQuestProgress, monarchEligible, describeEffect } from "@/lib/system/progression";
+import { statSheet } from "@/lib/system/stats";
+import { hasDayWorkout } from "@/lib/workoutHelpers";
+import { awaken, startJobQuest, chooseClass, setQuestProgress, saveQuestItems, survivePenalty, consumeItem, startTrial, toggleTrialTask, submitTrial, failTrial } from "@/lib/system/actions";
 
 /** Current time, refreshed every `ms` (0 until the first tick — never read during render). */
 export function useNow(ms = 1000) {
@@ -190,6 +193,9 @@ function QuestEditor({ items, lv, custom, onClose }) {
 /** Penalty Zone — survive 5 minutes of non-stop movement. */
 export function PenaltyZone() {
     const system = useAppStore(s => s.system);
+    const activeTitle = useAppStore(s => s.activeTitle);
+    // Tenacity (skill) and the Tank class shorten the zone.
+    const PENALTY_SECONDS = Math.max(60, PENALTY_BASE_SECONDS - effectSum(system, activeTitle, "penaltyCut"));
     const [endsAt, setEndsAt] = useState(null);
     const [finished, setFinished] = useState(false);
     const now = useNow(250);
@@ -206,7 +212,7 @@ export function PenaltyZone() {
             if (m !== lastMove.current) { if (lastMove.current >= 0) play("timerBeep"); lastMove.current = m; }
         }, 250);
         return () => clearInterval(t);
-    }, [endsAt, finished]);
+    }, [endsAt, finished, PENALTY_SECONDS]);
 
     if (!system?.penalty?.active) return null;
     const total = PENALTY_SECONDS * 1000;
@@ -308,6 +314,68 @@ export function RankTrialCard() {
                     <div className="text-[12px] mt-2 text-center" style={{ color: "var(--text-dim)" }}>The timer starts when you begin. Warm up first.</div>
                 </>
             )}
+        </SysWin>
+    );
+}
+
+/** Job Change Quest (Lv 40): 7 days in a row of Daily Quest + a workout, then pick a class. */
+export function JobChangeCard() {
+    const state = useAppStore();
+    const { system, totalXP, workoutLog } = state;
+    const lv = getLevel(totalXP || 0);
+    if (!system?.awakened || system.job?.id) return null;
+    if (lv < JOB_LEVEL) {
+        return (
+            <div className="gs mb-4 text-[12.5px] flex items-center gap-3" style={{ color: "var(--text-secondary)" }}>
+                <span className="text-[22px]">🔒</span>
+                <span><b style={{ color: "var(--text-primary)" }}>Job Change</b> unlocks at Level {JOB_LEVEL} (you are Lv {lv}). Choose a class that shapes your bonuses.</span>
+            </div>
+        );
+    }
+    const prog = jobQuestProgress(system, (k) => hasDayWorkout(workoutLog, k));
+    if (!prog) {
+        return (
+            <SysWin title="Job Change" kind="gold" className="mb-4">
+                <div className="sys-notice-lines">
+                    <p>You have reached Level {JOB_LEVEL}. A Job Change Quest is available.</p>
+                    <p style={{ color: "var(--text-secondary)" }}>For {JOB_DAYS} days in a row: clear the Daily Quest and finish a workout or Gate.</p>
+                </div>
+                <button type="button" className="sys-btn w-full mt-4" onClick={startJobQuest}>Accept the Job Change Quest</button>
+            </SysWin>
+        );
+    }
+    if (!prog.complete) {
+        return (
+            <SysWin title="Job Change Quest" kind={prog.failed ? "warning" : "gold"} className="mb-4">
+                <div className="flex justify-center gap-1.5 mb-3" aria-label={`${prog.done} of ${JOB_DAYS} days complete`}>
+                    {Array.from({ length: JOB_DAYS }, (_, i) => <span key={i} className={`job-dot ${i < prog.done ? "is-on" : ""}`}>{i + 1}</span>)}
+                </div>
+                <div className="text-center text-[13px]" style={{ color: "var(--text-secondary)" }}>
+                    {prog.failed ? "A day was missed — the quest has failed." : `Day ${prog.done + 1} of ${JOB_DAYS}: clear today's Daily Quest and finish a workout or Gate.`}
+                </div>
+                {prog.failed && <button type="button" className="sys-btn w-full mt-3" onClick={startJobQuest}>Restart from today</button>}
+            </SysWin>
+        );
+    }
+    const sheet = statSheet(state, system);
+    const top = [...sheet].sort((a, b) => b.total - a.total)[0];
+    const options = CLASSES.filter(c => !c.hidden || monarchEligible(sheet, system));
+    return (
+        <SysWin title="Choose Your Job" kind="gold" className="mb-4">
+            <p className="text-center text-[13px] mb-2" style={{ color: "var(--text-secondary)" }}>Quest complete. The choice is permanent.</p>
+            {options.map(c => {
+                const stat = sheet.find(s => s.key === c.stat);
+                return (
+                    <div key={c.id} className="quest-row">
+                        <span className="text-[26px] w-9 text-center">{c.icon}</span>
+                        <div className="flex-1 min-w-0">
+                            <div className="quest-name">{c.name}{c.hidden ? " · Hidden class" : ""}{stat && top.key === c.stat ? " · Recommended" : ""}</div>
+                            <div className="text-[12px]" style={{ color: "var(--text-secondary)" }}>{stat ? `${stat.label} ${stat.total} · ` : ""}{describeEffect(c.effect)}</div>
+                        </div>
+                        <button type="button" className="sys-btn !py-1.5 !px-3 !text-[12px]" onClick={() => { if (window.confirm(`Become a ${c.name}? This can't be changed.`)) chooseClass(c.id); }}>Choose</button>
+                    </div>
+                );
+            })}
         </SysWin>
     );
 }

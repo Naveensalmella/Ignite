@@ -2,7 +2,7 @@
 // Quests: the System's Daily Quest (+ Penalty Zone, Rank Assessment), habits and long-term missions.
 import { useState, lazy, Suspense } from "react";
 import useAppStore from "@/stores/useAppStore";
-import { DailyQuestCard, PenaltyZone, RankTrialCard } from "./QuestWidgets";
+import { DailyQuestCard, PenaltyZone, RankTrialCard, JobChangeCard } from "./QuestWidgets";
 import { SkeletonPage } from "../Loading";
 
 const DailyQuestPage = lazy(() => import("../DailyQuestPage"));
@@ -26,6 +26,7 @@ export default function QuestsPage({ initialTab = "daily" }) {
                 <>
                     <PenaltyZone />
                     <RankTrialCard />
+                    <JobChangeCard />
                     <DailyQuestCard />
                     <div className="gs mt-4 text-[12.5px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
                         <div className="sys-label mb-1">How it works</div>

@@ -16,6 +16,7 @@ const StatusPage = lazy(() => import('./system/StatusPage'));
 const QuestsPage = lazy(() => import('./system/QuestsPage'));
 const InventoryPage = lazy(() => import('./system/InventoryPage'));
 const ProgressPage = lazy(() => import('./ProgressPage'));
+const ShadowArmyPage = lazy(() => import('./system/ShadowArmyPage'));
 const TrainingPage = lazy(() => import('./TrainingPage'));
 const Nutrition = lazy(() => import('./Nutrition'));
 const MissionsPage = lazy(() => import('./MissionsPage'));
@@ -180,6 +181,18 @@ export default function App() {
         };
     }, []);
 
+    // ── Skills, titles and Shadow Army power follow your progress (debounced) ──
+    useEffect(() => {
+        const WATCH = ['workoutLog', 'foodLog', 'focusLog', 'journal', 'habitLog', 'habits', 'tasks', 'finances', 'streak', 'system', 'dataReady'];
+        let t = null;
+        const run = () => { t = null; import('@/lib/system/actions').then(m => m.checkUnlocks()).catch(() => { /* optional */ }); };
+        const unsub = useAppStore.subscribe((cur, prev) => {
+            if (!cur.dataReady || !cur.system?.awakened) return;
+            if (WATCH.some(k => cur[k] !== prev[k])) { if (t) clearTimeout(t); t = setTimeout(run, 1200); }
+        });
+        return () => { unsub(); if (t) clearTimeout(t); };
+    }, []);
+
     // Retry a failed save after a short pause.
     useEffect(() => {
         if (syncStatus !== 'error') return;
@@ -278,7 +291,8 @@ export default function App() {
     const renderPage = () => {
         switch (current) {
             case 'quests': return <QuestsPage initialTab={page === 'growth' ? 'long' : page === 'dailyquest' ? 'habits' : 'daily'} />;
-            case 'inventory': return <InventoryPage initialTab={page === 'gaming' ? 'achievements' : page === 'shop' ? 'shop' : 'inventory'} />;
+            case 'inventory': return <InventoryPage initialTab={page === 'gaming' ? 'achievements' : page === 'shop' ? 'shop' : page === 'titles' ? 'titles' : 'inventory'} />;
+            case 'army': return <ShadowArmyPage />;
             case 'training': return <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} programState={programState} setProgramState={setProgramState} />;
             case 'nutrition': return <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} profile={profile} />;
             case 'missions': return <MissionsPage tasks={tasks} setTasks={setTasks} addXP={addXP} />;

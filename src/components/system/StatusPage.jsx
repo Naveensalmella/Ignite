@@ -11,6 +11,7 @@ import { hasDayWorkout } from "@/lib/workoutHelpers";
 import { statSheet } from "@/lib/system/stats";
 import { playerRank, availableTrial } from "@/lib/system/ranks";
 import { allocate } from "@/lib/system/actions";
+import { SKILLS, TITLES, classById, describeEffect, armyState } from "@/lib/system/progression";
 
 function StatusWindow() {
     const s = useAppStore();
@@ -30,6 +31,7 @@ function StatusWindow() {
     );
     const power = sheet.reduce((a, st) => a + st.total, 0);
     const name = profile?.name || user?.name || "Player";
+    const job = classById(system?.job?.id);
 
     return (
         <SysWin title="Status">
@@ -41,7 +43,7 @@ function StatusWindow() {
                 <dl className="status-kv flex-1 min-w-0">
                     <dt>Name</dt><dd>{name}</dd>
                     <dt>Rank</dt><dd className="flex items-center gap-1.5"><RankEmblem rank={rank} size={20} /><span style={{ color: rank.color }}>{rank.name}</span></dd>
-                    <dt>Job</dt><dd style={{ color: "var(--text-dim)" }}>None</dd>
+                    <dt>Job</dt><dd>{job ? <span style={{ color: "#fde68a" }}>{job.icon} {job.name}</span> : <span style={{ color: "var(--text-dim)" }}>{system?.job?.questStart ? "Job Change in progress" : "None"}</span>}</dd>
                     <dt>Title</dt><dd>{activeTitle || <span style={{ color: "var(--text-dim)" }}>—</span>}</dd>
                 </dl>
             </div>
@@ -80,6 +82,49 @@ function StatusWindow() {
             </div>
             <div className="text-[11.5px] mt-2" style={{ color: "var(--text-dim)" }}>
                 Stats grow from what you actually do. Every level grants 3 Ability Points to spend.
+            </div>
+        </SysWin>
+    );
+}
+
+function SkillsWindow({ setPage }) {
+    const system = useAppStore(s => s.system);
+    const activeTitle = useAppStore(s => s.activeTitle);
+    const habits = useAppStore(s => s.habits);
+    const habitLog = useAppStore(s => s.habitLog);
+    if (!system?.awakened) return null;
+    const owned = new Set(system.skills || []);
+    const army = armyState(system, habits, habitLog);
+    const title = TITLES.find(t => t.name === activeTitle && (system.titles || []).includes(t.id));
+    const job = classById(system.job?.id);
+    const bonuses = [
+        ...SKILLS.filter(s => owned.has(s.id)).map(s => `${s.icon} ${s.name}: ${describeEffect(s.effect, s.desc)}`),
+        ...(title ? [`🏷️ “${title.name}”: ${describeEffect(title.effect)}`] : []),
+        ...(job ? [`${job.icon} ${job.name}: ${describeEffect(job.effect)}`] : []),
+        ...(army.power > 0 ? [`👥 Shadow Army: +${Math.round(army.power * 100)}% XP from everything`] : []),
+    ];
+    return (
+        <SysWin title="Skills" className="mb-4">
+            <div className="skill-grid">
+                {SKILLS.map(sk => {
+                    const has = owned.has(sk.id);
+                    return (
+                        <div key={sk.id} className={`skill ${has ? "is-on" : ""}`} title={describeEffect(sk.effect, sk.desc)}>
+                            <span className="skill-icon">{has ? sk.icon : "🔒"}</span>
+                            <span className="skill-name">{sk.name}</span>
+                            <span className="skill-req">{has ? describeEffect(sk.effect, sk.desc) : Object.entries(sk.req).map(([k, v]) => `${k.toUpperCase()} ${v}`).join(" · ")}</span>
+                        </div>
+                    );
+                })}
+            </div>
+            <div className="sys-divider" />
+            <div className="sys-label mb-1">Active bonuses</div>
+            {bonuses.length ? (
+                <ul className="text-[12.5px] flex flex-col gap-1" style={{ color: "var(--text-secondary)" }}>{bonuses.map(b => <li key={b}>{b}</li>)}</ul>
+            ) : <div className="text-[12.5px]" style={{ color: "var(--text-dim)" }}>None yet — raise stats to unlock skills, earn titles and raise shadows.</div>}
+            <div className="flex gap-2 mt-3">
+                <button type="button" className="sys-btn flex-1 !text-[12.5px]" onClick={() => setPage("army")}>👥 Shadow Army ({army.shadows.length})</button>
+                <button type="button" className="sys-btn flex-1 !text-[12.5px]" onClick={() => setPage("titles")}>🏷️ Titles ({(system.titles || []).length})</button>
             </div>
         </SysWin>
     );
@@ -147,6 +192,7 @@ export default function StatusPage() {
             <Alerts setPage={setPage} />
             <div className="mb-4"><StatusWindow /></div>
             <div className="mb-4"><DailyQuestCard compact onOpen={() => setPage("quests")} /></div>
+            <SkillsWindow setPage={setPage} />
             <div className="sys-label mb-2">Today</div>
             <TodayTiles setPage={setPage} />
             <WeeklyReport workoutLog={s.workoutLog} foodLog={s.foodLog} focusLog={s.focusLog} habitLog={s.habitLog} totalXP={s.totalXP} streak={s.streak} />

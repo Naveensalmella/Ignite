@@ -4,6 +4,7 @@ export const SHOP_ITEMS = [
     { id: "shield", name: "Streak Shield", icon: "🛡️", price: 300, desc: "Protects today: keeps your streak and prevents a Penalty Quest if today's Daily Quest is missed." },
     { id: "potion", name: "XP Potion", icon: "🧪", price: 250, desc: "Doubles all XP you earn for the next 60 minutes." },
     { id: "pardon", name: "Penalty Pardon", icon: "📜", price: 500, desc: "Instantly clears an active Penalty Quest." },
+    { id: "key", name: "Gate Key", icon: "🗝️", price: 200, desc: "Opens today's Red Gate — a dungeon one rank above yours. Used when you clear it." },
     { id: "box", name: "Random Box", icon: "🎁", price: 150, desc: "Contains gold, an item or an Ability Point." },
     { id: "reset", name: "Stat Reset Scroll", icon: "🌀", price: 400, desc: "Refunds every Ability Point you've allocated so you can rebuild." },
 ];

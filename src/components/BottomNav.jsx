@@ -2,19 +2,20 @@
 import { useState, useEffect } from 'react';
 import {
     IdCard, Swords, Apple, Sparkles, User, LayoutGrid, X, Timer, Heart, Users,
-    Calendar, Wallet, Camera, ListChecks, Share2, ScrollText, Backpack,
+    Calendar, Wallet, Camera, ListChecks, Share2, ScrollText, Backpack, Ghost,
 } from 'lucide-react';
 
 // Single source of truth for every page the app can show.
 export const MAIN_TABS = [
     { key: "status", label: "Status", title: "Status", Icon: IdCard },
     { key: "quests", label: "Quests", title: "Quests", Icon: ScrollText },
-    { key: "training", label: "Train", title: "Training", Icon: Swords },
+    { key: "training", label: "Gates", title: "Gates & Training", Icon: Swords },
     { key: "oracle", label: "System", title: "The System", Icon: Sparkles },
     { key: "inventory", label: "Inventory", title: "Inventory", Icon: Backpack },
 ];
 
 export const MORE_PAGES = [
+    { key: "army", label: "Shadows", title: "Shadow Army", Icon: Ghost, desc: "Habits that rise" },
     { key: "nutrition", label: "Nutrition", title: "Nutrition", Icon: Apple, desc: "Food & water" },
     { key: "focus", label: "Focus", title: "Focus Timer", Icon: Timer, desc: "Pomodoro timer" },
     { key: "wellness", label: "Wellness", title: "Wellness", Icon: Heart, desc: "Mood & journal" },
@@ -34,6 +35,7 @@ export const PAGE_KEYS = new Set(ALL_PAGES.map(p => p.key));
 export const PAGE_ALIASES = {
     dashboard: "status", gaming: "inventory", dailyquest: "quests", growth: "quests",
     programs: "training", challenges: "training", body: "bodyphotos", shop: "inventory",
+    titles: "inventory", gates: "training", shadows: "army",
 };
 export const resolvePage = (key) => (PAGE_KEYS.has(key) ? key : PAGE_ALIASES[key] || null);
 export const pageTitle = (key) => ALL_PAGES.find(p => p.key === key)?.title || "IGNITE";

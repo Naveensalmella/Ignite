@@ -6,6 +6,7 @@ import useAppStore from '@/stores/useAppStore';
 import { playerRank } from '@/lib/system/ranks';
 import { statSheet } from '@/lib/system/stats';
 import { questItems, questDay, questStatus } from '@/lib/system/quests';
+import { classById } from '@/lib/system/progression';
 
 // Streaming AI call — calls onToken with the full text so far; resolves with the final text.
 async function callAIStream(messages, mode, userContext, onToken) {
@@ -146,7 +147,7 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
     const questLine = !system?.awakened ? "Not awakened yet."
       : system.penalty?.active ? "PENALTY ZONE ACTIVE (missed yesterday's Daily Quest): XP halved until the 5-minute Penalty Zone is survived."
         : `Daily Quest today: ${qDay.claimed ? "COMPLETED" : `${Math.round(qs.pct * 100)}% — ` + qItems.map(i => `${i.name} ${Number(qDay.progress?.[i.id]) || 0}/${i.target}${i.unit === "reps" ? "" : i.unit}`).join(", ")}.`;
-    const systemLine = `SYSTEM STATUS: Hunter rank ${rank.name}. Stats: ${stats}. Unspent Ability Points: ${Number(system?.abilityPoints) || 0}. Gold: ${Number(system?.gold) || 0}. ${questLine}`;
+    const systemLine = `SYSTEM STATUS: Hunter rank ${rank.name}. Stats: ${stats}. Unspent Ability Points: ${Number(system?.abilityPoints) || 0}. Gold: ${Number(system?.gold) || 0}. Job: ${classById(system?.job?.id)?.name || "none"}. Shadows: ${toArr(system?.shadows).length}. Gates cleared: ${Number(system?.gateStats?.cleared) || 0}. ${questLine}`;
     const todayFood = toArr(appState?.foodLog?.[d]);
     const todayWorked = hasDayWorkout(workoutLog, d);
     const todayCal = todayFood.reduce((s, f) => s + (f.cal || 0), 0);
