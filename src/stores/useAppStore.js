@@ -1,6 +1,6 @@
 "use client";
 import { create } from 'zustand';
-import { DEFAULT_HABITS } from '@/data/index';
+import { DEFAULT_HABITS, MAX_XP_MULT } from '@/data/index';
 import { getLevel, getStreakMult, today, addDays, normalizeDayLog, toArr } from '@/utils';
 import { checkMilestone } from '@/data/gamingSystem';
 import { hasDayWorkout } from '@/lib/workoutHelpers';
@@ -9,7 +9,7 @@ import { play, hapticTap } from '@/components/soundEngine';
 import { playLevelUp } from '@/sounds';
 import { playerRank, availableTrial } from '@/lib/system/ranks';
 import { AP_PER_LEVEL } from '@/lib/system/stats';
-import { pruneQuestLog } from '@/lib/system/quests';
+import { pruneQuestLog, msToMidnight, penaltyExpired, penaltyFine, penaltyCovers, PENALTY_DAYS } from '@/lib/system/quests';
 import { xpMultiplier, goldMultiplier } from '@/lib/system/progression';
 
 // Fields stored on the main users/{uid} document.
@@ -93,6 +93,8 @@ export function computeStreak(workoutLog, freezeData) {
   }
   return streak;
 }
+
+let midnightTimer = null; // re-runs runDailyCheck just after local midnight
 
 // Save bookkeeping (module-level: one signed-in user per tab).
 let lastSaved = new Map();   // doc key → JSON of what Firestore has
@@ -188,13 +190,18 @@ const useAppStore = create((set, get) => ({
 
   // ── Add XP (streak multiplier, XP Potion, Penalty halving, gold, ability points, level-up) ──
   addXP: (amount, reason = "") => {
-    const { streak, logActivity, pushXpEvent, system, activeTitle } = get();
+    const { logActivity, pushXpEvent, system, activeTitle, workoutLog, freezeData } = get();
+    // Fresh streak (the stored one is synced by an effect after render, so a streak-extending
+    // workout would otherwise pay the old multiplier).
+    const streak = get().dataReady ? computeStreak(workoutLog, freezeData) : get().streak;
     const mult = getStreakMult(streak);
     const boosted = (Number(system?.buffs?.xpBoostUntil) || 0) > Date.now();
     const penalized = !!system?.penalty?.active;
     // Skills, equipped title, job class and Shadow Army
     const bonus = system?.awakened ? xpMultiplier(system, activeTitle, reason) : 1;
-    const actual = Math.floor((Number(amount) || 0) * mult * bonus * (boosted ? 2 : 1) * (penalized ? 0.5 : 1));
+    // Streak × System bonuses × XP Potion never exceed MAX_XP_MULT combined (the penalty still halves after that).
+    const combined = Math.min(MAX_XP_MULT, mult * bonus * (boosted ? 2 : 1));
+    const actual = Math.floor((Number(amount) || 0) * combined * (penalized ? 0.5 : 1));
     if (actual <= 0) return;
 
     const prevXP = get().totalXP || 0;
@@ -238,7 +245,8 @@ const useAppStore = create((set, get) => ({
       const ms = checkMilestone(prevXP, nextXP);
       if (ms) setTimeout(() => set({ milestone: ms }), 800);
     } catch { /* milestone data is optional */ }
-    const tags = `${mult > 1 ? ` ×${mult}` : ''}${bonus > 1 ? ` +${Math.round((bonus - 1) * 100)}%` : ''}${boosted ? ' 🧪×2' : ''}${penalized ? ' (penalty ½)' : ''}`;
+    const capped = combined < mult * bonus * (boosted ? 2 : 1);
+    const tags = `${mult > 1 ? ` ×${mult}` : ''}${bonus > 1 ? ` +${Math.round((bonus - 1) * 100)}%` : ''}${boosted ? ' 🧪×2' : ''}${capped ? ` (max ×${MAX_XP_MULT})` : ''}${penalized ? ' (penalty ½)' : ''}`;
     pushXpEvent(actual, reason + tags, 1600);
     logActivity("xp", `+${actual} XP: ${reason}`);
     play('xpGain');
@@ -271,22 +279,39 @@ const useAppStore = create((set, get) => ({
     if (sys?.awakened && sys.penaltyChecked !== d) {
       const y = addDays(-1, d);
       const shielded = toArr(s.freezeData?.freezesUsed).includes(y);
-      const missed = !!sys.awakenedOn && y >= sys.awakenedOn && !sys.questLog?.[y]?.claimed && !shielded && !sys.penalty?.active;
+      // An ignored Penalty Quest doesn't last forever: after PENALTY_DAYS it expires and costs Gold.
+      const expired = penaltyExpired(sys.penalty, d);
+      const fine = expired ? penaltyFine(sys.gold) : 0;
+      // `>`: awakening late at night doesn't owe that day's quest. Days spent locked in a penalty don't count.
+      const missed = !!sys.awakenedOn && y > sys.awakenedOn && !sys.questLog?.[y]?.claimed && !shielded && !penaltyCovers(sys.penalty, y);
       updates.system = {
         ...sys,
         ...pruneQuestLog(sys, d),
         penaltyChecked: d,
+        ...(expired ? { gold: Math.max(0, (Number(sys.gold) || 0) - fine), penalty: { ...sys.penalty, active: false, cleared: 'expired', clearedAt: Date.now(), endedOn: y, fine } } : {}),
         ...(missed ? { penalty: { active: true, date: d, missed: y } } : {}),
       };
+      if (expired) {
+        setTimeout(() => get().notify({
+          kind: 'warning', title: 'PENALTY EXPIRED',
+          lines: [`You ignored the Penalty Quest for ${PENALTY_DAYS} days.`, fine ? `The System confiscated ${fine} Gold.` : 'You had no Gold to confiscate.', 'XP gains are back to normal and the Daily Quest is unlocked.'],
+        }), 1200);
+      }
       if (missed) {
         setTimeout(() => get().notify({
           kind: 'warning', title: 'PENALTY QUEST',
-          lines: ["Yesterday's Daily Quest was not completed.", 'You have been sent to the Penalty Zone. Until you survive it, XP gains are halved and the Daily Quest is locked.'],
+          lines: ["Yesterday's Daily Quest was not completed.", `You have been sent to the Penalty Zone. Until you survive it, XP gains are halved and the Daily Quest is locked. Ignore it for ${PENALTY_DAYS} days and the System takes Gold instead.`],
           cta: { label: 'Enter the Penalty Zone', page: 'quests' },
         }), 1200);
       }
     }
     set(updates);
+
+    // Run again just after local midnight (the app may stay open overnight).
+    if (typeof window !== 'undefined') {
+      if (midnightTimer) clearTimeout(midnightTimer);
+      midnightTimer = setTimeout(() => { midnightTimer = null; get().runDailyCheck(); }, msToMidnight() + 2000);
+    }
   },
 
   // ── Load user data from Firestore ──

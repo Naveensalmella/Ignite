@@ -111,7 +111,7 @@ export const SHADOW_RANKS = [
 export const ARISE_DAYS = 14;
 export const SHADOW_NAMES = ["Igris", "Iron", "Tank", "Tusk", "Beru", "Bellion", "Kaisel", "Greed", "Jima", "Kamish", "Fangs", "Cerberus", "Ashborn"];
 
-export const shadowRank = (best) => [...SHADOW_RANKS].reverse().find(r => best >= r.min) || SHADOW_RANKS[0];
+export const shadowRank = (days) => [...SHADOW_RANKS].reverse().find(r => days >= r.min) || SHADOW_RANKS[0];
 
 /** Current and best consecutive-day run for one habit. Today may still be pending. */
 export function habitRuns(habitLog, habitId) {
@@ -136,7 +136,8 @@ export function armyState(system, habits, habitLog) {
     const shadows = arisen.map(sh => {
         const habit = list.find(h => String(h.id) === String(sh.habitId));
         const runs = habitRuns(habitLog, sh.habitId);
-        const rank = shadowRank(Math.max(runs.best, ARISE_DAYS));
+        // Power follows the CURRENT run: a shadow is never lost, but it weakens when the habit breaks.
+        const rank = shadowRank(Math.max(runs.current, ARISE_DAYS));
         return { ...sh, habit, ...runs, rank, active: runs.current > 0 && !!habit };
     });
     const mult = classById(system?.job?.id)?.effect.armyMult || 1;

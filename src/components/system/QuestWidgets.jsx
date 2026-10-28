@@ -10,8 +10,8 @@ import MoveFigure from "../training/MoveFigure";
 import Sheet from "../training/Sheet";
 import { getLevel, today } from "@/utils";
 import { play } from "../soundEngine";
-import { questItems, questDay, questStatus, questRewards, msToMidnight, PENALTY_MOVES, PENALTY_SECONDS as PENALTY_BASE_SECONDS, PENALTY_INTERVAL, QUEST_TEMPLATE, templateTarget } from "@/lib/system/quests";
-import { availableTrial, TRIALS, trialRewards, rankById } from "@/lib/system/ranks";
+import { questItems, questDay, questStatus, scaledQuestRewards, questEditable, questScale, MIN_QUEST_EFFORT, PENALTY_DAYS, msToMidnight, PENALTY_MOVES, PENALTY_SECONDS as PENALTY_BASE_SECONDS, PENALTY_INTERVAL, QUEST_TEMPLATE, templateTarget } from "@/lib/system/quests";
+import { availableTrial, TRIALS, TRIAL_MIN_MS, trialRewards, rankById } from "@/lib/system/ranks";
 import { effectSum, CLASSES, JOB_LEVEL, JOB_DAYS, jobQuestProgress, monarchEligible, describeEffect } from "@/lib/system/progression";
 import { statSheet } from "@/lib/system/stats";
 import { hasDayWorkout } from "@/lib/workoutHelpers";
@@ -93,7 +93,8 @@ export function DailyQuestCard({ compact = false, onOpen }) {
     const { system, lv, items, day, locked } = useQuest();
     const now = useNow(compact ? 30000 : 1000);
     const [editing, setEditing] = useState(false);
-    const r = questRewards(system?.rank);
+    const r = scaledQuestRewards(system?.rank, items, lv);
+    const editable = questEditable(day);
     const left = now ? msToMidnight(new Date(now)) : null;
 
     if (!system?.awakened) {
@@ -128,7 +129,7 @@ export function DailyQuestCard({ compact = false, onOpen }) {
                     <div className="flex flex-wrap gap-1.5 mt-3">
                         {day.claimed
                             ? <Pill tone="teal">✓ Cleared{day.over ? " · hidden reward claimed" : ""}</Pill>
-                            : <><Pill tone="sky">+{r.xp} XP</Pill><Pill tone="amber">+{r.gold} Gold</Pill><Pill tone="violet">+{r.ap} point</Pill><Pill tone="orange" icon={Gift}>{Math.round(r.boxChance * 100)}% box</Pill></>}
+                            : <><Pill tone="sky">+{r.xp} XP</Pill><Pill tone="amber">+{r.gold} Gold</Pill>{r.ap > 0 && <Pill tone="violet">+{r.ap} point</Pill>}<Pill tone="orange" icon={Gift}>{Math.round(r.boxChance * 100)}% box</Pill>{r.scale < 1 && <Pill tone="rose">{Math.round(r.scale * 100)}% rewards — easier than the System&apos;s quest</Pill>}</>}
                     </div>
                 )}
 
@@ -136,8 +137,9 @@ export function DailyQuestCard({ compact = false, onOpen }) {
                     <span className="text-[12.5px] dim inline-flex items-center gap-1"><Clock size={14} /> {left == null ? "…" : `${fmtLeft(left)} left today`}</span>
                     {compact
                         ? <button type="button" className="bp !py-2.5" onClick={onOpen}>{locked ? "Penalty Zone" : day.claimed ? "View" : "Continue"}</button>
-                        : <button type="button" className="bg !py-2" onClick={() => setEditing(true)} disabled={locked}><Pencil size={14} /> Edit quest</button>}
+                        : <button type="button" className="bg !py-2" onClick={() => setEditing(true)} disabled={locked || !editable}><Pencil size={14} /> Edit quest</button>}
                 </div>
+                {!compact && !locked && !editable && <p className="text-[12px] dim mt-2">The quest is locked once you start it — edit it tomorrow before logging anything.</p>}
                 {!compact && !locked && (
                     <p className="text-[12px] dim mt-2">{day.claimed && !day.over ? "Keep going — double every target for a hidden reward." : !day.claimed ? "Double every target for a hidden reward. Miss today and tomorrow starts with a short Penalty Zone." : ""}</p>
                 )}
@@ -150,14 +152,26 @@ export function DailyQuestCard({ compact = false, onOpen }) {
 let nextId = 0;
 function QuestEditor({ items, lv, custom, onClose }) {
     const [list, setList] = useState(() => items.map(i => ({ ...i })));
-    const set = (idx, patch) => setList(l => l.map((x, i) => (i === idx ? { ...x, ...patch } : x)));
-    const save = () => { saveQuestItems(list); onClose(); };
-    const reset = () => { saveQuestItems(null); onClose(); };
+    const [error, setError] = useState("");
+    const set = (idx, patch) => { setError(""); setList(l => l.map((x, i) => (i === idx ? { ...x, ...patch } : x))); };
+    const done = (res) => { if (res?.ok === false) setError(res.reason); else onClose(); };
+    const save = () => done(saveQuestItems(list));
+    const reset = () => done(saveQuestItems(null));
+    // Difficulty vs the System's template for this level (min MIN_QUEST_EFFORT to save).
+    const scale = questScale(questItems({ quest: { items: list.filter(i => String(i.name || "").trim()) } }, lv), lv);
     return (
         <Sheet title="Edit Daily Quest" subtitle="Your quest, your rules" onClose={onClose}
-            footer={<button type="button" className="bp w-full" onClick={save}>Save quest</button>}>
+            footer={<>
+                {error && <p className="text-[12.5px] mb-2" role="alert" style={{ color: "var(--danger)" }}>{error}</p>}
+                <button type="button" className="bp w-full" onClick={save}>Save quest</button>
+            </>}>
+            <div className="flex items-center gap-2 mb-3">
+                <span className="text-[12.5px] muted shrink-0">Difficulty</span>
+                <Bar value={scale} color={scale >= MIN_QUEST_EFFORT ? "var(--ok)" : "var(--danger)"} className="flex-1" />
+                <span className="text-[12.5px] num shrink-0" style={{ color: scale >= MIN_QUEST_EFFORT ? "var(--ok)" : "var(--danger)" }}>{Math.round(scale * 100)}%</span>
+            </div>
             <p className="text-[13px] muted mb-3">
-                The template grows with your level (Lv {lv}: {templateTarget("pushups", lv)} reps, {templateTarget("run", lv)} km). Change any target, swap exercises or add your own.
+                The template grows with your level (Lv {lv}: {templateTarget("pushups", lv)} reps, {templateTarget("run", lv)} km). Change any target, swap exercises or add your own — it must stay at least {Math.round(MIN_QUEST_EFFORT * 100)}% as hard as the template. Edits lock once you start the day.
             </p>
             <div className="flex flex-col gap-3">
                 {list.map((it, idx) => (
@@ -232,7 +246,7 @@ export function PenaltyZone() {
         <Card tone="rose" title={<span className="inline-flex items-center gap-2"><TriangleAlert size={17} style={{ color: "var(--danger)" }} /> Penalty Quest</span>}
             sub={finished ? "Survived" : `${Math.round(zoneSeconds / 60)} min`}>
             <p className="text-[13.5px] muted -mt-1 mb-3">
-                {finished ? "You survived the Penalty Zone." : "Yesterday's Daily Quest was missed. Survive non-stop movement to lift the penalty — until then XP is halved."}
+                {finished ? "You survived the Penalty Zone." : `Yesterday's Daily Quest was missed. Survive non-stop movement to lift the penalty — until then XP is halved. Ignore it for ${PENALTY_DAYS} days and it ends with the System taking Gold.`}
             </p>
             {!finished && (
                 <div className="flex items-center gap-4">
@@ -277,6 +291,9 @@ export function RankTrialCard() {
     const cooldown = !trial && system?.trialCooldown && system.trialCooldown > today();
     const left = trial && now ? trial.deadline - now : null;
     const allDone = trial && def.tasks.every((_, i) => trial.done?.[i]);
+    // Submit opens TRIAL_MIN_MS after the start (an assessment isn't done in a few taps).
+    const opensIn = trial && now ? (Number(trial.startedAt) || 0) + TRIAL_MIN_MS - now : null;
+    const tooSoon = opensIn == null || opensIn > 0;
 
     return (
         <Card tone="amber">
@@ -306,10 +323,10 @@ export function RankTrialCard() {
                     <div className="flex gap-2 mt-3">
                         {left != null && left <= 0
                             ? <button type="button" className="bp flex-1" onClick={() => failTrial("Time ran out.")}>Time&apos;s up</button>
-                            : <button type="button" className="bp flex-1" disabled={!allDone} onClick={submitTrial}>Submit assessment</button>}
+                            : <button type="button" className="bp flex-1" disabled={!allDone || tooSoon} onClick={submitTrial}>{tooSoon && opensIn != null ? `Submit in ${fmtClock(opensIn)}` : "Submit assessment"}</button>}
                         <button type="button" className="bg" onClick={() => failTrial()}>Withdraw</button>
                     </div>
-                    <p className="text-[12px] dim mt-2">Be honest — tick each task as you finish it.</p>
+                    <p className="text-[12px] dim mt-2">Be honest — tick each task as you finish it. Submitting opens {Math.round(TRIAL_MIN_MS / 60e3)} minutes after you begin.</p>
                 </>
             ) : cooldown ? (
                 <p className="text-[13px] muted mt-2">You can retry the assessment tomorrow.</p>

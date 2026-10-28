@@ -32,6 +32,9 @@ export const TRIALS = {
     N: { minutes: 120, tasks: [T("Push-ups", 200, "reps", "pushup"), T("Squats", 300, "reps", "squat"), T("Burpees", 100, "reps", "burpee"), T("Pull-ups (or rows)", 30, "reps", "pull_up"), T("Run", 15, "km", "jog")] },
 };
 
+/** An assessment can't be submitted sooner than this after it begins. */
+export const TRIAL_MIN_MS = 10 * 60e3;
+
 /** Rewards for passing an assessment into `rankId`. */
 export function trialRewards(rankId) {
     const tier = rankById(rankId).tier;

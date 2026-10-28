@@ -1,5 +1,5 @@
 // Daily Quest ("Preparations to become powerful"), Penalty Zone and quest bookkeeping.
-import { toArr, addDays } from "@/utils";
+import { toArr, addDays, dateKey } from "@/utils";
 import { rankIndex } from "./ranks";
 
 export const QUEST_TEMPLATE = [
@@ -45,6 +45,27 @@ export function questRewards(rankId) {
     return { xp: 40 + 15 * r, gold: 50 + 25 * r, ap: 1, boxChance: 0.25 };
 }
 
+// ── Difficulty: an edited quest must stay close to the System template for your level ──
+// Effort per unit, in "reps": 1 km ≈ 15 reps, 1 s ≈ 0.5 reps, 1 min ≈ 30 reps.
+const EFFORT = { reps: 1, km: 15, sec: 0.5, min: 30 };
+export const MIN_QUEST_EFFORT = 0.75; // a custom quest must be ≥ 75% of the template
+
+export const questEffort = (items) => toArr(items).reduce((a, i) => a + Math.max(0, Number(i?.target) || 0) * (EFFORT[i?.unit] ?? 1), 0);
+export const templateEffort = (lv) => questEffort(questItems(null, lv));
+/** How hard a quest list is compared with the template (1 = as hard or harder). */
+export const questScale = (items, lv) => Math.min(1, questEffort(items) / Math.max(1, templateEffort(lv)));
+
+/** Rewards for clearing `items` — scaled down when the quest is easier than the template. */
+export function scaledQuestRewards(rankId, items, lv) {
+    const r = questRewards(rankId);
+    const k = questScale(items, lv);
+    if (k >= 1) return { ...r, scale: 1 };
+    return { xp: Math.round(r.xp * k), gold: Math.round(r.gold * k), ap: k >= MIN_QUEST_EFFORT ? r.ap : 0, boxChance: r.boxChance * k, scale: k };
+}
+
+/** The quest list can only be edited before today's quest has any progress. */
+export const questEditable = (day) => !day?.claimed && !Object.values(day?.progress || {}).some(v => Number(v) > 0);
+
 export const OVERACHIEVE_BONUS = { gold: 100, ap: 1 };
 
 export function msToMidnight(now = new Date()) {
@@ -63,6 +84,19 @@ export function pruneQuestLog(system, todayKey) {
         else if (v?.claimed) archived++;
     }
     return { questLog, questArchive: archived };
+}
+
+// ── Penalty Quest lifetime ──
+// A penalty lasts PENALTY_DAYS days. Ignored that long, it expires and the System takes Gold instead.
+export const PENALTY_DAYS = 3;
+export const penaltyExpired = (penalty, todayKey) => !!penalty?.active && !!penalty.date && todayKey >= addDays(PENALTY_DAYS, penalty.date);
+export const penaltyFine = (gold) => Math.min(Math.max(0, Math.floor(Number(gold) || 0)), Math.max(100, Math.round((Number(gold) || 0) * 0.2)));
+/** Was the Daily Quest locked by this penalty on `day`? (Days spent in the Penalty Zone don't trigger a new one.) */
+export function penaltyCovers(penalty, day) {
+    if (!penalty?.date || penalty.date > day) return false;
+    if (penalty.active) return true;
+    const end = penalty.endedOn || (penalty.clearedAt ? dateKey(new Date(penalty.clearedAt)) : penalty.date);
+    return day <= end;
 }
 
 // Penalty Zone: survive 5 minutes of non-stop movement (30 s per move).

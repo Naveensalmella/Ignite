@@ -7,7 +7,8 @@ import { armyState, SHADOW_RANKS, ARISE_DAYS } from "@/lib/system/progression";
 import { arise, awaken } from "@/lib/system/actions";
 
 function ShadowRow({ sh }) {
-    const next = SHADOW_RANKS.find(r => r.min > Math.max(sh.best, ARISE_DAYS));
+    // Rank and progress both follow the current streak (see armyState).
+    const next = SHADOW_RANKS.find(r => r.min > Math.max(sh.current, ARISE_DAYS));
     return (
         <div className={`list-row !items-start ${sh.active ? "" : "is-dormant"}`}>
             <div className="shadow-ava" aria-hidden="true">{sh.name[0]}</div>
@@ -63,7 +64,7 @@ export default function ShadowArmyPage() {
                     </div>
                 </div>
                 <p className="text-[12.5px] mt-3" style={{ color: "var(--text-secondary)" }}>
-                    Keep a habit {ARISE_DAYS} days in a row to raise its shadow. It ranks up with your best streak and sleeps when the habit breaks.
+                    Keep a habit {ARISE_DAYS} days in a row to raise its shadow. It ranks up with the habit&apos;s current streak, sleeps when the habit breaks and starts again as a Soldier.
                 </p>
             </Card>
 

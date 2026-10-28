@@ -18,9 +18,13 @@ export const emptyStats = () => Object.fromEntries(STAT_KEYS.map(k => [k, 0]));
 const AGI_PATTERNS = new Set(["burpee", "sprawl", "mountain_climber", "bear_crawl", "jumping_jack", "jump_rope", "high_knees", "jump_squat", "jog", "walk", "front_kick", "side_kick", "roundhouse_kick", "knee_strike", "elbow_strike", "clinch", "level_change", "ground_strikes", "block", "hook_uppercut", "jab_cross", "shadow_boxing", "boxing_stance", "leg_swing"]);
 const VIT_PATTERNS = new Set(["wall_sit", "horse_stance", "warrior", "tree_pose", "downward_dog", "child_pose", "cobra", "cat_cow", "forward_fold", "arm_circles", "hip_circles", "lying_rest", "meditate", "side_stretch"]);
 
+// Only finished sets count. Old entries without per-set `done` flags count every logged set;
+// a plain number of sets (legacy) counts up to 10.
 const setCount = (ex) => {
-    const sets = toArr(ex.sets).filter(s => s && typeof s === "object" && s.done !== false).length;
-    return sets || Math.min(10, Number(ex.sets) || 0) || 1;
+    if (typeof ex.sets === "number" || typeof ex.sets === "string") return Math.min(10, Math.max(0, Number(ex.sets) || 0));
+    const sets = toArr(ex.sets).filter(s => s && typeof s === "object");
+    const flagged = sets.some(s => "done" in s);
+    return sets.filter(s => (flagged ? s.done === true : true)).length;
 };
 
 /** Stat points earned from history (fractional; the UI floors them). */
@@ -31,13 +35,15 @@ export function earnedStats({ workoutLog, foodLog, focusLog, journal, habitLog, 
         for (const s of getDayEntries(workoutLog, date)) {
             if (!s || typeof s !== "object") continue;
             let counted = 0;
-            for (const ex of toArr(s.gym?.exercises ?? s.exercises)) {
-                if (!ex?.name) continue;
+            const exercises = toArr(s.gym?.exercises ?? s.exercises).filter(ex => ex?.name);
+            for (const ex of exercises) {
                 const n = setCount(ex);
+                if (!n) continue;
                 const p = classifyPattern(ex.name);
                 e[AGI_PATTERNS.has(p) ? "agi" : VIT_PATTERNS.has(p) ? "vit" : "str"] += n * 0.05;
                 counted += n;
             }
+            if (exercises.length && !counted) continue; // logged, but no set was finished
             if (!counted) e[s.trainingType === "combat" || s.trainingType === "fitness" ? "agi" : "str"] += 0.6;
             e.vit += 0.15; // showing up
         }

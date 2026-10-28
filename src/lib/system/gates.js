@@ -37,13 +37,14 @@ export function gateRewards(tier) {
     return { xp: 40 + 25 * tier, gold: 60 * tier, dropChance: Math.min(0.6, 0.25 + 0.05 * tier) };
 }
 
-/** Today's three Gates: one below your rank, one at it, and a Red Gate one rank above (needs a Gate Key). */
+/** Today's three Gates: one below your rank, one at it, and a Red Gate one rank above (needs a Gate Key).
+ *  Ids include the rank (a mid-day rank-up brings new Gates); `date` ties a clear to the Gate's own day. */
 export function dailyGates(dateKey, rankId) {
     const r = rankIndex(rankId) + 1;
     const rand = rng(`${dateKey}:${rankId}`);
     const themes = [...GATE_THEMES].sort(() => rand() - 0.5);
     const tiers = [Math.max(1, r - 1), r, Math.min(RANKS.length, r + 1)];
-    return tiers.map((t, i) => ({ ...buildGate(themes[i], t, `${dateKey}_${i}`), red: i === 2 && t > r }));
+    return tiers.map((t, i) => ({ ...buildGate(themes[i], t, `${dateKey}_${rankId}_${i}`), date: dateKey, red: i === 2 && t > r }));
 }
 
 /** Loot after a clear. */
@@ -55,3 +56,25 @@ export function rollGateDrop(tier, r = Math.random()) {
 
 /** A Gate counts as cleared when at least 60% of its sets were finished. */
 export const GATE_CLEAR_RATIO = 0.6;
+
+/** Share of the Gate's ORIGINAL sets that were really finished. Measured against `gate.exercises`, so removing
+ *  sets, swapping exercises or cutting a set to a token amount (< half the reps/time) doesn't count. */
+export function gateClearRatio(gate, log) {
+    const need = new Map();
+    for (const e of gate?.exercises || []) {
+        const n = need.get(e.name) || { sets: 0, reps: 0, duration: 0 };
+        need.set(e.name, { sets: n.sets + (Number(e.sets) || 1), reps: Math.max(n.reps, Number(e.reps) || 0), duration: Math.max(n.duration, Number(e.duration) || 0) });
+    }
+    const total = [...need.values()].reduce((a, n) => a + n.sets, 0);
+    if (!total) return 0;
+    const done = new Map();
+    for (const e of Array.isArray(log) ? log : []) {
+        const n = need.get(e?.name);
+        if (!n) continue;
+        // Sets are logged as reps or seconds (the player may show a rep exercise as timed).
+        const full = (s) => (Number(s.duration) > 0 ? Number(s.duration) : Number(s.reps) || 0) >= (n.duration || n.reps) / 2;
+        const ok = (Array.isArray(e.sets) ? e.sets : []).filter(s => s?.done && full(s)).length;
+        done.set(e.name, (done.get(e.name) || 0) + ok);
+    }
+    return [...need.entries()].reduce((a, [name, n]) => a + Math.min(n.sets, done.get(name) || 0), 0) / total;
+}
