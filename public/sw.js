@@ -1,6 +1,6 @@
 // IGNITE service worker — offline shell + notifications.
 // Bump CACHE when the caching strategy changes; old caches are deleted on activate.
-const CACHE = "ignite-v2";
+const CACHE = "ignite-v3";
 const OFFLINE_URLS = ["/", "/manifest.json", "/ignite-logo.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -27,8 +27,19 @@ self.addEventListener("fetch", (e) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/_next/webpack-hmr") || url.pathname.startsWith("/__nextjs")) return;
 
-  // Hashed build assets never change — serve from cache first.
-  if (url.pathname.startsWith("/_next/static/")) {
+  // Exercise library catalog: show the cached copy instantly, refresh in the background.
+  if (url.pathname === "/data/exercise-catalog.json") {
+    e.respondWith(
+      caches.open(CACHE).then((c) => c.match(req).then((hit) => {
+        const fresh = fetch(req).then((res) => { if (res.ok) c.put(req, res.clone()); return res; }).catch(() => hit);
+        return hit || fresh;
+      }))
+    );
+    return;
+  }
+
+  // Hashed build assets and exercise demo photos never change — serve from cache first.
+  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/exercises/")) {
     e.respondWith(
       caches.match(req).then((hit) => hit || fetch(req).then((res) => {
         if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }

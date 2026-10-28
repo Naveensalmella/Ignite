@@ -8,7 +8,7 @@ Built with **Next.js 16 (App Router)**, **React 19**, **Zustand**, **Tailwind CS
 | Area | What it does |
 |------|--------------|
 | **Dashboard** | Level, streak, today's score, "next step" suggestion, daily login bonus, weekly report |
-| **Training** | Guided workout player (warm-up → exercises → rest → cool-down), challenges, gym & combat programs, AI workout generator, body-focus workouts, history |
+| **Training** | Visual demo for **every** exercise (start/end photos or an animated athlete), 900+ exercise library, workout player with set/weight logging, rest timer and PR detection, muscle-recovery map, 22 programs (strength, combat, running, yoga, HIIT, mind), custom workouts, AI workout builder, progress analytics |
 | **Nutrition** | Food log with 190+ Indian/global foods, AI photo & text food scanner, water tracker, macro targets, meal plans & shopping list |
 | **Flame Oracle** | Streaming AI coach with 4 modes; can log food from chat |
 | **Habits & life** | Daily quests, missions (to-dos), focus timer (Pomodoro), wellness journal, finance tracker, daily routine, growth missions |
@@ -58,6 +58,20 @@ On **Vercel**, add the same variables under *Project → Settings → Environmen
 | `npm start` | Serve the production build |
 | `npm run lint` | ESLint |
 
+## Exercise visuals
+
+Every exercise in the app has a visual demonstration:
+
+1. **Photo demos** — start/end photos from [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (public domain / Unlicense), crossfaded to show the movement. The exercises used by the app's workouts are matched in `src/data/exerciseVisualMap.json` and their photos are bundled in `public/exercises/` (so they load fast and work offline). The full 870+ exercise catalog lives in `public/data/exercise-catalog.json`; its remaining photos load from GitHub at a pinned commit.
+2. **Animated figure** — `src/components/training/MoveFigure.jsx` draws an animated athlete for ~60 movement patterns (`figurePatterns.js`), used for combat drills, yoga, running and anything without a photo (including AI-generated exercises).
+
+To rebuild the bundled photos and catalog after changing the map:
+
+```bash
+pip install pillow
+python3 scripts/build_exercise_assets.py
+```
+
 ## How data is stored
 
 ```
@@ -68,6 +82,7 @@ users/{uid}/finances/ledger     transactions
 users/{uid}/activityLog/recent  last 200 activity entries
 users/{uid}/bodyPhotos/{date}   progress photos (one per document)
 users/{uid}/bodyData/photos     body-tracker snapshots (size-capped)
+(programState on the main doc holds the active program, weekly goal and saved custom workouts)
 publicProfiles/{uid}            what friends can see (social)
 ```
 
@@ -80,6 +95,7 @@ All day-based data uses the user's **local** calendar date.
 ```
 src/app/            Next.js entry (layout, page) and API routes (chat, food-scan, generate-workout, exercise-gif)
 src/components/     App shell (App.jsx, BottomNav.jsx) and every page
+src/components/training/  Training hub pieces: MoveFigure, BodyMap, ExerciseDemo, library, programs, progress
 src/stores/         Zustand store — loading, auto-save, XP, streak logic
 src/store-v2.js     Firestore read/write layer
 src/lib/            Firebase init, AI helpers, workout helpers

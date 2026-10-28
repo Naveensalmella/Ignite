@@ -1,348 +1,393 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
-import { beep, victorySound } from '@/lib/beep';
+// ══════════════════════════════════════════════════════════════
+// Workout player — warm-up → exercises (set logging + rest timer) →
+// cool-down → summary. Every exercise shows a live visual demo.
+// ══════════════════════════════════════════════════════════════
+import { useEffect, useMemo, useRef, useState } from "react";
+import { X, Check, Plus, Minus, Play, Pause, SkipForward, ChevronLeft, ChevronRight, Info, Repeat, Trophy, Timer, Dumbbell, Layers, Clock } from "lucide-react";
+import ExerciseDemo from "./training/ExerciseDemo";
+import ExerciseSheet from "./training/ExerciseSheet";
+import BodyMap from "./training/BodyMap";
+import { getExerciseInfo, toWorkoutExercise } from "@/lib/exerciseVisuals";
+import { exerciseHistory } from "@/lib/trainingStats";
+import { MUSCLE_LABELS } from "@/lib/muscles";
+import { WARMUP, COOLDOWN, getSwapOptions } from "@/data/exerciseMeta";
+import { EXERCISES } from "@/data/exercises";
+import { beep, victorySound } from "@/lib/beep";
 
-const BODY_EMOJI = { chest: "🫁", back: "🔙", shoulders: "🏅", arms: "💪", core: "🎯", legs: "🦵", glutes: "🍑", cardio: "❤️‍🔥" };
+const fmt = (s) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, Math.round(s)) % 60).padStart(2, "0")}`;
 
-const WARMUP_EXERCISES = [
-    { name: "Arm Circles", duration: 20 },
-    { name: "Jumping Jacks", duration: 30 },
-    { name: "High Knees", duration: 20 },
-];
-const COOLDOWN_EXERCISES = [
-    { name: "Standing Hamstring Stretch", duration: 20 },
-    { name: "Quad Stretch", duration: 20 },
-    { name: "Deep Breathing", duration: 20 },
-];
+function buildLog(exercises, sessions) {
+    return exercises.map(ex => {
+        const prev = exerciseHistory(sessions, ex.name).last;
+        const prevSets = prev?.sets || [];
+        return {
+            ...ex,
+            sets: Array.from({ length: ex.sets }, (_, i) => ({
+                reps: ex.duration ? 0 : (ex.reps || 12),
+                duration: ex.duration || 0,
+                weight: Number(prevSets[i]?.weight ?? prevSets[prevSets.length - 1]?.weight) || 0,
+                prev: prevSets[i] || null,
+                done: false,
+            })),
+        };
+    });
+}
 
-// ── Circular Timer ──
-function CircleTimer({ current, total, size = 140, color = "#3b82f6" }) {
-    const r = (size - 12) / 2, c = 2 * Math.PI * r, pct = total > 0 ? current / total : 0;
+function swapsFor(name) {
+    const info = getExerciseInfo(name);
+    const own = getSwapOptions(name);
+    const same = [];
+    for (const parts of Object.values(EXERCISES)) for (const list of Object.values(parts)) for (const e of list) {
+        if (e.name === name || own.includes(e.name)) continue;
+        const p = getExerciseInfo(e).primary;
+        if (p.some(m => info.primary.includes(m))) same.push(e.name);
+    }
+    return [...new Set([...own, ...same])].slice(0, 8);
+}
+
+// ── Warm-up / cool-down step ──
+function Guided({ title, list, color, onDone }) {
+    const [idx, setIdx] = useState(0);
+    const [left, setLeft] = useState(list[0].duration);
+    const [paused, setPaused] = useState(false);
+    const ref = useRef({ idx: 0, left: list[0].duration });
+    const next = () => {
+        const i = ref.current.idx + 1;
+        if (i >= list.length) { onDone(); return; }
+        ref.current = { idx: i, left: list[i].duration };
+        setIdx(i); setLeft(list[i].duration);
+    };
+    const nextRef = useRef(next);
+    useEffect(() => { nextRef.current = next; });
+    useEffect(() => {
+        if (paused) return;
+        const id = setInterval(() => {
+            const l = ref.current.left - 1;
+            ref.current.left = l; setLeft(l);
+            if (l > 0 && l <= 3) beep(660, 0.08);
+            if (l <= 0) { beep(880, 0.15); nextRef.current(); }
+        }, 1000);
+        return () => clearInterval(id);
+    }, [paused]);
+    const cur = list[idx];
+    const info = getExerciseInfo(cur.name);
     return (
-        <div style={{ position: "relative", width: size, height: size }}>
-            <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" />
-                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth="10" strokeDasharray={c} strokeDashoffset={c * (1 - pct)} strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.3s" }} />
-            </svg>
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 48, fontWeight: 900, color: "#f3f4f6" }}>{current}</span>
+        <div className="player-guided">
+            <div className="text-[12px] font-bold tracking-[2px] mb-1" style={{ color }}>{title} · {idx + 1}/{list.length}</div>
+            <div className="text-[22px] font-extrabold mb-3 text-center">{cur.name}</div>
+            <div className="player-demo-sm"><ExerciseDemo info={info} /></div>
+            <div className="text-[44px] font-black tabular-nums mt-3" style={{ color }}>{fmt(left)}</div>
+            <div className="flex gap-2 mt-3">
+                <button type="button" className="pl-btn" onClick={() => setPaused(p => !p)}>{paused ? <Play size={16} /> : <Pause size={16} />}{paused ? "Resume" : "Pause"}</button>
+                <button type="button" className="pl-btn" onClick={next}><SkipForward size={16} /> Next</button>
+                <button type="button" className="pl-btn" style={{ color }} onClick={onDone}>Skip all</button>
             </div>
+            {idx + 1 < list.length && <div className="text-[12px] mt-4" style={{ color: "#9ca3af" }}>Up next: {list[idx + 1].name}</div>}
         </div>
     );
 }
 
-// ── Pre-fetch ALL workout GIFs at start ──
-const gifCache = {};
-function useWorkoutGifs(exercises) {
-    const [gifs, setGifs] = useState({});
-    useEffect(() => {
-        if (!exercises?.length) return;
-        exercises.forEach(ex => {
-            const name = ex.name;
-            if (!name) return;
-            if (gifCache[name] && gifCache[name] !== true) {
-                setGifs(prev => ({ ...prev, [name]: gifCache[name] }));
-                return;
-            }
-            if (gifCache[name] === false) return; // already failed
-            if (gifCache[name] === true) return; // already fetching
-            gifCache[name] = true; // mark fetching
-            fetch(`/api/exercise-gif?name=${encodeURIComponent(name)}`)
-                .then(r => r.json())
-                .then(d => {
-                    gifCache[name] = d.gif || false;
-                    if (d.gif) setGifs(prev => ({ ...prev, [name]: d.gif }));
-                })
-                .catch(() => { gifCache[name] = false; });
-        });
-    }, [exercises]);
-    return gifs;
-}
-
-// ── Exercise Visual (takes gif as prop) ──
-function ExerciseVisual({ exercise, gif, size = 240 }) {
-    const [stepIdx, setStepIdx] = useState(0);
-    const steps = exercise?.steps || [];
-    useEffect(() => { if (steps.length <= 1) return; const i = setInterval(() => setStepIdx(s => (s + 1) % steps.length), 2500); return () => clearInterval(i); }, [steps.length]);
+// ── Summary ──
+function Summary({ workout, log, seconds, sessions, onSave, onDiscard }) {
+    const [rpe, setRpe] = useState(0);
+    const done = log.map(ex => ({ ...ex, sets: ex.sets.filter(s => s.done) })).filter(ex => ex.sets.length);
+    const sets = done.reduce((n, ex) => n + ex.sets.length, 0);
+    const volume = Math.round(done.reduce((v, ex) => v + ex.sets.reduce((a, s) => a + s.weight * s.reps, 0), 0));
+    const prs = done.map(ex => {
+        const best = Math.max(0, ...ex.sets.map(s => s.weight));
+        const prev = exerciseHistory(sessions, ex.name).bestWeight;
+        return best > 0 && best > prev ? { name: ex.name, best, prev } : null;
+    }).filter(Boolean);
+    const muscles = (() => {
+        const p = new Set(), s = new Set();
+        done.forEach(ex => { const i = getExerciseInfo(ex); i.primary.forEach(m => p.add(m)); i.secondary.forEach(m => s.add(m)); });
+        p.forEach(m => s.delete(m));
+        return { primary: [...p], secondary: [...s] };
+    })();
 
     return (
-        <div style={{ width: size, height: size, borderRadius: 20, overflow: "hidden", background: gif ? "#fff" : "#1a1a2e", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, flexShrink: 0 }}>
-            {gif ? (
-                <img src={gif} alt={exercise?.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 20 }} />
-            ) : (
-                <div style={{ textAlign: "center", padding: 16 }}>
-                    <div style={{ fontSize: 48, animation: "pulse 1.5s ease-in-out infinite" }}>{BODY_EMOJI[exercise?.bodyPart] || "💪"}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#10b981", marginTop: 8 }}>{exercise?.muscle || exercise?.bodyPart || ""}</div>
-                    {steps.length > 0 && <div style={{ marginTop: 8, fontSize: 12, color: "#d1d5db" }}><span style={{ color: "#f59e0b", fontWeight: 700 }}>Step {(stepIdx % steps.length) + 1}:</span> {steps[stepIdx % steps.length]}</div>}
+        <div className="player-summary">
+            <div className="text-[56px] leading-none mb-2">🏆</div>
+            <div className="text-[26px] font-black">Workout complete!</div>
+            <div className="text-[13px] mb-5" style={{ color: "#9ca3af" }}>{workout.name}</div>
+            <div className="grid grid-cols-2 gap-2 w-full mb-4">
+                {[[Clock, fmt(seconds), "Duration"], [Layers, sets, "Sets"], [Dumbbell, volume ? `${volume.toLocaleString()} kg` : "—", "Volume"], [Check, `${done.length}/${log.length}`, "Exercises"]].map(([Icon, v, l]) => (
+                    <div key={l} className="pl-card text-center"><Icon size={16} className="mx-auto mb-1 text-emerald-400" /><div className="text-[20px] font-extrabold tabular-nums">{v}</div><div className="text-[11px]" style={{ color: "#9ca3af" }}>{l}</div></div>
+                ))}
+            </div>
+            {prs.length > 0 && (
+                <div className="pl-card w-full mb-4" style={{ borderColor: "rgba(245,158,11,.35)" }}>
+                    <div className="flex items-center gap-2 text-[14px] font-bold mb-2 text-amber-400"><Trophy size={16} /> New personal records</div>
+                    {prs.map(p => <div key={p.name} className="flex justify-between text-[13px] py-0.5"><span>{p.name}</span><b>{p.best} kg <span className="font-normal" style={{ color: "#9ca3af" }}>{p.prev ? `(was ${p.prev})` : "(first)"}</span></b></div>)}
                 </div>
             )}
+            {muscles.primary.length > 0 && (
+                <div className="pl-card w-full mb-4">
+                    <div className="text-[12px] font-bold tracking-[1.5px] mb-2" style={{ color: "#9ca3af" }}>MUSCLES WORKED</div>
+                    <BodyMap primary={muscles.primary} secondary={muscles.secondary} height={170} />
+                </div>
+            )}
+            <div className="pl-card w-full mb-5">
+                <div className="text-[12px] font-bold tracking-[1.5px] mb-2" style={{ color: "#9ca3af" }}>HOW HARD WAS IT?</div>
+                <div className="grid grid-cols-5 gap-1.5">
+                    {[["😌", "Easy"], ["🙂", "Moderate"], ["😤", "Hard"], ["🥵", "Very hard"], ["💀", "Max"]].map(([e, l], i) => (
+                        <button key={l} type="button" onClick={() => setRpe(i + 1)} className={`rpe ${rpe === i + 1 ? "is-on" : ""}`}><span className="text-[22px]">{e}</span><span className="text-[11px]">{l}</span></button>
+                    ))}
+                </div>
+            </div>
+            <button type="button" className="bp w-full !py-4 text-[16px]" onClick={() => onSave({ rpe, prs })}>Save workout</button>
+            <button type="button" className="w-full py-3 mt-1 text-[13px]" style={{ color: "#9ca3af" }} onClick={onDiscard}>Discard</button>
         </div>
     );
 }
 
-// ══ WARMUP / COOLDOWN ══
-function WarmupCooldown({ type, exercises, idx, timer, onSkip, onSkipAll }) {
-    const cur = exercises[idx];
-    const color = type === "warmup" ? "#f59e0b" : "#3b82f6";
-    return (
-        <div style={{ minHeight: "100dvh", background: "#0a0a0a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
-            <div style={{ fontSize: 12, color, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>
-                {type === "warmup" ? "🔥 WARM-UP" : "🧊 COOL DOWN"} · {idx + 1}/{exercises.length}
+export default function ActiveWorkout({ workout, sessions = [], onComplete, onQuit }) {
+    const initial = useMemo(() => (workout?.exercises || []).map(toWorkoutExercise), [workout]);
+    const [stage, setStage] = useState("warmup");
+    const [log, setLog] = useState(() => buildLog(initial, sessions));
+    const [idx, setIdx] = useState(0);
+    const [startAt] = useState(() => Date.now());
+    const [endAt, setEndAt] = useState(null);
+    const [now, setNow] = useState(() => Date.now());
+    const [rest, setRest] = useState(null);           // { endAt, total, label }
+    const [timer, setTimer] = useState(null);         // timed set: { set, endAt, left, running }
+    const [view, setView] = useState("demo");
+    const [howTo, setHowTo] = useState(false);
+    const [swapOpen, setSwapOpen] = useState(false);
+
+    const ex = log[idx];
+    const info = ex ? getExerciseInfo(ex) : null;
+    const timed = !!ex?.duration;
+    const doneSets = (e) => e.sets.filter(s => s.done).length;
+    const allDone = ex && doneSets(ex) === ex.sets.length;
+
+    // One clock for elapsed time, rest and timed sets.
+    const tickRef = useRef(null);
+    useEffect(() => {
+        tickRef.current = () => {
+            const t = Date.now();
+            setNow(t);
+            if (rest) {
+                const left = Math.ceil((rest.endAt - t) / 1000);
+                if (left <= 3 && left > 0 && left !== rest.beeped) { beep(660, 0.08); setRest(r => r && { ...r, beeped: left }); }
+                if (t >= rest.endAt) { beep(880, 0.2); setTimeout(() => beep(1100, 0.25), 180); setRest(null); }
+            }
+            if (timer?.running) {
+                const left = Math.ceil((timer.endAt - t) / 1000);
+                if (left <= 3 && left > 0 && left !== timer.beeped) { beep(660, 0.08); setTimer(tm => tm && { ...tm, beeped: left }); }
+                if (t >= timer.endAt) { beep(880, 0.2); completeSet(timer.set); setTimer(null); }
+            }
+        };
+    });
+    useEffect(() => {
+        if (stage !== "workout") return;
+        const id = setInterval(() => tickRef.current?.(), 250);
+        return () => clearInterval(id);
+    }, [stage]);
+
+    const updateSet = (s, patch) => setLog(l => l.map((e, i) => i !== idx ? e : { ...e, sets: e.sets.map((st, j) => j === s ? { ...st, ...patch } : st) }));
+
+    function completeSet(s) {
+        const willBeLast = ex.sets.filter((st, j) => st.done || j === s).length === ex.sets.length;
+        updateSet(s, { done: true });
+        const restSec = ex.rest || 0;
+        if (restSec > 0 && !(willBeLast && idx === log.length - 1)) {
+            const nextEx = willBeLast ? log[idx + 1] : null;
+            setRest({ endAt: Date.now() + restSec * 1000, total: restSec, label: nextEx ? `Next: ${nextEx.name}` : `Next: set ${s + 2}` });
+        }
+        if (willBeLast && idx < log.length - 1) setTimeout(() => goTo(idx + 1), 350);
+    }
+    const toggleSet = (s) => {
+        if (ex.sets[s].done) { updateSet(s, { done: false }); return; }
+        completeSet(s);
+    };
+
+    function goTo(i) {
+        if (i < 0 || i >= log.length) return;
+        setIdx(i); setView("demo"); setTimer(null); setSwapOpen(false);
+    }
+    const addSet = () => setLog(l => l.map((e, i) => i !== idx ? e : { ...e, sets: [...e.sets, { ...e.sets[e.sets.length - 1], done: false, prev: null }] }));
+    const removeSet = () => setLog(l => l.map((e, i) => i !== idx || e.sets.length <= 1 ? e : { ...e, sets: e.sets.slice(0, -1) }));
+    const swap = (name) => {
+        setLog(l => l.map((e, i) => i !== idx ? e : { ...buildLog([toWorkoutExercise({ ...e, name, datasetId: undefined, primary: undefined })], sessions)[0], sets: e.sets.map(st => ({ ...st, done: false, prev: null })) }));
+        setSwapOpen(false);
+    };
+
+    const startTimedSet = (s) => {
+        const left = timer?.set === s && !timer.running ? timer.left : ex.duration;
+        setTimer({ set: s, endAt: Date.now() + left * 1000, left, running: true });
+    };
+    const pauseTimedSet = () => setTimer(tm => tm && { ...tm, running: false, left: Math.max(1, Math.ceil((tm.endAt - Date.now()) / 1000)) });
+
+    const finish = () => { setRest(null); setTimer(null); setEndAt(Date.now()); setStage("cooldown"); };
+    const quit = () => {
+        const started = log.some(e => e.sets.some(s => s.done));
+        if (!started || window.confirm("Quit this workout? Sets you logged in this session won't be saved.")) onQuit?.();
+    };
+
+    const elapsed = ((endAt || now) - startAt) / 1000;
+    const totalSets = log.reduce((n, e) => n + e.sets.length, 0);
+    const totalDone = log.reduce((n, e) => n + doneSets(e), 0);
+
+    if (!workout || log.length === 0) return null;
+
+    if (stage === "summary") {
+        return (
+            <div className="player keep-dark">
+                <Summary workout={workout} log={log} seconds={elapsed} sessions={sessions}
+                    onDiscard={() => { if (window.confirm("Discard this workout?")) onQuit?.(); }}
+                    onSave={({ rpe, prs }) => onComplete?.({ workout, duration: Math.round(elapsed), caloriesBurned: Math.round(elapsed / 60 * 6.5), log, rpe, prs })} />
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", marginBottom: 24 }}>{cur?.name}</div>
-            <CircleTimer current={timer} total={cur?.duration || 20} size={140} color={color} />
-            <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
-                <button type="button" onClick={onSkip}
-                    style={{ padding: "10px 24px", borderRadius: 12, background: "#1a1a2e", color: "#9ca3af", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer" }}>Skip →</button>
-                <button type="button" onClick={onSkipAll}
-                    style={{ padding: "10px 24px", borderRadius: 12, background: "#1a1a2e", color, fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer" }}>Skip All →→</button>
-            </div>
-        </div>
-    );
-}
+        );
+    }
 
-// ══ READY TO GO (first exercise only) ══
-function ReadyPhase({ exercise, gif, countdown, total, onSkip }) {
-    return (
-        <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg, #0a0a14, #101020)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
-            <div style={{ width: 220, height: 220, borderRadius: "50%", overflow: "hidden", background: gif ? "#fff" : "rgba(59,130,246,0.08)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, flexShrink: 0 }}>
-                {gif ? <img src={gif} alt={exercise.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} /> :
-                    <div style={{ textAlign: "center" }}><div style={{ fontSize: 64, animation: "pulse 1.5s ease-in-out infinite" }}>{BODY_EMOJI[exercise?.bodyPart] || "💪"}</div></div>}
+    if (stage === "warmup" || stage === "cooldown") {
+        return (
+            <div className="player keep-dark">
+                <div className="player-top">
+                    <button type="button" className="pl-icon" onClick={quit} aria-label="Quit workout"><X size={20} /></button>
+                    <div className="text-[14px] font-semibold truncate">{workout.name}</div>
+                    <span className="w-10" />
+                </div>
+                {stage === "warmup"
+                    ? <Guided title="🔥 WARM-UP" list={WARMUP} color="#f59e0b" onDone={() => { setStage("workout"); setNow(Date.now()); }} />
+                    : <Guided title="🧊 COOL-DOWN" list={COOLDOWN} color="#38bdf8" onDone={() => { victorySound(); setStage("summary"); }} />}
             </div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: "#3b82f6", letterSpacing: 2 }}>READY TO GO!</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", textTransform: "uppercase", marginTop: 8, marginBottom: 32 }}>{exercise.name}</div>
-            <CircleTimer current={countdown} total={total} size={120} color="#3b82f6" />
-            <button onClick={onSkip} style={{ marginTop: 24, padding: "10px 32px", borderRadius: 12, background: "#1a1a2e", color: "#9ca3af", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer" }}>Skip →</button>
-        </div>
-    );
-}
+        );
+    }
 
-// ══ EXERCISE PHASE (with weight tracking) ══
-function ExercisePhase({ exercise, gif, exerciseIndex, totalExercises, timer, totalTime, isTimeBased, onDone, onSkip, onPause, isPaused, weights, setWeights }) {
-    const progressPct = ((exerciseIndex + 1) / totalExercises) * 100;
-    const sets = exercise.sets || 3;
+    const restLeft = rest ? Math.max(0, Math.ceil((rest.endAt - now) / 1000)) : 0;
+    const timerLeft = timer ? (timer.running ? Math.max(0, Math.ceil((timer.endAt - now) / 1000)) : timer.left) : 0;
 
     return (
-        <div style={{ position: "fixed", inset: 0, background: "#0a0a0a", display: "flex", flexDirection: "column" }}>
-            {/* Progress bar */}
-            <div style={{ height: 4, background: "#1a1a2e", flexShrink: 0 }}><div style={{ height: "100%", background: "#3b82f6", width: `${progressPct}%`, transition: "width 0.3s" }} /></div>
+        <div className="player keep-dark">
+            <div className="player-top">
+                <button type="button" className="pl-icon" onClick={quit} aria-label="Quit workout"><X size={20} /></button>
+                <div className="min-w-0 text-center">
+                    <div className="text-[13px] font-semibold truncate">{workout.name}</div>
+                    <div className="text-[11px] tabular-nums" style={{ color: "#9ca3af" }}>{fmt(elapsed)} · {totalDone}/{totalSets} sets</div>
+                </div>
+                <button type="button" className="pl-finish" onClick={finish}>Finish</button>
+            </div>
+            <div className="player-progress"><div style={{ width: `${(totalDone / Math.max(1, totalSets)) * 100}%` }} /></div>
 
-            {/* Scrollable content */}
-            <div style={{ flex: 1, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <ExerciseVisual exercise={exercise} gif={gif} size={200} />
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", textTransform: "uppercase", textAlign: "center" }}>{exercise.name}</div>
-                <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>{exerciseIndex + 1} of {totalExercises}</div>
+            <div className="player-body">
+                <div className="player-demo">
+                    {view === "demo" ? <ExerciseDemo info={info} key={ex.name} /> : <div className="h-full flex items-center justify-center bg-[#0f141c]"><BodyMap primary={info.primary} secondary={info.secondary} height={230} /></div>}
+                    <div className="player-demo-tabs">
+                        <button type="button" className={view === "demo" ? "is-on" : ""} onClick={() => setView("demo")}>Demo</button>
+                        <button type="button" className={view === "muscles" ? "is-on" : ""} onClick={() => setView("muscles")}>Muscles</button>
+                        <button type="button" onClick={() => setHowTo(true)}><Info size={14} /> How to</button>
+                    </div>
+                </div>
 
-                {isTimeBased ? (
-                    <CircleTimer current={timer} total={totalTime} size={140} color="#10b981" />
-                ) : (
-                    <>
-                        <div style={{ fontSize: 48, fontWeight: 900, color: "#10b981", textAlign: "center" }}>x{exercise.reps || 12}</div>
-                        <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 12 }}>{sets} sets · log weight (optional)</div>
-                        <div style={{ width: "100%", maxWidth: 280 }}>
-                            {[...Array(sets)].map((_, i) => (
-                                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                                    <span style={{ fontSize: 12, color: "#6b7280", width: 40 }}>Set {i + 1}</span>
-                                    <input type="number" placeholder="kg" value={weights[exerciseIndex]?.[i] || ""}
-                                        aria-label={`Set ${i + 1} weight in kg`} inputMode="decimal"
-                                        onChange={e => { const val = e.target.value; setWeights(prev => ({ ...prev, [exerciseIndex]: { ...(prev[exerciseIndex] || {}), [i]: val } })); }}
-                                        style={{ flex: 1, padding: "8px 12px", borderRadius: 8, background: "#1a1a2e", border: "1px solid #2a2a3e", color: "#f3f4f6", fontSize: 14, textAlign: "center" }} />
-                                    <span style={{ fontSize: 12, color: "#6b7280" }}>kg</span>
-                                </div>
-                            ))}
+                <div className="px-4">
+                    <div className="flex items-start justify-between gap-3 mt-3">
+                        <div className="min-w-0">
+                            <div className="text-[11px] font-bold tracking-[1.5px] text-emerald-400">EXERCISE {idx + 1} OF {log.length}</div>
+                            <div className="text-[21px] font-extrabold leading-tight">{ex.name}</div>
+                            <div className="text-[13px]" style={{ color: "#9ca3af" }}>{ex.sets.length} sets × {timed ? `${ex.duration}s` : `${ex.reps} reps`} · rest {ex.rest}s</div>
                         </div>
-                    </>
+                        <button type="button" className="pl-icon shrink-0" onClick={() => setSwapOpen(o => !o)} aria-label="Swap exercise"><Repeat size={17} /></button>
+                    </div>
+                    {info.primary.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                            {info.primary.map(m => <span key={m} className="pl-chip">{MUSCLE_LABELS[m] || m}</span>)}
+                            {info.secondary.slice(0, 3).map(m => <span key={m} className="pl-chip is-dim">{MUSCLE_LABELS[m] || m}</span>)}
+                        </div>
+                    )}
+                    {info.tips[0] && <div className="pl-tip">💡 {info.tips[0]}</div>}
+
+                    {swapOpen && (
+                        <div className="pl-card mt-3">
+                            <div className="text-[12px] font-bold mb-2" style={{ color: "#9ca3af" }}>Swap for a similar exercise</div>
+                            <div className="flex flex-wrap gap-1.5">
+                                {swapsFor(ex.name).map(n => <button key={n} type="button" className="pl-chip !py-1.5 !px-3" onClick={() => swap(n)}>{n}</button>)}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Sets table */}
+                    <div className="pl-sets mt-3">
+                        <div className="pl-sets-head">
+                            <span>Set</span><span>Previous</span>{timed ? <span className="col-span-2">Time</span> : <><span>kg</span><span>Reps</span></>}<span className="text-center">✓</span>
+                        </div>
+                        {ex.sets.map((st, s) => {
+                            const running = timer?.set === s;
+                            return (
+                                <div key={s} className={`pl-set ${st.done ? "is-done" : ""}`}>
+                                    <span className="font-bold">{s + 1}</span>
+                                    <span className="text-[12px]" style={{ color: "#9ca3af" }}>{st.prev ? (st.prev.duration ? `${st.prev.duration}s` : `${st.prev.weight ? `${st.prev.weight}×` : ""}${st.prev.reps}`) : "—"}</span>
+                                    {timed ? (
+                                        <div className="col-span-2 flex items-center gap-2">
+                                            <span className="tabular-nums font-bold text-[16px] w-12">{fmt(running ? timerLeft : ex.duration)}</span>
+                                            {!st.done && (running && timer.running
+                                                ? <button type="button" className="pl-mini" onClick={pauseTimedSet}><Pause size={14} /></button>
+                                                : <button type="button" className="pl-mini is-go" onClick={() => startTimedSet(s)}><Play size={14} /></button>)}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <input className="pl-inp" type="number" inputMode="decimal" min="0" step="0.5" value={st.weight || ""} placeholder="0"
+                                                aria-label={`Set ${s + 1} weight kg`} onChange={e => updateSet(s, { weight: Math.max(0, parseFloat(e.target.value) || 0) })} />
+                                            <input className="pl-inp" type="number" inputMode="numeric" min="0" value={st.reps || ""} placeholder={String(ex.reps)}
+                                                aria-label={`Set ${s + 1} reps`} onChange={e => updateSet(s, { reps: Math.max(0, parseInt(e.target.value, 10) || 0) })} />
+                                        </>
+                                    )}
+                                    <button type="button" className={`pl-check ${st.done ? "is-on" : ""}`} onClick={() => toggleSet(s)} aria-label={st.done ? `Undo set ${s + 1}` : `Complete set ${s + 1}`}><Check size={16} /></button>
+                                </div>
+                            );
+                        })}
+                        <div className="flex gap-2 mt-2">
+                            <button type="button" className="pl-btn flex-1" onClick={addSet}><Plus size={14} /> Add set</button>
+                            <button type="button" className="pl-btn flex-1" onClick={removeSet} disabled={ex.sets.length <= 1}><Minus size={14} /> Remove set</button>
+                        </div>
+                    </div>
+
+                    {allDone && idx === log.length - 1 && (
+                        <button type="button" className="bp w-full mt-3 !py-4 text-[15px]" onClick={finish}>All done — cool down & finish</button>
+                    )}
+
+                    {/* Exercise navigator */}
+                    <div className="pl-strip mt-4">
+                        {log.map((e, i) => {
+                            const d = doneSets(e), complete = d === e.sets.length;
+                            return (
+                                <button key={i} type="button" onClick={() => goTo(i)} className={`pl-strip-item ${i === idx ? "is-cur" : ""} ${complete ? "is-done" : ""}`} aria-label={`${e.name}, ${d} of ${e.sets.length} sets`}>
+                                    <div className="pl-strip-thumb"><ExerciseDemo info={getExerciseInfo(e)} animate={false} rounded={8} showBadge={false} /></div>
+                                    <div className="pl-strip-count">{complete ? "✓" : `${d}/${e.sets.length}`}</div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <div className="h-28" />
+                </div>
+            </div>
+
+            {/* Bottom bar: rest timer or prev/next */}
+            <div className="player-bottom">
+                {rest ? (
+                    <div className="pl-rest">
+                        <div className="pl-rest-ring" style={{ "--p": `${(restLeft / rest.total) * 360}deg` }}><span className="tabular-nums">{fmt(restLeft)}</span></div>
+                        <div className="min-w-0 flex-1">
+                            <div className="text-[12px] font-bold tracking-[1.5px] text-amber-400 flex items-center gap-1"><Timer size={13} /> REST</div>
+                            <div className="text-[13px] truncate">{rest.label}</div>
+                        </div>
+                        <button type="button" className="pl-mini" onClick={() => setRest(r => ({ ...r, endAt: r.endAt - 15000 }))} aria-label="Rest 15 seconds less">−15</button>
+                        <button type="button" className="pl-mini" onClick={() => setRest(r => ({ ...r, endAt: r.endAt + 15000, total: r.total + 15 }))} aria-label="Rest 15 seconds more">+15</button>
+                        <button type="button" className="pl-mini is-go" onClick={() => setRest(null)}>Skip</button>
+                    </div>
+                ) : (
+                    <div className="flex gap-2">
+                        <button type="button" className="pl-btn" onClick={() => goTo(idx - 1)} disabled={idx === 0}><ChevronLeft size={16} /> Prev</button>
+                        {idx < log.length - 1
+                            ? <button type="button" className="bp flex-1" onClick={() => goTo(idx + 1)}>Next exercise <ChevronRight size={16} /></button>
+                            : <button type="button" className="bp flex-1" onClick={finish}>Finish workout</button>}
+                    </div>
                 )}
             </div>
 
-            {/* Fixed bottom buttons */}
-            <div style={{ flexShrink: 0, padding: "12px 24px calc(16px + env(safe-area-inset-bottom))", background: "#0a0a0a", borderTop: "1px solid #1a1a2e" }}>
-                <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-                    <button onClick={onPause} style={{ flex: 1, padding: 14, borderRadius: 14, background: "#1a1a2e", color: "#f3f4f6", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer" }}>
-                        {isPaused ? "▶ Resume" : "⏸ Pause"}
-                    </button>
-                    <button onClick={onSkip} style={{ flex: 1, padding: 14, borderRadius: 14, background: "#1a1a2e", color: "#f59e0b", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer" }}>
-                        Skip →
-                    </button>
-                </div>
-                <button onClick={onDone} style={{ width: "100%", padding: 16, borderRadius: 14, background: "linear-gradient(135deg,#10b981,#059669)", color: "#fff", fontSize: 16, fontWeight: 800, border: "none", cursor: "pointer" }}>
-                    DONE ✓
-                </button>
-            </div>
-        </div>
-    );
-}
-
-// ══ REST ══
-function RestPhase({ timer, total, nextExercise, nextGif, onSkip }) {
-    return (
-        <div style={{ minHeight: "100dvh", background: "#0a0a0a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
-            <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 12, letterSpacing: 2, fontWeight: 700 }}>REST</div>
-            <CircleTimer current={timer} total={total} size={160} color="#f59e0b" />
-            {nextExercise && (
-                <div style={{ marginTop: 32, background: "#1a1a2e", borderRadius: 14, padding: 16, width: "100%", maxWidth: 280 }}>
-                    <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 8, letterSpacing: 1 }}>NEXT UP</div>
-                    {nextGif ? <img src={nextGif} alt={nextExercise.name} style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 10, margin: "0 auto 8px", display: "block" }} /> :
-                        <div style={{ fontSize: 28, marginBottom: 4 }}>{BODY_EMOJI[nextExercise.bodyPart] || "💪"}</div>}
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6" }}>{nextExercise.name}</div>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{nextExercise.duration ? `${nextExercise.duration}s` : `x${nextExercise.reps || 12}`}</div>
-                </div>
-            )}
-            <button onClick={onSkip} style={{ marginTop: 24, padding: "12px 40px", borderRadius: 12, background: "#1a1a2e", color: "#f3f4f6", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer" }}>Skip Rest →</button>
-        </div>
-    );
-}
-
-// ══ COMPLETE ══
-function CompletePhase({ workout, duration, caloriesBurned, exercisesDone, maxWeight, onDone }) {
-    return (
-        <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg, #0a0a0a, #0f172a)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
-            <div style={{ fontSize: 64, marginBottom: 16 }}>🎉</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: "#f3f4f6", marginBottom: 8 }}>Great Work!</div>
-            <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 32 }}>You crushed {workout.name}!</div>
-            <div style={{ display: "flex", gap: 20, marginBottom: 40, flexWrap: "wrap", justifyContent: "center" }}>
-                {[[exercisesDone, "Exercises", "#10b981"], [`${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, "0")}`, "Duration", "#3b82f6"], [caloriesBurned, "Calories", "#f59e0b"], [maxWeight > 0 ? `${maxWeight}kg` : "-", "Max Weight", "#8b5cf6"]].map(([v, l, c]) => (
-                    <div key={l} style={{ textAlign: "center", minWidth: 60 }}><div style={{ fontSize: 24, fontWeight: 900, color: c }}>{v}</div><div style={{ fontSize: 11, color: "#6b7280" }}>{l}</div></div>
-                ))}
-            </div>
-            <div style={{ background: "#1a1a2e", borderRadius: 16, padding: 20, marginBottom: 32, width: "100%", maxWidth: 300 }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>💪</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6" }}>Results will follow!</div>
-                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Consistency beats perfection.</div>
-            </div>
-            <button onClick={onDone} style={{ width: "100%", maxWidth: 300, padding: 16, borderRadius: 14, marginBottom: 24, background: "linear-gradient(135deg,#3b82f6,#2563eb)", color: "#fff", fontWeight: 800, fontSize: 16, border: "none", cursor: "pointer" }}>DONE ✓</button>
-        </div>
-    );
-}
-
-// ══════════════════════════════════════
-// MAIN CONTROLLER
-// warmup → ready → exercise → rest → exercise … → cooldown → complete
-// ══════════════════════════════════════
-const READY_SECONDS = 10;
-const isTimed = (ex) => !!ex && !!(ex.duration || ex.time) && !ex.reps;
-const timedLength = (ex) => Number(ex?.duration || ex?.time) || 30;
-
-export default function ActiveWorkout({ workout, onComplete, onQuit }) {
-    const exercises = workout?.exercises || [];
-    const [phase, setPhase] = useState("warmup");
-    const [stepIdx, setStepIdx] = useState(0);              // warm-up / cool-down item
-    const [exIndex, setExIndex] = useState(0);
-    const [timer, setTimer] = useState(WARMUP_EXERCISES[0].duration);
-    const [isPaused, setIsPaused] = useState(false);
-    const [startTime] = useState(() => Date.now());
-    const [endTime, setEndTime] = useState(null);
-    const [weights, setWeights] = useState({});
-    const [completedIdx, setCompletedIdx] = useState([]);
-
-    const curEx = exercises[exIndex];
-    const restDuration = Number(exercises[Math.max(0, exIndex - 1)]?.rest) || 30;
-    const gifs = useWorkoutGifs(exercises);
-
-    const timedPhase = phase === "warmup" || phase === "cooldown" || phase === "ready" || phase === "rest" || (phase === "exercise" && isTimed(curEx));
-
-    // Timer value is mirrored in a ref so the interval can read it without re-subscribing.
-    const timerRef = useRef(timer);
-    const setCountdown = (v) => { timerRef.current = v; setTimer(v); };
-
-    function startExercise(idx) {
-        setExIndex(idx);
-        setPhase("exercise");
-        setCountdown(isTimed(exercises[idx]) ? timedLength(exercises[idx]) : 0);
-    }
-
-    function finishExercise(done) {
-        if (done) setCompletedIdx(prev => prev.includes(exIndex) ? prev : [...prev, exIndex]);
-        if (exIndex >= exercises.length - 1) {
-            setStepIdx(0); setPhase("cooldown"); setCountdown(COOLDOWN_EXERCISES[0].duration);
-        } else {
-            setExIndex(exIndex + 1); setPhase("rest"); setCountdown(Number(curEx?.rest) || 30);
-        }
-    }
-
-    function nextWarmCool(list, onFinished) {
-        if (stepIdx < list.length - 1) { setStepIdx(stepIdx + 1); setCountdown(list[stepIdx + 1].duration); }
-        else onFinished();
-    }
-    const endWarmup = () => { setPhase("ready"); setCountdown(READY_SECONDS); };
-    const endCooldown = () => { victorySound(); setEndTime(Date.now()); setPhase("complete"); };
-
-    // What happens when the current countdown reaches zero (latest closure, read by the interval).
-    const onZeroRef = useRef(null);
-    useEffect(() => {
-        onZeroRef.current = () => {
-            if (phase === "warmup") nextWarmCool(WARMUP_EXERCISES, endWarmup);
-            else if (phase === "cooldown") nextWarmCool(COOLDOWN_EXERCISES, endCooldown);
-            else if (phase === "ready" || phase === "rest") startExercise(exIndex);
-            else if (phase === "exercise") finishExercise(true);
-        };
-    });
-
-    // ── Tick (paused, or untimed phases, don't run) ──
-    useEffect(() => {
-        if (!timedPhase || isPaused) return;
-        const id = setInterval(() => {
-            const next = Math.max(0, timerRef.current - 1);
-            setCountdown(next);
-            if (next > 0 && next <= 3) beep(660, 0.08);
-            if (next === 0) { beep(880, 0.15); onZeroRef.current?.(); }
-        }, 1000);
-        return () => clearInterval(id);
-    }, [timedPhase, isPaused, phase, exIndex, stepIdx]);
-
-    const duration = endTime ? Math.floor((endTime - startTime) / 1000) : 0;
-    const maxWeight = Object.values(weights).flatMap(s => Object.values(s)).map(Number).filter(n => n > 0).reduce((a, b) => Math.max(a, b), 0);
-
-    function handleComplete() {
-        onComplete?.({ workout, duration, caloriesBurned: Math.round(duration * 0.15), exercisesDone: completedIdx.length, completedIdx, maxWeight, weights });
-    }
-
-    function quit() {
-        const started = phase !== "warmup" || completedIdx.length > 0;
-        if (!started || window.confirm("Quit this workout? Progress from this session won't be saved.")) onQuit?.();
-    }
-
-    if (!workout || exercises.length === 0) return null;
-
-    return (
-        <div className="keep-dark" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#0a0a0a", overflowY: "auto" }}>
-            {phase !== "complete" && (
-                <button type="button" onClick={quit}
-                    style={{ position: "absolute", top: "calc(12px + env(safe-area-inset-top))", left: 12, zIndex: 1010, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 10, padding: "6px 12px", color: "#9ca3af", fontSize: 14, cursor: "pointer" }}>← Quit</button>
-            )}
-
-            {phase === "warmup" && (
-                <WarmupCooldown type="warmup" exercises={WARMUP_EXERCISES} idx={stepIdx} timer={timer}
-                    onSkip={() => nextWarmCool(WARMUP_EXERCISES, endWarmup)} onSkipAll={endWarmup} />
-            )}
-
-            {phase === "ready" && curEx && (
-                <ReadyPhase exercise={curEx} gif={gifs[curEx.name]} countdown={timer} total={READY_SECONDS} onSkip={() => startExercise(exIndex)} />
-            )}
-
-            {phase === "exercise" && curEx && (
-                <ExercisePhase exercise={curEx} gif={gifs[curEx.name]} exerciseIndex={exIndex} totalExercises={exercises.length}
-                    timer={timer} totalTime={timedLength(curEx)} isTimeBased={isTimed(curEx)}
-                    onDone={() => finishExercise(true)} onSkip={() => finishExercise(false)} onPause={() => setIsPaused(p => !p)} isPaused={isPaused}
-                    weights={weights} setWeights={setWeights} />
-            )}
-
-            {phase === "rest" && (
-                <RestPhase timer={timer} total={restDuration} nextExercise={curEx} nextGif={curEx ? gifs[curEx.name] : null}
-                    onSkip={() => startExercise(exIndex)} />
-            )}
-
-            {phase === "cooldown" && (
-                <WarmupCooldown type="cooldown" exercises={COOLDOWN_EXERCISES} idx={stepIdx} timer={timer}
-                    onSkip={() => nextWarmCool(COOLDOWN_EXERCISES, endCooldown)} onSkipAll={endCooldown} />
-            )}
-
-            {phase === "complete" && (
-                <CompletePhase workout={workout} duration={duration} caloriesBurned={Math.round(duration * 0.15)}
-                    exercisesDone={completedIdx.length} maxWeight={maxWeight} onDone={handleComplete} />
-            )}
-
-            <style>{`@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }`}</style>
+            {howTo && <ExerciseSheet exercise={ex} history={exerciseHistory(sessions, ex.name)} onClose={() => setHowTo(false)} />}
         </div>
     );
 }

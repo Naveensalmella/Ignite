@@ -143,9 +143,10 @@ export default function App() {
 
     // ── Navigation: URL hash ⇄ page, with real browser history ──
     useEffect(() => {
+        // Note: never replaceState here — this runs before Next.js patches the history
+        // API, and an entry without Next's internal state makes Back do a full reload.
         const initial = hashPage();
         if (initial) setPageSilent(initial);
-        window.history.replaceState({ page: initial || useAppStore.getState().page }, '', window.location.href);
         const onPop = () => setPageSilent(hashPage() || 'dashboard');
         window.addEventListener('popstate', onPop);
         return () => window.removeEventListener('popstate', onPop);

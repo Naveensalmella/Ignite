@@ -1,0 +1,7338 @@
+{
+ "Standing Forward Fold": {
+  "id": "Standing_Toe_Touches",
+  "match": "close",
+  "pattern": "forward_fold",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": [
+   "calves"
+  ]
+ },
+ "Quad Stretch": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": []
+ },
+ "Child's Pose": {
+  "id": "Childs_Pose",
+  "match": "exact",
+  "pattern": "child_pose",
+  "primary": [
+   "lower back"
+  ],
+  "secondary": [
+   "glutes",
+   "middle back"
+  ]
+ },
+ "Deep Breathing": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Standard Push-ups": {
+  "id": "Pushups",
+  "match": "close",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Wide Push-ups": {
+  "id": "Push-Up_Wide",
+  "match": "exact",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "abdominals",
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Diamond Push-ups": {
+  "id": "Push-Ups_-_Close_Triceps_Position",
+  "match": "close",
+  "pattern": "pushup",
+  "primary": [
+   "triceps"
+  ],
+  "secondary": [
+   "chest",
+   "shoulders"
+  ]
+ },
+ "Decline Push-ups": {
+  "id": "Decline_Push-Up",
+  "match": "exact",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Archer Push-ups": {
+  "id": null,
+  "match": null,
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "shoulders"
+  ]
+ },
+ "Clap Push-ups": {
+  "id": "Plyo_Push-up",
+  "match": "close",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Superman Hold": {
+  "id": "Superman",
+  "match": "exact",
+  "pattern": "superman",
+  "primary": [
+   "lower back"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Reverse Snow Angels": {
+  "id": null,
+  "match": null,
+  "pattern": "superman",
+  "primary": [
+   "shoulders",
+   "middle back"
+  ],
+  "secondary": [
+   "traps",
+   "lower back"
+  ]
+ },
+ "Inverted Rows (table/bar)": {
+  "id": "Inverted_Row",
+  "match": "exact",
+  "pattern": "row",
+  "primary": [
+   "middle back"
+  ],
+  "secondary": [
+   "lats"
+  ]
+ },
+ "Pull-ups": {
+  "id": "Pullups",
+  "match": "exact",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "biceps",
+   "middle back"
+  ]
+ },
+ "Chin-ups": {
+  "id": "Chin-Up",
+  "match": "exact",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "middle back"
+  ]
+ },
+ "Pike Push-ups": {
+  "id": null,
+  "match": null,
+  "pattern": "pushup",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps",
+   "chest"
+  ]
+ },
+ "Shoulder Taps": {
+  "id": null,
+  "match": null,
+  "pattern": "plank",
+  "primary": [
+   "abdominals",
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "triceps"
+  ]
+ },
+ "Hindu Push-ups": {
+  "id": null,
+  "match": null,
+  "pattern": "pushup",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "lower back",
+   "hamstrings"
+  ]
+ },
+ "Handstand Push-ups (wall)": {
+  "id": "Handstand_Push-Ups",
+  "match": "exact",
+  "pattern": "overhead_press",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps"
+  ]
+ },
+ "Tricep Dips (chair)": {
+  "id": "Bench_Dips",
+  "match": "close",
+  "pattern": "dip",
+  "primary": [
+   "triceps"
+  ],
+  "secondary": [
+   "chest",
+   "shoulders"
+  ]
+ },
+ "Chin-up Hold": {
+  "id": "Chin-Up",
+  "match": "close",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "middle back"
+  ]
+ },
+ "Close-grip Push-ups": {
+  "id": "Push-Ups_-_Close_Triceps_Position",
+  "match": "exact",
+  "pattern": "pushup",
+  "primary": [
+   "triceps"
+  ],
+  "secondary": [
+   "chest",
+   "shoulders"
+  ]
+ },
+ "Bodyweight Curls (towel)": {
+  "id": null,
+  "match": null,
+  "pattern": "curl",
+  "primary": [
+   "biceps"
+  ],
+  "secondary": [
+   "forearms"
+  ]
+ },
+ "Plank Hold": {
+  "id": "Plank",
+  "match": "exact",
+  "pattern": "plank",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": []
+ },
+ "Crunches": {
+  "id": "Crunches",
+  "match": "exact",
+  "pattern": "crunch",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": []
+ },
+ "Leg Raises": {
+  "id": "Flat_Bench_Lying_Leg_Raise",
+  "match": "close",
+  "pattern": "leg_raise",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": []
+ },
+ "Mountain Climbers": {
+  "id": "Mountain_Climbers",
+  "match": "exact",
+  "pattern": "mountain_climber",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "chest",
+   "hamstrings",
+   "shoulders"
+  ]
+ },
+ "Russian Twists": {
+  "id": "Russian_Twist",
+  "match": "exact",
+  "pattern": "russian_twist",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "lower back"
+  ]
+ },
+ "Dragon Flag Negatives": {
+  "id": null,
+  "match": null,
+  "pattern": "leg_raise",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "lats",
+   "lower back",
+   "glutes"
+  ]
+ },
+ "Bodyweight Squats": {
+  "id": "Bodyweight_Squat",
+  "match": "close",
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Lunges": {
+  "id": "Bodyweight_Walking_Lunge",
+  "match": "close",
+  "pattern": "lunge",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Jump Squats": {
+  "id": "Freehand_Jump_Squat",
+  "match": "exact",
+  "pattern": "jump_squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Bulgarian Split Squats": {
+  "id": "Split_Squat_with_Dumbbells",
+  "match": "close",
+  "pattern": "lunge",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Pistol Squats": {
+  "id": "Kettlebell_Pistol_Squat",
+  "match": "close",
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "calves",
+   "glutes",
+   "hamstrings",
+   "shoulders"
+  ]
+ },
+ "Calf Raises": {
+  "id": "Standing_Dumbbell_Calf_Raise",
+  "match": "close",
+  "pattern": "calf_raise",
+  "primary": [
+   "calves"
+  ],
+  "secondary": []
+ },
+ "Glute Bridges": {
+  "id": "Butt_Lift_Bridge",
+  "match": "exact",
+  "pattern": "glute_bridge",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings"
+  ]
+ },
+ "Single-leg Glute Bridge": {
+  "id": "Single_Leg_Glute_Bridge",
+  "match": "exact",
+  "pattern": "glute_bridge",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings"
+  ]
+ },
+ "Donkey Kicks": {
+  "id": "Glute_Kickback",
+  "match": "close",
+  "pattern": "donkey_kick",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings"
+  ]
+ },
+ "Fire Hydrants": {
+  "id": null,
+  "match": null,
+  "pattern": "donkey_kick",
+  "primary": [
+   "glutes",
+   "abductors"
+  ],
+  "secondary": [
+   "abdominals"
+  ]
+ },
+ "Burpees": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Jumping Jacks": {
+  "id": null,
+  "match": null,
+  "pattern": "jumping_jack",
+  "primary": [
+   "calves",
+   "shoulders"
+  ],
+  "secondary": [
+   "quadriceps",
+   "glutes",
+   "abductors",
+   "adductors"
+  ]
+ },
+ "High Knees": {
+  "id": null,
+  "match": null,
+  "pattern": "high_knees",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Tuck Jumps": {
+  "id": "Knee_Tuck_Jump",
+  "match": "exact",
+  "pattern": "jump_squat",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": [
+   "abductors",
+   "adductors",
+   "calves",
+   "glutes",
+   "quadriceps"
+  ]
+ },
+ "Sprint in Place": {
+  "id": null,
+  "match": null,
+  "pattern": "high_knees",
+  "primary": [
+   "quadriceps",
+   "calves"
+  ],
+  "secondary": [
+   "hamstrings",
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Barbell Bench Press": {
+  "id": "Barbell_Bench_Press_-_Medium_Grip",
+  "match": "exact",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Incline Dumbbell Press": {
+  "id": "Incline_Dumbbell_Press",
+  "match": "exact",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Dumbbell Flyes": {
+  "id": "Dumbbell_Flyes",
+  "match": "exact",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": []
+ },
+ "Cable Crossovers": {
+  "id": "Cable_Crossover",
+  "match": "exact",
+  "pattern": "lateral_raise",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders"
+  ]
+ },
+ "Lat Pulldown": {
+  "id": "Wide-Grip_Lat_Pulldown",
+  "match": "close",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "biceps",
+   "middle back",
+   "shoulders"
+  ]
+ },
+ "Barbell Rows": {
+  "id": "Bent_Over_Barbell_Row",
+  "match": "exact",
+  "pattern": "row",
+  "primary": [
+   "middle back"
+  ],
+  "secondary": [
+   "biceps",
+   "lats",
+   "shoulders"
+  ]
+ },
+ "Seated Cable Row": {
+  "id": "Seated_Cable_Rows",
+  "match": "exact",
+  "pattern": "row",
+  "primary": [
+   "middle back"
+  ],
+  "secondary": [
+   "biceps",
+   "lats",
+   "shoulders"
+  ]
+ },
+ "Dumbbell Rows": {
+  "id": "One-Arm_Dumbbell_Row",
+  "match": "exact",
+  "pattern": "row",
+  "primary": [
+   "middle back"
+  ],
+  "secondary": [
+   "biceps",
+   "lats",
+   "shoulders"
+  ]
+ },
+ "Overhead Press (barbell)": {
+  "id": "Standing_Military_Press",
+  "match": "exact",
+  "pattern": "overhead_press",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps"
+  ]
+ },
+ "Lateral Raises": {
+  "id": "Side_Lateral_Raise",
+  "match": "exact",
+  "pattern": "lateral_raise",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": []
+ },
+ "Face Pulls": {
+  "id": "Face_Pull",
+  "match": "exact",
+  "pattern": "row",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "middle back"
+  ]
+ },
+ "Barbell Curls": {
+  "id": "Barbell_Curl",
+  "match": "exact",
+  "pattern": "curl",
+  "primary": [
+   "biceps"
+  ],
+  "secondary": [
+   "forearms"
+  ]
+ },
+ "Tricep Pushdowns": {
+  "id": "Triceps_Pushdown",
+  "match": "exact",
+  "pattern": "dip",
+  "primary": [
+   "triceps"
+  ],
+  "secondary": []
+ },
+ "Hammer Curls": {
+  "id": "Hammer_Curls",
+  "match": "exact",
+  "pattern": "curl",
+  "primary": [
+   "biceps"
+  ],
+  "secondary": []
+ },
+ "Skull Crushers": {
+  "id": "EZ-Bar_Skullcrusher",
+  "match": "exact",
+  "pattern": "dip",
+  "primary": [
+   "triceps"
+  ],
+  "secondary": [
+   "forearms"
+  ]
+ },
+ "Barbell Squats": {
+  "id": "Barbell_Squat",
+  "match": "exact",
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "calves",
+   "glutes",
+   "hamstrings",
+   "lower back"
+  ]
+ },
+ "Leg Press": {
+  "id": "Leg_Press",
+  "match": "exact",
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Romanian Deadlift": {
+  "id": "Romanian_Deadlift",
+  "match": "exact",
+  "pattern": "deadlift",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": [
+   "calves",
+   "glutes",
+   "lower back"
+  ]
+ },
+ "Leg Extensions": {
+  "id": "Leg_Extensions",
+  "match": "exact",
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": []
+ },
+ "Leg Curls": {
+  "id": "Lying_Leg_Curls",
+  "match": "exact",
+  "pattern": "donkey_kick",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": []
+ },
+ "Cable Crunches": {
+  "id": "Cable_Crunch",
+  "match": "exact",
+  "pattern": "crunch",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": []
+ },
+ "Hanging Leg Raises": {
+  "id": "Hanging_Leg_Raise",
+  "match": "exact",
+  "pattern": "leg_raise",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": []
+ },
+ "Ab Wheel Rollouts": {
+  "id": "Ab_Roller",
+  "match": "exact",
+  "pattern": "plank",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "shoulders"
+  ]
+ },
+ "Barbell Hip Thrusts": {
+  "id": "Barbell_Hip_Thrust",
+  "match": "exact",
+  "pattern": "glute_bridge",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "calves",
+   "hamstrings"
+  ]
+ },
+ "Cable Kickbacks": {
+  "id": "One-Legged_Cable_Kickback",
+  "match": "exact",
+  "pattern": "donkey_kick",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings"
+  ]
+ },
+ "Sumo Deadlift": {
+  "id": "Sumo_Deadlift",
+  "match": "exact",
+  "pattern": "deadlift",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": [
+   "adductors",
+   "forearms",
+   "glutes",
+   "lower back",
+   "middle back",
+   "quadriceps",
+   "traps"
+  ]
+ },
+ "Treadmill Sprints": {
+  "id": "Running_Treadmill",
+  "match": "close",
+  "pattern": "jog",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Rowing Machine": {
+  "id": "Rowing_Stationary",
+  "match": "exact",
+  "pattern": "row",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "biceps",
+   "calves",
+   "glutes",
+   "hamstrings",
+   "lower back",
+   "middle back"
+  ]
+ },
+ "Battle Ropes": {
+  "id": "Battling_Ropes",
+  "match": "exact",
+  "pattern": "lateral_raise",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "forearms"
+  ]
+ },
+ "Jab": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals"
+  ]
+ },
+ "Cross": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "Jab-Cross Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "Hook Punch": {
+  "id": null,
+  "match": null,
+  "pattern": "hook_uppercut",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "biceps",
+   "chest"
+  ]
+ },
+ "Uppercut": {
+  "id": null,
+  "match": null,
+  "pattern": "hook_uppercut",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "biceps",
+   "chest"
+  ]
+ },
+ "4-Punch Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Slip & Counter": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow Boxing": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Front Kick (Teep)": {
+  "id": null,
+  "match": null,
+  "pattern": "front_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Roundhouse Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Knee Strikes": {
+  "id": null,
+  "match": null,
+  "pattern": "knee_strike",
+  "primary": [
+   "abdominals",
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "calves"
+  ]
+ },
+ "Kick-Punch Combos": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Low Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Elbow Strikes": {
+  "id": null,
+  "match": null,
+  "pattern": "elbow_strike",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "triceps",
+   "chest"
+  ]
+ },
+ "Sprawl Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "sprawl",
+  "primary": [
+   "quadriceps",
+   "abdominals",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "hamstrings",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Ground & Pound Simulation": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "abdominals",
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "triceps",
+   "glutes",
+   "lats"
+  ]
+ },
+ "Clinch Knees + Elbows": {
+  "id": null,
+  "match": null,
+  "pattern": "knee_strike",
+  "primary": [
+   "abdominals",
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "calves"
+  ]
+ },
+ "Level Change Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "level_change",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings",
+   "abdominals",
+   "shoulders"
+  ]
+ },
+ "MMA Shadow Fighting": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Horse Stance Hold": {
+  "id": null,
+  "match": null,
+  "pattern": "horse_stance",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "adductors",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "Front Snap Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "front_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Side Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "side_kick",
+  "primary": [
+   "glutes",
+   "quadriceps"
+  ],
+  "secondary": [
+   "abductors",
+   "hamstrings",
+   "abdominals"
+  ]
+ },
+ "Spinning Back Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "side_kick",
+  "primary": [
+   "glutes",
+   "quadriceps"
+  ],
+  "secondary": [
+   "abductors",
+   "hamstrings",
+   "abdominals"
+  ]
+ },
+ "Kata / Forms Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "quadriceps",
+   "shoulders"
+  ],
+  "secondary": [
+   "abdominals",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Tabata Burpees": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Jump Squat + Push-up Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Mountain Climber Blitz": {
+  "id": "Mountain_Climbers",
+  "match": "close",
+  "pattern": "mountain_climber",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "chest",
+   "hamstrings",
+   "shoulders"
+  ]
+ },
+ "EMOM (Every Minute on the Minute)": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Ladder Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Easy Jog": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Walk-Run Intervals": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Tempo Run": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Sprint Intervals": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Hill Sprints": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "glutes",
+   "calves"
+  ],
+  "secondary": [
+   "hamstrings",
+   "abdominals"
+  ]
+ },
+ "Long Run": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Fartlek Run": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Arm Circles": {
+  "id": "Arm_Circles",
+  "match": "exact",
+  "pattern": "arm_circles",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "traps"
+  ]
+ },
+ "Leg Swings": {
+  "id": "Front_Leg_Raises",
+  "match": "close",
+  "pattern": "leg_swing",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": []
+ },
+ "Hip Circles": {
+  "id": null,
+  "match": null,
+  "pattern": "hip_circles",
+  "primary": [
+   "abductors",
+   "adductors"
+  ],
+  "secondary": [
+   "glutes",
+   "lower back",
+   "abdominals"
+  ]
+ },
+ "Sun Salutation (Surya Namaskar)": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "hamstrings",
+   "shoulders"
+  ],
+  "secondary": [
+   "quadriceps",
+   "abdominals",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Warrior I": {
+  "id": null,
+  "match": null,
+  "pattern": "warrior",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "shoulders",
+   "hamstrings",
+   "calves"
+  ]
+ },
+ "Warrior II": {
+  "id": null,
+  "match": null,
+  "pattern": "warrior",
+  "primary": [
+   "quadriceps",
+   "adductors"
+  ],
+  "secondary": [
+   "shoulders",
+   "glutes"
+  ]
+ },
+ "Downward Dog": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "hamstrings",
+   "shoulders"
+  ],
+  "secondary": [
+   "calves",
+   "lats"
+  ]
+ },
+ "Pigeon Pose": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "abductors",
+   "quadriceps",
+   "lower back"
+  ]
+ },
+ "Tree Pose": {
+  "id": null,
+  "match": null,
+  "pattern": "tree_pose",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "abdominals",
+   "adductors",
+   "glutes"
+  ]
+ },
+ "Bridge Pose": {
+  "id": "Butt_Lift_Bridge",
+  "match": "close",
+  "pattern": "glute_bridge",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings"
+  ]
+ },
+ "Cobra Stretch": {
+  "id": null,
+  "match": null,
+  "pattern": "cobra",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "lower back",
+   "chest"
+  ]
+ },
+ "Stance Hold": {
+  "id": null,
+  "match": null,
+  "pattern": "boxing_stance",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "abdominals"
+  ]
+ },
+ "Shadow Footwork": {
+  "id": null,
+  "match": null,
+  "pattern": "boxing_stance",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "abdominals"
+  ]
+ },
+ "Guard Check": {
+  "id": null,
+  "match": null,
+  "pattern": "boxing_stance",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "forearms",
+   "abdominals"
+  ]
+ },
+ "Jump Rope": {
+  "id": "Rope_Jumping",
+  "match": "exact",
+  "pattern": "jump_rope",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "calves",
+   "hamstrings"
+  ]
+ },
+ "Plank": {
+  "id": "Plank",
+  "match": "exact",
+  "pattern": "plank",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": []
+ },
+ "Single Jab Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals"
+  ]
+ },
+ "Double Jab": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals"
+  ]
+ },
+ "Jab + Footwork": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "calves"
+  ],
+  "secondary": [
+   "triceps",
+   "quadriceps",
+   "abdominals"
+  ]
+ },
+ "Shadow Boxing (jab only)": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals"
+  ]
+ },
+ "Push Ups": {
+  "id": "Pushups",
+  "match": "exact",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Cross Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "1-2 Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "1-2 + Step Back": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "Shadow Boxing (1-2)": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "Russian Twist": {
+  "id": "Russian_Twist",
+  "match": "exact",
+  "pattern": "russian_twist",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "lower back"
+  ]
+ },
+ "Hook Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "hook_uppercut",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "biceps",
+   "chest"
+  ]
+ },
+ "1-2-3 Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Body Hooks": {
+  "id": null,
+  "match": null,
+  "pattern": "hook_uppercut",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "biceps",
+   "chest"
+  ]
+ },
+ "Shadow Boxing (1-2-3)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Bicycle Crunches": {
+  "id": "Air_Bike",
+  "match": "exact",
+  "pattern": "bicycle",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": []
+ },
+ "Uppercut Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "hook_uppercut",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "biceps",
+   "chest"
+  ]
+ },
+ "1-2-5-2 Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Body-Head Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "hook_uppercut",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "biceps",
+   "chest"
+  ]
+ },
+ "Shadow Boxing (all punches)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Slip Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "abdominals",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "calves"
+  ]
+ },
+ "Roll Under": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "shoulders"
+  ]
+ },
+ "Slip + Counter": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow Boxing + Defense": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "5-Punch Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Combo + Movement": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Freestyle Combos": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow Boxing (free)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Flutter Kicks": {
+  "id": "Scissor_Kick",
+  "match": "close",
+  "pattern": "flutter_kick",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": []
+ },
+ "Pivot Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "boxing_stance",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "abdominals"
+  ]
+ },
+ "In-Out Attack": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "Circle Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "boxing_stance",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "abdominals"
+  ]
+ },
+ "Shadow Boxing (movement focus)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Body Shot Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "hook_uppercut",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "biceps",
+   "chest"
+  ]
+ },
+ "3-Punch Body Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow Boxing (body focus)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Catch-Counter": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Pull Counter": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Counter Combos": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow Boxing (counter focus)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "V-Ups": {
+  "id": "Jackknife_Sit-Up",
+  "match": "close",
+  "pattern": "crunch",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": []
+ },
+ "Jab-Only Spar": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals"
+  ]
+ },
+ "1-2 Only Spar": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "Free Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow Boxing (simulate fight)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "3-Round Shadow Fight": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Power Round": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Technical Round": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow Boxing (full fight)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Teep Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "front_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Round Kick Chamber": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Stance Switches": {
+  "id": null,
+  "match": null,
+  "pattern": "boxing_stance",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "abdominals"
+  ]
+ },
+ "Shadow Kickboxing": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "1-2-Low Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Low Kick Both Sides": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Check Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "abdominals",
+   "quadriceps"
+  ],
+  "secondary": [
+   "abductors",
+   "calves"
+  ]
+ },
+ "Body Kick Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "High Kick Flexibility": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "hamstrings",
+   "adductors"
+  ],
+  "secondary": [
+   "quadriceps",
+   "abdominals",
+   "glutes"
+  ]
+ },
+ "Combo: 1-2-Body Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow Kickboxing (kicks focus)": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Knee Strike Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "knee_strike",
+  "primary": [
+   "abdominals",
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "calves"
+  ]
+ },
+ "Clinch Entry": {
+  "id": null,
+  "match": null,
+  "pattern": "clinch",
+  "primary": [
+   "shoulders",
+   "traps"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "abdominals",
+   "neck"
+  ]
+ },
+ "Clinch Knee Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "knee_strike",
+  "primary": [
+   "abdominals",
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "calves"
+  ]
+ },
+ "Shadow Kickboxing (knees)": {
+  "id": null,
+  "match": null,
+  "pattern": "knee_strike",
+  "primary": [
+   "abdominals",
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "calves"
+  ]
+ },
+ "Squats": {
+  "id": "Bodyweight_Squat",
+  "match": "close",
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Elbow Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "elbow_strike",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "triceps",
+   "chest"
+  ]
+ },
+ "1-2-Elbow": {
+  "id": null,
+  "match": null,
+  "pattern": "elbow_strike",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "triceps",
+   "chest"
+  ]
+ },
+ "Elbow from Clinch": {
+  "id": null,
+  "match": null,
+  "pattern": "elbow_strike",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "triceps",
+   "chest"
+  ]
+ },
+ "Shadow Kickboxing (elbows)": {
+  "id": null,
+  "match": null,
+  "pattern": "elbow_strike",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "triceps",
+   "chest"
+  ]
+ },
+ "Dutch Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Switch Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Mix Combos": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow Kickboxing (combos)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Catch and Counter": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Defense Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "forearms"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Shadow (defense focus)": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "forearms"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Teep Range Control": {
+  "id": null,
+  "match": null,
+  "pattern": "front_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Angle Off Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "boxing_stance",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "abdominals"
+  ]
+ },
+ "Shadow (movement focus)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "5-Strike Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Punch-Knee-Elbow": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Freestyle": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow (full arsenal)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Feint Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Timing Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Pattern Read": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow (tactical)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Punch-Only Spar": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Kick-Only Spar": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Full Rules Light": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow Fight Simulation": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Squat Jumps": {
+  "id": "Freehand_Jump_Squat",
+  "match": "exact",
+  "pattern": "jump_squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "5-Round Fight": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Recovery Round": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Shadow Fight": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Stance Transitions": {
+  "id": null,
+  "match": null,
+  "pattern": "boxing_stance",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "abdominals"
+  ]
+ },
+ "Shadow MMA": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Sprawls": {
+  "id": null,
+  "match": null,
+  "pattern": "sprawl",
+  "primary": [
+   "quadriceps",
+   "abdominals",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "hamstrings",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Short Combo Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "Combo to Sprawl": {
+  "id": null,
+  "match": null,
+  "pattern": "sprawl",
+  "primary": [
+   "quadriceps",
+   "abdominals",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "hamstrings",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Dirty Boxing": {
+  "id": null,
+  "match": null,
+  "pattern": "hook_uppercut",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "biceps",
+   "chest"
+  ]
+ },
+ "Low Kick Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Shadow MMA (kicks)": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Clinch Knees": {
+  "id": null,
+  "match": null,
+  "pattern": "knee_strike",
+  "primary": [
+   "abdominals",
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "calves"
+  ]
+ },
+ "Clinch Escape": {
+  "id": null,
+  "match": null,
+  "pattern": "clinch",
+  "primary": [
+   "shoulders",
+   "traps"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "abdominals",
+   "neck"
+  ]
+ },
+ "Shadow + Clinch": {
+  "id": null,
+  "match": null,
+  "pattern": "clinch",
+  "primary": [
+   "shoulders",
+   "traps"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "abdominals",
+   "neck"
+  ]
+ },
+ "Penetration Step": {
+  "id": null,
+  "match": null,
+  "pattern": "level_change",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings",
+   "abdominals",
+   "shoulders"
+  ]
+ },
+ "Double Leg Solo": {
+  "id": null,
+  "match": null,
+  "pattern": "level_change",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings",
+   "abdominals",
+   "shoulders"
+  ]
+ },
+ "Single Leg Finish": {
+  "id": null,
+  "match": null,
+  "pattern": "level_change",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings",
+   "abdominals",
+   "shoulders"
+  ]
+ },
+ "Sprawl-Shoot Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "sprawl",
+  "primary": [
+   "quadriceps",
+   "abdominals",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "hamstrings",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Whizzer Counter": {
+  "id": null,
+  "match": null,
+  "pattern": "clinch",
+  "primary": [
+   "shoulders",
+   "traps"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "abdominals",
+   "neck"
+  ]
+ },
+ "Cage Getup": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "abdominals",
+   "hamstrings",
+   "shoulders"
+  ]
+ },
+ "Sprawl Burpees": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "abdominals",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "hamstrings",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Bear Crawl": {
+  "id": null,
+  "match": null,
+  "pattern": "bear_crawl",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "quadriceps",
+   "triceps",
+   "chest"
+  ]
+ },
+ "Mount Hold": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "abdominals",
+   "adductors"
+  ],
+  "secondary": [
+   "glutes",
+   "shoulders",
+   "chest"
+  ]
+ },
+ "Side Control Pressure": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "abdominals",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "quadriceps",
+   "glutes"
+  ]
+ },
+ "Guard Recovery": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "abdominals",
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings",
+   "adductors",
+   "shoulders"
+  ]
+ },
+ "Positional Drills": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "abdominals",
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "triceps",
+   "glutes",
+   "lats"
+  ]
+ },
+ "Hip Bridges": {
+  "id": "Butt_Lift_Bridge",
+  "match": "close",
+  "pattern": "glute_bridge",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings"
+  ]
+ },
+ "GnP from Mount": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "abdominals",
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "triceps",
+   "glutes",
+   "lats"
+  ]
+ },
+ "GnP from Guard": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "abdominals",
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "triceps",
+   "glutes",
+   "lats"
+  ]
+ },
+ "Strike-Pass Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "abdominals",
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "triceps",
+   "glutes",
+   "lats"
+  ]
+ },
+ "GnP Simulation": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "abdominals",
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "triceps",
+   "glutes",
+   "lats"
+  ]
+ },
+ "RNC Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "biceps",
+   "lats"
+  ],
+  "secondary": [
+   "forearms",
+   "abdominals",
+   "adductors"
+  ]
+ },
+ "Armbar from Guard": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "glutes",
+   "hamstrings"
+  ],
+  "secondary": [
+   "abdominals",
+   "biceps",
+   "adductors"
+  ]
+ },
+ "Guillotine Setup": {
+  "id": null,
+  "match": null,
+  "pattern": "clinch",
+  "primary": [
+   "biceps",
+   "lats"
+  ],
+  "secondary": [
+   "forearms",
+   "abdominals",
+   "shoulders"
+  ]
+ },
+ "Submission Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "abdominals",
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "triceps",
+   "glutes",
+   "lats"
+  ]
+ },
+ "Pull Ups": {
+  "id": "Pullups",
+  "match": "exact",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "biceps",
+   "middle back"
+  ]
+ },
+ "1-2-Takedown": {
+  "id": null,
+  "match": null,
+  "pattern": "level_change",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings",
+   "abdominals",
+   "shoulders"
+  ]
+ },
+ "Takedown-GnP-Sub": {
+  "id": null,
+  "match": null,
+  "pattern": "level_change",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings",
+   "abdominals",
+   "shoulders"
+  ]
+ },
+ "Full Transition Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "level_change",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings",
+   "abdominals",
+   "shoulders"
+  ]
+ },
+ "MMA Simulation": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Striker Gameplan": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Grappler Gameplan": {
+  "id": null,
+  "match": null,
+  "pattern": "level_change",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings",
+   "abdominals",
+   "shoulders"
+  ]
+ },
+ "Mixed Gameplan": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Fight Simulation": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "5-Round Shadow MMA": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Scramble Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "level_change",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings",
+   "abdominals",
+   "shoulders"
+  ]
+ },
+ "Finish Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "abdominals",
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "triceps",
+   "glutes",
+   "lats"
+  ]
+ },
+ "MMA Circuit": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Full Body HIIT": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Teep Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "front_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Long Guard Walk": {
+  "id": null,
+  "match": null,
+  "pattern": "boxing_stance",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "abdominals"
+  ]
+ },
+ "Stance Movement": {
+  "id": null,
+  "match": null,
+  "pattern": "boxing_stance",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "abdominals"
+  ]
+ },
+ "Shadow Muay Thai": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Round Kick Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "1-2-Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Kick Both Sides": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Shadow (punches + kicks)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Elbow Combos": {
+  "id": null,
+  "match": null,
+  "pattern": "elbow_strike",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "triceps",
+   "chest"
+  ]
+ },
+ "Shadow (8 limbs)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Clinch Position": {
+  "id": null,
+  "match": null,
+  "pattern": "clinch",
+  "primary": [
+   "shoulders",
+   "traps"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "abdominals",
+   "neck"
+  ]
+ },
+ "Clinch Sweep": {
+  "id": null,
+  "match": null,
+  "pattern": "clinch",
+  "primary": [
+   "shoulders",
+   "traps"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "abdominals",
+   "neck"
+  ]
+ },
+ "Check Both Sides": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "abdominals",
+   "quadriceps"
+  ],
+  "secondary": [
+   "abductors",
+   "calves"
+  ]
+ },
+ "Catch + Counter": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "8-Count Combo": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Question Mark Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Freestyle Muay Thai": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Catch-Cross": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "Slip-Cross Counter": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Teep Counter": {
+  "id": null,
+  "match": null,
+  "pattern": "front_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Shadow (counter focus)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Low Kick Combos": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Calf Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Low Kick to Body Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Shadow (kicks focus)": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Feint to Attack": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Tempo Changes": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Pattern Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Inside Trip": {
+  "id": null,
+  "match": null,
+  "pattern": "clinch",
+  "primary": [
+   "shoulders",
+   "traps"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "abdominals",
+   "neck"
+  ]
+ },
+ "Clinch Dump": {
+  "id": null,
+  "match": null,
+  "pattern": "clinch",
+  "primary": [
+   "shoulders",
+   "traps"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "abdominals",
+   "neck"
+  ]
+ },
+ "Sweep to Strike": {
+  "id": null,
+  "match": null,
+  "pattern": "ground_strikes",
+  "primary": [
+   "abdominals",
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "triceps",
+   "glutes",
+   "lats"
+  ]
+ },
+ "Shadow + Trips": {
+  "id": null,
+  "match": null,
+  "pattern": "clinch",
+  "primary": [
+   "shoulders",
+   "traps"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "abdominals",
+   "neck"
+  ]
+ },
+ "Technical Spar": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Clinch Spar": {
+  "id": null,
+  "match": null,
+  "pattern": "clinch",
+  "primary": [
+   "shoulders",
+   "traps"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "abdominals",
+   "neck"
+  ]
+ },
+ "Fight Rounds": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Cooldown Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Full Fight Sim": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Walking Meditation": {
+  "id": null,
+  "match": null,
+  "pattern": "walk",
+  "primary": [
+   "quadriceps",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Wall Sit": {
+  "id": null,
+  "match": null,
+  "pattern": "wall_sit",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "calves"
+  ]
+ },
+ "Slow Squats": {
+  "id": "Bodyweight_Squat",
+  "match": "close",
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Block Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "forearms"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "React Block": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "forearms"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Block + Step": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "forearms"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Shadow (blocks)": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "forearms"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Front Punch": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals"
+  ]
+ },
+ "Reverse Punch": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "1-2 from Stance": {
+  "id": null,
+  "match": null,
+  "pattern": "jab_cross",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "Shadow (punches + blocks)": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Squat Hold": {
+  "id": "Bodyweight_Squat",
+  "match": "close",
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Front Kick Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "front_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Side Kick Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "side_kick",
+  "primary": [
+   "glutes",
+   "quadriceps"
+  ],
+  "secondary": [
+   "abductors",
+   "hamstrings",
+   "abdominals"
+  ]
+ },
+ "Kick Combos": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Slow Kicks": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Roundhouse Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Back Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "side_kick",
+  "primary": [
+   "glutes",
+   "quadriceps"
+  ],
+  "secondary": [
+   "abductors",
+   "hamstrings",
+   "abdominals"
+  ]
+ },
+ "Combo Kicks": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Shadow (all kicks)": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "8-Move Form": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "quadriceps",
+   "shoulders"
+  ],
+  "secondary": [
+   "abdominals",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Slow Form": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "quadriceps",
+   "shoulders"
+  ],
+  "secondary": [
+   "abdominals",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Power Form": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "quadriceps",
+   "shoulders"
+  ],
+  "secondary": [
+   "abdominals",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Form Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "quadriceps",
+   "shoulders"
+  ],
+  "secondary": [
+   "abdominals",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Horse Stance": {
+  "id": null,
+  "match": null,
+  "pattern": "horse_stance",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "adductors",
+   "abdominals",
+   "calves"
+  ]
+ },
+ "Punch Defense 1": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "forearms"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Kick Defense 1": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "forearms"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Combo Defense": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "forearms"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Reaction Drills": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "forearms"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Spinning Hook Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "hamstrings",
+   "glutes"
+  ],
+  "secondary": [
+   "abdominals",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Jump Kick": {
+  "id": null,
+  "match": null,
+  "pattern": "front_kick",
+  "primary": [
+   "quadriceps",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings",
+   "abdominals"
+  ]
+ },
+ "Kick Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "roundhouse_kick",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "abductors",
+   "calves"
+  ]
+ },
+ "Jump Kicks": {
+  "id": null,
+  "match": null,
+  "pattern": "front_kick",
+  "primary": [
+   "quadriceps",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings",
+   "abdominals"
+  ]
+ },
+ "Grab Defense": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "forearms",
+   "shoulders"
+  ],
+  "secondary": [
+   "biceps",
+   "abdominals"
+  ]
+ },
+ "Choke Defense": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "neck"
+  ],
+  "secondary": [
+   "forearms",
+   "abdominals",
+   "traps"
+  ]
+ },
+ "Scenario Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "forearms"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Light Sparring": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Attack-Only Round": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Defense-Only Round": {
+  "id": null,
+  "match": null,
+  "pattern": "block",
+  "primary": [
+   "shoulders",
+   "forearms"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Spar Rounds": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Full Form": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "quadriceps",
+   "shoulders"
+  ],
+  "secondary": [
+   "abdominals",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Breakdown Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "quadriceps",
+   "shoulders"
+  ],
+  "secondary": [
+   "abdominals",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Mirror Form": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "quadriceps",
+   "shoulders"
+  ],
+  "secondary": [
+   "abdominals",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Full Review": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Form Performance": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "quadriceps",
+   "shoulders"
+  ],
+  "secondary": [
+   "abdominals",
+   "glutes",
+   "triceps"
+  ]
+ },
+ "Sparring Round": {
+  "id": null,
+  "match": null,
+  "pattern": "shadow_boxing",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "triceps"
+  ]
+ },
+ "Full Workout": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Meditation": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Bench Press": {
+  "id": "Barbell_Bench_Press_-_Medium_Grip",
+  "match": "exact",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Bent Over Row": {
+  "id": "Bent_Over_Barbell_Row",
+  "match": "exact",
+  "pattern": "row",
+  "primary": [
+   "middle back"
+  ],
+  "secondary": [
+   "biceps",
+   "lats",
+   "shoulders"
+  ]
+ },
+ "Shoulder Press": {
+  "id": "Dumbbell_Shoulder_Press",
+  "match": "close",
+  "pattern": "overhead_press",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps"
+  ]
+ },
+ "Bicep Curls": {
+  "id": "Dumbbell_Bicep_Curl",
+  "match": "exact",
+  "pattern": "curl",
+  "primary": [
+   "biceps"
+  ],
+  "secondary": [
+   "forearms"
+  ]
+ },
+ "Deadlift": {
+  "id": "Barbell_Deadlift",
+  "match": "exact",
+  "pattern": "deadlift",
+  "primary": [
+   "lower back"
+  ],
+  "secondary": [
+   "calves",
+   "forearms",
+   "glutes",
+   "hamstrings",
+   "lats",
+   "middle back",
+   "quadriceps",
+   "traps"
+  ]
+ },
+ "Dumbbell Press": {
+  "id": "Dumbbell_Bench_Press",
+  "match": "close",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Tricep Extension": {
+  "id": "Standing_Dumbbell_Triceps_Extension",
+  "match": "close",
+  "pattern": "overhead_press",
+  "primary": [
+   "triceps"
+  ],
+  "secondary": []
+ },
+ "Bulgarian Split Squat": {
+  "id": "Split_Squat_with_Dumbbells",
+  "match": "close",
+  "pattern": "lunge",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Lateral Raise": {
+  "id": "Side_Lateral_Raise",
+  "match": "exact",
+  "pattern": "lateral_raise",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": []
+ },
+ "Hanging Leg Raise": {
+  "id": "Hanging_Leg_Raise",
+  "match": "exact",
+  "pattern": "leg_raise",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": []
+ },
+ "Hip Thrust": {
+  "id": "Barbell_Hip_Thrust",
+  "match": "close",
+  "pattern": "glute_bridge",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "calves",
+   "hamstrings"
+  ]
+ },
+ "Tricep Dips": {
+  "id": "Dips_-_Triceps_Version",
+  "match": "exact",
+  "pattern": "dip",
+  "primary": [
+   "triceps"
+  ],
+  "secondary": [
+   "chest",
+   "shoulders"
+  ]
+ },
+ "Walking Lunges": {
+  "id": "Bodyweight_Walking_Lunge",
+  "match": "exact",
+  "pattern": "lunge",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Leg Curl": {
+  "id": "Lying_Leg_Curls",
+  "match": "exact",
+  "pattern": "donkey_kick",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": []
+ },
+ "Arnold Press": {
+  "id": "Arnold_Dumbbell_Press",
+  "match": "exact",
+  "pattern": "overhead_press",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps"
+  ]
+ },
+ "Face Pull": {
+  "id": "Face_Pull",
+  "match": "exact",
+  "pattern": "row",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "middle back"
+  ]
+ },
+ "Leg Extension": {
+  "id": "Leg_Extensions",
+  "match": "exact",
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": []
+ },
+ "Chin Ups": {
+  "id": "Chin-Up",
+  "match": "exact",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "middle back"
+  ]
+ },
+ "Chest Fly": {
+  "id": "Dumbbell_Flyes",
+  "match": "close",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": []
+ },
+ "Step Ups": {
+  "id": "Dumbbell_Step_Ups",
+  "match": "close",
+  "pattern": "lunge",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "calves",
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Ab Wheel Rollout": {
+  "id": "Ab_Roller",
+  "match": "exact",
+  "pattern": "plank",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "shoulders"
+  ]
+ },
+ "Incline Push Ups": {
+  "id": "Incline_Push-Up",
+  "match": "exact",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Seated Row": {
+  "id": "Seated_Cable_Rows",
+  "match": "close",
+  "pattern": "row",
+  "primary": [
+   "middle back"
+  ],
+  "secondary": [
+   "biceps",
+   "lats",
+   "shoulders"
+  ]
+ },
+ "Glute Bridge": {
+  "id": "Butt_Lift_Bridge",
+  "match": "exact",
+  "pattern": "glute_bridge",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings"
+  ]
+ },
+ "Diamond Push Ups": {
+  "id": "Push-Ups_-_Close_Triceps_Position",
+  "match": "close",
+  "pattern": "pushup",
+  "primary": [
+   "triceps"
+  ],
+  "secondary": [
+   "chest",
+   "shoulders"
+  ]
+ },
+ "Pike Push Ups": {
+  "id": null,
+  "match": null,
+  "pattern": "pushup",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps",
+   "chest"
+  ]
+ },
+ "Superman": {
+  "id": "Superman",
+  "match": "exact",
+  "pattern": "superman",
+  "primary": [
+   "lower back"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Breath Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Mountain Pose Hold": {
+  "id": null,
+  "match": null,
+  "pattern": "stand",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "abdominals",
+   "glutes"
+  ]
+ },
+ "Child's Pose Flow": {
+  "id": "Childs_Pose",
+  "match": "close",
+  "pattern": "child_pose",
+  "primary": [
+   "lower back"
+  ],
+  "secondary": [
+   "glutes",
+   "middle back"
+  ]
+ },
+ "Cat-Cow Stretch": {
+  "id": "Cat_Stretch",
+  "match": "close",
+  "pattern": "cat_cow",
+  "primary": [
+   "lower back"
+  ],
+  "secondary": [
+   "middle back",
+   "traps"
+  ]
+ },
+ "Child's Pose Hold": {
+  "id": "Childs_Pose",
+  "match": "exact",
+  "pattern": "child_pose",
+  "primary": [
+   "lower back"
+  ],
+  "secondary": [
+   "glutes",
+   "middle back"
+  ]
+ },
+ "Seated Meditation": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Half Sun Salutation": {
+  "id": null,
+  "match": null,
+  "pattern": "forward_fold",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": [
+   "lower back",
+   "calves",
+   "shoulders"
+  ]
+ },
+ "Full Sun Salutation A": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "hamstrings",
+   "shoulders"
+  ],
+  "secondary": [
+   "quadriceps",
+   "abdominals",
+   "lower back",
+   "calves"
+  ]
+ },
+ "3 Rounds Continuous": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "hamstrings",
+   "shoulders"
+  ],
+  "secondary": [
+   "quadriceps",
+   "abdominals",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Downward Dog Hold": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "hamstrings",
+   "shoulders"
+  ],
+  "secondary": [
+   "calves",
+   "lats"
+  ]
+ },
+ "Warrior Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "warrior",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "shoulders",
+   "adductors",
+   "hamstrings"
+  ]
+ },
+ "Triangle Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "hamstrings",
+   "abdominals"
+  ],
+  "secondary": [
+   "adductors",
+   "shoulders",
+   "quadriceps"
+  ]
+ },
+ "Standing Sequence": {
+  "id": null,
+  "match": null,
+  "pattern": "warrior",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings",
+   "shoulders",
+   "abdominals"
+  ]
+ },
+ "Warrior II Hold": {
+  "id": null,
+  "match": null,
+  "pattern": "warrior",
+  "primary": [
+   "quadriceps",
+   "adductors"
+  ],
+  "secondary": [
+   "shoulders",
+   "glutes"
+  ]
+ },
+ "Chair Pose": {
+  "id": null,
+  "match": null,
+  "pattern": "squat",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "shoulders",
+   "calves",
+   "abdominals"
+  ]
+ },
+ "Balance Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "tree_pose",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "abdominals",
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Core Yoga": {
+  "id": null,
+  "match": null,
+  "pattern": "plank",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "shoulders",
+   "lower back"
+  ]
+ },
+ "Full Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "hamstrings",
+   "shoulders"
+  ],
+  "secondary": [
+   "quadriceps",
+   "abdominals",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Boat Pose Hold": {
+  "id": null,
+  "match": null,
+  "pattern": "russian_twist",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "quadriceps",
+   "lower back"
+  ]
+ },
+ "Side Plank": {
+  "id": "Side_Bridge",
+  "match": "close",
+  "pattern": "side_plank",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "shoulders"
+  ]
+ },
+ "Hip Sequence": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "glutes",
+   "quadriceps"
+  ],
+  "secondary": [
+   "adductors",
+   "abductors",
+   "hamstrings"
+  ]
+ },
+ "Happy Baby Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "lying_rest",
+  "primary": [
+   "adductors",
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings",
+   "lower back"
+  ]
+ },
+ "Full Flow + Hips": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "hamstrings",
+   "shoulders"
+  ],
+  "secondary": [
+   "quadriceps",
+   "abdominals",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Pigeon Hold": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "abductors",
+   "quadriceps",
+   "lower back"
+  ]
+ },
+ "Butterfly Stretch": {
+  "id": "Groin_and_Back_Stretch",
+  "match": "close",
+  "pattern": "forward_fold",
+  "primary": [
+   "adductors"
+  ],
+  "secondary": []
+ },
+ "Backbend Sequence": {
+  "id": null,
+  "match": null,
+  "pattern": "cobra",
+  "primary": [
+   "lower back",
+   "abdominals"
+  ],
+  "secondary": [
+   "chest",
+   "shoulders",
+   "glutes"
+  ]
+ },
+ "Twist Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "abdominals",
+   "lower back"
+  ],
+  "secondary": [
+   "middle back",
+   "glutes"
+  ]
+ },
+ "Bridge Hold": {
+  "id": "Butt_Lift_Bridge",
+  "match": "close",
+  "pattern": "glute_bridge",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings"
+  ]
+ },
+ "Cat-Cow": {
+  "id": "Cat_Stretch",
+  "match": "close",
+  "pattern": "cat_cow",
+  "primary": [
+   "lower back"
+  ],
+  "secondary": [
+   "middle back",
+   "traps"
+  ]
+ },
+ "Savasana": {
+  "id": null,
+  "match": null,
+  "pattern": "lying_rest",
+  "primary": [],
+  "secondary": []
+ },
+ "Sun Salutation B": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "shoulders"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Creative Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "hamstrings",
+   "shoulders"
+  ],
+  "secondary": [
+   "quadriceps",
+   "abdominals",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Slow Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "hamstrings",
+   "shoulders"
+  ],
+  "secondary": [
+   "quadriceps",
+   "abdominals",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Flow Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "hamstrings",
+   "shoulders"
+  ],
+  "secondary": [
+   "quadriceps",
+   "abdominals",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Headstand Prep": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "shoulders",
+   "abdominals"
+  ],
+  "secondary": [
+   "triceps",
+   "traps",
+   "neck"
+  ]
+ },
+ "Opening Meditation": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Full 20-Min Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "downward_dog",
+  "primary": [
+   "hamstrings",
+   "shoulders"
+  ],
+  "secondary": [
+   "quadriceps",
+   "abdominals",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Deep Stretching": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "hamstrings",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Pranayama": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Walk/Run Intervals": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Interval Run": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Long Intervals": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Continuous Run": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "5K Run": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Stretching": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "hamstrings",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Easy Run": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Easy Long Run": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Hill Repeats": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "glutes",
+   "calves"
+  ],
+  "secondary": [
+   "hamstrings",
+   "abdominals"
+  ]
+ },
+ "Race Pace Run": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Easy Recovery": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Short Intervals": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Strides": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Light Stretching": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "hamstrings",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "lower back",
+   "calves"
+  ]
+ },
+ "10K Run": {
+  "id": null,
+  "match": null,
+  "pattern": "jog",
+  "primary": [
+   "quadriceps",
+   "hamstrings",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "HIIT Circuit": {
+  "id": null,
+  "match": null,
+  "pattern": "jumping_jack",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Cool Down Walk": {
+  "id": null,
+  "match": null,
+  "pattern": "walk",
+  "primary": [
+   "quadriceps",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Walk": {
+  "id": null,
+  "match": null,
+  "pattern": "walk",
+  "primary": [
+   "quadriceps",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Stretch": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "hamstrings",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Tabata Block 1": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Tabata Block 2": {
+  "id": "Mountain_Climbers",
+  "match": "close",
+  "pattern": "mountain_climber",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "chest",
+   "hamstrings",
+   "shoulders"
+  ]
+ },
+ "Complex HIIT": {
+  "id": null,
+  "match": null,
+  "pattern": "jump_squat",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "12-Min AMRAP": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "20-Min EMOM": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Tabata × 4": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Cool Down": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "hamstrings",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Deep Stretch": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "hamstrings",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Full Body Stretch": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "hamstrings",
+   "quadriceps",
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "calves",
+   "neck",
+   "lower back"
+  ]
+ },
+ "Hamstring Routine": {
+  "id": null,
+  "match": null,
+  "pattern": "forward_fold",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": [
+   "calves",
+   "lower back"
+  ]
+ },
+ "Hip Routine": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "glutes",
+   "adductors"
+  ],
+  "secondary": [
+   "quadriceps",
+   "abductors",
+   "hamstrings"
+  ]
+ },
+ "Upper Body Mobility": {
+  "id": null,
+  "match": null,
+  "pattern": "arm_circles",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "middle back",
+   "traps",
+   "lats"
+  ]
+ },
+ "Splits Routine": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "hamstrings",
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "adductors",
+   "calves"
+  ]
+ },
+ "Leg Swings Front/Back": {
+  "id": "Front_Leg_Raises",
+  "match": "close",
+  "pattern": "leg_swing",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": []
+ },
+ "Standing Quad Pull": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": []
+ },
+ "Middle Split Routine": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "adductors",
+   "hamstrings"
+  ],
+  "secondary": [
+   "glutes",
+   "quadriceps"
+  ]
+ },
+ "Sumo Squat Hold": {
+  "id": "Plie_Dumbbell_Squat",
+  "match": "close",
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "abdominals",
+   "calves",
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Side Lunges": {
+  "id": null,
+  "match": null,
+  "pattern": "lunge",
+  "primary": [
+   "quadriceps",
+   "adductors"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "20-Min Flow": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "hamstrings",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Flexibility Test": {
+  "id": null,
+  "match": null,
+  "pattern": "forward_fold",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": [
+   "glutes",
+   "adductors",
+   "lower back"
+  ]
+ },
+ "Full Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "hamstrings",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Push Up Test": {
+  "id": "Pushups",
+  "match": "close",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Pull Up Test": {
+  "id": "Pullups",
+  "match": "close",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "biceps",
+   "middle back"
+  ]
+ },
+ "Pistol Squat Prep": {
+  "id": null,
+  "match": null,
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings",
+   "calves"
+  ]
+ },
+ "Dip Progression": {
+  "id": null,
+  "match": null,
+  "pattern": "dip",
+  "primary": [
+   "triceps"
+  ],
+  "secondary": [
+   "chest",
+   "shoulders"
+  ]
+ },
+ "Push Up Variations": {
+  "id": null,
+  "match": null,
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "shoulders"
+  ]
+ },
+ "L-Sit Prep": {
+  "id": null,
+  "match": null,
+  "pattern": "leg_raise",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "triceps",
+   "shoulders",
+   "quadriceps"
+  ]
+ },
+ "Dips": {
+  "id": "Dips_-_Triceps_Version",
+  "match": "exact",
+  "pattern": "dip",
+  "primary": [
+   "triceps"
+  ],
+  "secondary": [
+   "chest",
+   "shoulders"
+  ]
+ },
+ "High Pull Ups": {
+  "id": "Pullups",
+  "match": "close",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "biceps",
+   "middle back"
+  ]
+ },
+ "Explosive Pulls": {
+  "id": "Pullups",
+  "match": "close",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "biceps",
+   "middle back"
+  ]
+ },
+ "Muscle Up Negatives": {
+  "id": "Muscle_Up",
+  "match": "close",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "abdominals",
+   "biceps",
+   "forearms",
+   "middle back",
+   "shoulders",
+   "traps",
+   "triceps"
+  ]
+ },
+ "Dead Hang": {
+  "id": null,
+  "match": null,
+  "pattern": "pull_up",
+  "primary": [
+   "forearms",
+   "lats"
+  ],
+  "secondary": [
+   "shoulders",
+   "biceps"
+  ]
+ },
+ "Wall Handstand": {
+  "id": "Handstand_Push-Ups",
+  "match": "close",
+  "pattern": "overhead_press",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps"
+  ]
+ },
+ "Hollow Body Hold": {
+  "id": null,
+  "match": null,
+  "pattern": "leg_raise",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "quadriceps",
+   "shoulders"
+  ]
+ },
+ "Hollow Hold": {
+  "id": null,
+  "match": null,
+  "pattern": "leg_raise",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "quadriceps",
+   "shoulders"
+  ]
+ },
+ "Jump Training": {
+  "id": null,
+  "match": null,
+  "pattern": "jump_squat",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "calves",
+   "hamstrings"
+  ]
+ },
+ "Nordic Curl Negatives": {
+  "id": "Floor_Glute-Ham_Raise",
+  "match": "close",
+  "pattern": "donkey_kick",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": [
+   "calves",
+   "glutes"
+  ]
+ },
+ "L-Sit Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "leg_raise",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "triceps",
+   "shoulders",
+   "quadriceps"
+  ]
+ },
+ "Tuck Front Lever": {
+  "id": null,
+  "match": null,
+  "pattern": "pull_up",
+  "primary": [
+   "lats",
+   "abdominals"
+  ],
+  "secondary": [
+   "middle back",
+   "shoulders",
+   "biceps"
+  ]
+ },
+ "L-Sit": {
+  "id": null,
+  "match": null,
+  "pattern": "leg_raise",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "triceps",
+   "shoulders",
+   "quadriceps"
+  ]
+ },
+ "False Grip Hang": {
+  "id": null,
+  "match": null,
+  "pattern": "pull_up",
+  "primary": [
+   "forearms",
+   "lats"
+  ],
+  "secondary": [
+   "biceps",
+   "shoulders"
+  ]
+ },
+ "Transition Practice": {
+  "id": "Muscle_Up",
+  "match": "close",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "abdominals",
+   "biceps",
+   "forearms",
+   "middle back",
+   "shoulders",
+   "traps",
+   "triceps"
+  ]
+ },
+ "High Pull to Dip": {
+  "id": "Muscle_Up",
+  "match": "close",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "abdominals",
+   "biceps",
+   "forearms",
+   "middle back",
+   "shoulders",
+   "traps",
+   "triceps"
+  ]
+ },
+ "Muscle Up Attempts": {
+  "id": "Muscle_Up",
+  "match": "exact",
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "abdominals",
+   "biceps",
+   "forearms",
+   "middle back",
+   "shoulders",
+   "traps",
+   "triceps"
+  ]
+ },
+ "Planche Lean": {
+  "id": null,
+  "match": null,
+  "pattern": "plank",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Tuck Planche": {
+  "id": null,
+  "match": null,
+  "pattern": "plank",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Pseudo Planche Push Ups": {
+  "id": null,
+  "match": null,
+  "pattern": "pushup",
+  "primary": [
+   "shoulders",
+   "chest"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals"
+  ]
+ },
+ "Planche Lean Hold": {
+  "id": null,
+  "match": null,
+  "pattern": "plank",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "abdominals",
+   "triceps"
+  ]
+ },
+ "Handstand Hold": {
+  "id": null,
+  "match": null,
+  "pattern": "overhead_press",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps",
+   "abdominals",
+   "traps"
+  ]
+ },
+ "Combo Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "pull_up",
+  "primary": [
+   "lats",
+   "triceps"
+  ],
+  "secondary": [
+   "chest",
+   "shoulders",
+   "biceps"
+  ]
+ },
+ "Handstand Push Up": {
+  "id": "Handstand_Push-Ups",
+  "match": "exact",
+  "pattern": "overhead_press",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps"
+  ]
+ },
+ "Pistol to Jump": {
+  "id": null,
+  "match": null,
+  "pattern": "jump_squat",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "calves",
+   "hamstrings"
+  ]
+ },
+ "Front Lever Progression": {
+  "id": null,
+  "match": null,
+  "pattern": "pull_up",
+  "primary": [
+   "lats",
+   "abdominals"
+  ],
+  "secondary": [
+   "middle back",
+   "shoulders",
+   "biceps"
+  ]
+ },
+ "Front Lever Rows": {
+  "id": null,
+  "match": null,
+  "pattern": "row",
+  "primary": [
+   "lats",
+   "middle back"
+  ],
+  "secondary": [
+   "abdominals",
+   "biceps",
+   "shoulders"
+  ]
+ },
+ "Supplemental Pulls": {
+  "id": null,
+  "match": null,
+  "pattern": "pull_up",
+  "primary": [
+   "lats"
+  ],
+  "secondary": [
+   "biceps",
+   "middle back"
+  ]
+ },
+ "Front Lever Holds": {
+  "id": null,
+  "match": null,
+  "pattern": "pull_up",
+  "primary": [
+   "lats",
+   "abdominals"
+  ],
+  "secondary": [
+   "middle back",
+   "shoulders",
+   "biceps"
+  ]
+ },
+ "Back Lever Tuck": {
+  "id": null,
+  "match": null,
+  "pattern": "pull_up",
+  "primary": [
+   "shoulders",
+   "lats"
+  ],
+  "secondary": [
+   "biceps",
+   "chest",
+   "abdominals"
+  ]
+ },
+ "Flag Prep": {
+  "id": null,
+  "match": null,
+  "pattern": "side_plank",
+  "primary": [
+   "lats",
+   "abdominals"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Skill Work": {
+  "id": null,
+  "match": null,
+  "pattern": "pull_up",
+  "primary": [
+   "lats",
+   "shoulders"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps",
+   "biceps"
+  ]
+ },
+ "Full Upper Body": {
+  "id": null,
+  "match": null,
+  "pattern": "pushup",
+  "primary": [
+   "chest",
+   "lats"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "biceps"
+  ]
+ },
+ "Skills Test": {
+  "id": null,
+  "match": null,
+  "pattern": "pull_up",
+  "primary": [
+   "lats",
+   "shoulders"
+  ],
+  "secondary": [
+   "abdominals",
+   "triceps",
+   "quadriceps"
+  ]
+ },
+ "Max Rep Test": {
+  "id": null,
+  "match": null,
+  "pattern": "pushup",
+  "primary": [
+   "chest",
+   "lats"
+  ],
+  "secondary": [
+   "triceps",
+   "biceps",
+   "shoulders"
+  ]
+ },
+ "Celebration Workout": {
+  "id": null,
+  "match": null,
+  "pattern": "pushup",
+  "primary": [
+   "chest",
+   "lats"
+  ],
+  "secondary": [
+   "triceps",
+   "quadriceps",
+   "abdominals"
+  ]
+ },
+ "Wall Angels": {
+  "id": null,
+  "match": null,
+  "pattern": "overhead_press",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "middle back",
+   "traps"
+  ]
+ },
+ "Chin Tucks": {
+  "id": null,
+  "match": null,
+  "pattern": "stand",
+  "primary": [
+   "neck"
+  ],
+  "secondary": []
+ },
+ "Chest Opener": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders"
+  ]
+ },
+ "Band Pull Aparts": {
+  "id": "Band_Pull_Apart",
+  "match": "exact",
+  "pattern": "row",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "middle back",
+   "traps"
+  ]
+ },
+ "Superman Y-Raise": {
+  "id": "Superman",
+  "match": "close",
+  "pattern": "superman",
+  "primary": [
+   "lower back"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Face Down Rows": {
+  "id": "Dumbbell_Incline_Row",
+  "match": "close",
+  "pattern": "row",
+  "primary": [
+   "middle back"
+  ],
+  "secondary": [
+   "biceps",
+   "forearms",
+   "lats",
+   "shoulders"
+  ]
+ },
+ "Hip Flexor Stretch": {
+  "id": "Kneeling_Hip_Flexor",
+  "match": "exact",
+  "pattern": "lunge",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": []
+ },
+ "Glute Activation": {
+  "id": "Butt_Lift_Bridge",
+  "match": "close",
+  "pattern": "glute_bridge",
+  "primary": [
+   "glutes"
+  ],
+  "secondary": [
+   "hamstrings"
+  ]
+ },
+ "Dead Bug": {
+  "id": "Dead_Bug",
+  "match": "exact",
+  "pattern": "bicycle",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": []
+ },
+ "Neck Stretches": {
+  "id": "Side_Neck_Stretch",
+  "match": "close",
+  "pattern": "side_stretch",
+  "primary": [
+   "neck"
+  ],
+  "secondary": []
+ },
+ "Thoracic Extension": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "middle back"
+  ],
+  "secondary": [
+   "lats",
+   "chest"
+  ]
+ },
+ "Levator Scapulae Stretch": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "neck"
+  ],
+  "secondary": [
+   "traps"
+  ]
+ },
+ "Shoulder Rolls": {
+  "id": "Shoulder_Circles",
+  "match": "exact",
+  "pattern": "arm_circles",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": [
+   "traps"
+  ]
+ },
+ "Diaphragmatic Breathing": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Pallof Press": {
+  "id": "Pallof_Press",
+  "match": "close",
+  "pattern": "stand",
+  "primary": [
+   "abdominals"
+  ],
+  "secondary": [
+   "chest",
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Bird Dog": {
+  "id": null,
+  "match": null,
+  "pattern": "donkey_kick",
+  "primary": [
+   "lower back",
+   "abdominals"
+  ],
+  "secondary": [
+   "glutes",
+   "shoulders"
+  ]
+ },
+ "Hourly Reset": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "neck",
+   "shoulders"
+  ],
+  "secondary": [
+   "chest",
+   "traps"
+  ]
+ },
+ "Full Posture Routine": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "middle back",
+   "shoulders"
+  ],
+  "secondary": [
+   "glutes",
+   "lower back",
+   "neck"
+  ]
+ },
+ "Posture Check": {
+  "id": null,
+  "match": null,
+  "pattern": "stand",
+  "primary": [
+   "middle back",
+   "neck"
+  ],
+  "secondary": [
+   "traps",
+   "abdominals"
+  ]
+ },
+ "Full Routine": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "middle back",
+   "shoulders"
+  ],
+  "secondary": [
+   "glutes",
+   "lower back",
+   "neck"
+  ]
+ },
+ "2-Min Breath Focus": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Body Scan": {
+  "id": null,
+  "match": null,
+  "pattern": "lying_rest",
+  "primary": [],
+  "secondary": []
+ },
+ "Box Breathing": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Breath Focus": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "3 Deep Breaths": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Wim Hof Round": {
+  "id": null,
+  "match": null,
+  "pattern": "lying_rest",
+  "primary": [],
+  "secondary": []
+ },
+ "Cold Exposure": {
+  "id": null,
+  "match": null,
+  "pattern": "stand",
+  "primary": [],
+  "secondary": []
+ },
+ "10-Min Mindfulness": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Gratitude": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Journal": {
+  "id": null,
+  "match": null,
+  "pattern": "meditate",
+  "primary": [],
+  "secondary": []
+ },
+ "Sumo Squat": {
+  "id": "Plie_Dumbbell_Squat",
+  "match": "close",
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "abdominals",
+   "calves",
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Dumbbell Row": {
+  "id": "One-Arm_Dumbbell_Row",
+  "match": "exact",
+  "pattern": "row",
+  "primary": [
+   "middle back"
+  ],
+  "secondary": [
+   "biceps",
+   "lats",
+   "shoulders"
+  ]
+ },
+ "20-Min Circuit": {
+  "id": null,
+  "match": null,
+  "pattern": "squat",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "6-Exercise Circuit": {
+  "id": null,
+  "match": null,
+  "pattern": "squat",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Threshold Circuit": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "30-Min Continuous": {
+  "id": null,
+  "match": null,
+  "pattern": "squat",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Paired Workout": {
+  "id": null,
+  "match": null,
+  "pattern": "pushup",
+  "primary": [
+   "chest",
+   "quadriceps"
+  ],
+  "secondary": [
+   "triceps",
+   "glutes",
+   "lats",
+   "shoulders"
+  ]
+ },
+ "Continuous Movement": {
+  "id": null,
+  "match": null,
+  "pattern": "jumping_jack",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "20-Min AMRAP": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "40-Min Steady": {
+  "id": null,
+  "match": null,
+  "pattern": "squat",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "45-Min Challenge": {
+  "id": null,
+  "match": null,
+  "pattern": "burpee",
+  "primary": [
+   "quadriceps",
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps",
+   "abdominals",
+   "glutes",
+   "calves"
+  ]
+ },
+ "Stretch & Breathe": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "hamstrings",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "lower back",
+   "calves"
+  ]
+ },
+ "Seated Warm Up": {
+  "id": null,
+  "match": null,
+  "pattern": "arm_circles",
+  "primary": [
+   "shoulders",
+   "neck"
+  ],
+  "secondary": [
+   "traps",
+   "calves"
+  ]
+ },
+ "Standing Balance": {
+  "id": null,
+  "match": null,
+  "pattern": "tree_pose",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Gentle Walk": {
+  "id": null,
+  "match": null,
+  "pattern": "walk",
+  "primary": [
+   "quadriceps",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Chair Squats": {
+  "id": "Bodyweight_Squat",
+  "match": "close",
+  "pattern": "squat",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Wall Push Ups": {
+  "id": "Incline_Push-Up",
+  "match": "close",
+  "pattern": "pushup",
+  "primary": [
+   "chest"
+  ],
+  "secondary": [
+   "shoulders",
+   "triceps"
+  ]
+ },
+ "Marching in Place": {
+  "id": null,
+  "match": null,
+  "pattern": "walk",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "glutes"
+  ]
+ },
+ "Heel-Toe Walk": {
+  "id": null,
+  "match": null,
+  "pattern": "walk",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "abdominals",
+   "glutes"
+  ]
+ },
+ "Single Leg Stand": {
+  "id": null,
+  "match": null,
+  "pattern": "tree_pose",
+  "primary": [
+   "calves",
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "abdominals"
+  ]
+ },
+ "Side Steps": {
+  "id": null,
+  "match": null,
+  "pattern": "walk",
+  "primary": [
+   "abductors",
+   "quadriceps"
+  ],
+  "secondary": [
+   "glutes",
+   "calves"
+  ]
+ },
+ "Calf Raises (chair)": {
+  "id": "Standing_Dumbbell_Calf_Raise",
+  "match": "close",
+  "pattern": "calf_raise",
+  "primary": [
+   "calves"
+  ],
+  "secondary": []
+ },
+ "Seated Leg Lifts": {
+  "id": null,
+  "match": null,
+  "pattern": "leg_raise",
+  "primary": [
+   "quadriceps"
+  ],
+  "secondary": [
+   "abdominals"
+  ]
+ },
+ "Arm Exercises": {
+  "id": null,
+  "match": null,
+  "pattern": "curl",
+  "primary": [
+   "biceps",
+   "shoulders"
+  ],
+  "secondary": [
+   "triceps",
+   "forearms"
+  ]
+ },
+ "Resistance Band": {
+  "id": null,
+  "match": null,
+  "pattern": "row",
+  "primary": [
+   "middle back",
+   "shoulders"
+  ],
+  "secondary": [
+   "biceps",
+   "traps",
+   "lats"
+  ]
+ },
+ "Leg Routine": {
+  "id": null,
+  "match": null,
+  "pattern": "squat",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "calves",
+   "hamstrings",
+   "abductors"
+  ]
+ },
+ "Stair Practice": {
+  "id": null,
+  "match": null,
+  "pattern": "walk",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "calves",
+   "hamstrings"
+  ]
+ },
+ "Cat-Cow (on chair)": {
+  "id": null,
+  "match": null,
+  "pattern": "cat_cow",
+  "primary": [
+   "lower back",
+   "middle back"
+  ],
+  "secondary": [
+   "abdominals",
+   "neck"
+  ]
+ },
+ "Seated Twist": {
+  "id": "Spinal_Stretch",
+  "match": "close",
+  "pattern": "side_stretch",
+  "primary": [
+   "middle back"
+  ],
+  "secondary": [
+   "lats",
+   "lower back",
+   "neck",
+   "traps"
+  ]
+ },
+ "Coordination Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "high_knees",
+  "primary": [
+   "abdominals",
+   "quadriceps"
+  ],
+  "secondary": [
+   "shoulders",
+   "calves"
+  ]
+ },
+ "Reaction Drill": {
+  "id": null,
+  "match": null,
+  "pattern": "side_stretch",
+  "primary": [
+   "quadriceps",
+   "shoulders"
+  ],
+  "secondary": [
+   "calves",
+   "abdominals"
+  ]
+ },
+ "Gentle Dance": {
+  "id": null,
+  "match": null,
+  "pattern": "walk",
+  "primary": [
+   "quadriceps",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "shoulders",
+   "abdominals"
+  ]
+ },
+ "Marching": {
+  "id": null,
+  "match": null,
+  "pattern": "walk",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "glutes"
+  ]
+ },
+ "Toe Taps": {
+  "id": null,
+  "match": null,
+  "pattern": "walk",
+  "primary": [
+   "quadriceps",
+   "abdominals"
+  ],
+  "secondary": [
+   "calves",
+   "glutes"
+  ]
+ },
+ "Complete Session": {
+  "id": null,
+  "match": null,
+  "pattern": "squat",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "chest",
+   "shoulders",
+   "calves",
+   "abdominals"
+  ]
+ },
+ "Your Routine": {
+  "id": null,
+  "match": null,
+  "pattern": "squat",
+  "primary": [
+   "quadriceps",
+   "glutes"
+  ],
+  "secondary": [
+   "chest",
+   "shoulders",
+   "calves",
+   "abdominals"
+  ]
+ },
+ "Your Choice": {
+  "id": null,
+  "match": null,
+  "pattern": "walk",
+  "primary": [
+   "quadriceps",
+   "calves"
+  ],
+  "secondary": [
+   "glutes",
+   "hamstrings"
+  ]
+ },
+ "Hamstring Stretch": {
+  "id": "Hamstring_Stretch",
+  "match": "exact",
+  "pattern": "forward_fold",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": []
+ },
+ "Shoulder Stretch": {
+  "id": "Shoulder_Stretch",
+  "match": "exact",
+  "pattern": "side_stretch",
+  "primary": [
+   "shoulders"
+  ],
+  "secondary": []
+ },
+ "Torso Twist": {
+  "id": "Middle_Back_Stretch",
+  "match": "close",
+  "pattern": "side_stretch",
+  "primary": [
+   "middle back"
+  ],
+  "secondary": [
+   "abdominals",
+   "lats",
+   "lower back"
+  ]
+ },
+ "Standing Hamstring Stretch": {
+  "id": "Standing_Hamstring_and_Calf_Stretch",
+  "match": "close",
+  "pattern": "forward_fold",
+  "primary": [
+   "hamstrings"
+  ],
+  "secondary": []
+ }
+}
