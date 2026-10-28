@@ -4,17 +4,19 @@ import { StaggerContainer, StaggerItem } from './PageTransition';
 import { getLevel, getRank, today, toArr, addDays, parseDateKey } from '@/utils';
 import { playerRank, rankById } from '@/lib/system/ranks';
 import useAppStore from '@/stores/useAppStore';
-import { collection, query, where, getDocs, doc, getDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, query, where, limit, getDocs, doc, getDoc, setDoc, arrayUnion, arrayRemove, deleteField } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, Pill, Tabs, Tile, IconBadge, EmptyState } from '@/components/ui/kit';
 import { Dumbbell, Zap, Flame, Swords, TrendingUp, Send, Search, UserPlus, Check, X, RotateCw, Users, Rss, Trophy, Inbox, Clock, Medal } from 'lucide-react';
 import { countWorkoutDays, getDayEntries } from '@/lib/workoutHelpers';
 
 // ── Firestore model ──
-// firestore.rules only allow users/{uid} (owner-only) and publicProfiles/{uid} (readable by any
-// signed-in user, writable only by its owner). So every piece of social data lives in the user's
-// OWN public profile and relationships are derived by querying other public profiles — this page
-// never reads another user's private users/{uid} doc and never writes to anyone else's doc.
+// firestore.rules only allow users/{uid} (owner-only), publicProfiles/{uid} (any signed-in user
+// can get one by id; listing is limited to profiles that name you in `friends` /
+// `outgoingRequests`; writable only by its owner, with validated fields) and emailIndex/{hash}.
+// So every piece of social data lives in the user's OWN public profile and relationships are
+// derived by querying other public profiles — this page never reads another user's private
+// users/{uid} doc and never writes to anyone else's doc.
 //   friends: [uid]             people I've added/accepted. Shown as a friend once they list me too
 //                              (in their `friends`, or still in their `outgoingRequests` to me).
 //   outgoingRequests: [uid]    requests I've sent — the recipient finds them with array-contains.
@@ -22,12 +24,29 @@ import { countWorkoutDays, getDayEntries } from '@/lib/workoutHelpers';
 //   posts: [...]               my posts (max 20).
 //   likes: ["ownerUid:postId"] posts I've liked; like counts are tallied across loaded profiles.
 //   groupChallenges: [...]     challenges I created; participants see them via my profile.
-//   emailHash                  SHA-256 of the lower-cased email, used for "add friend by email"
-//                              without publishing raw email addresses to every signed-in user.
+// emailIndex/{sha256(email)} → { uid }: "add friend by email" looks a user up by the hash of
+// the address you type (a get, never a list), so nobody can enumerate users or harvest hashes.
+// The rules only let an account write the entry for its own sign-in email.
 const PUBLIC = "publicProfiles";
+const EMAIL_INDEX = "emailIndex";
+const MAX_QUERY = 200; // firestore.rules cap list queries
 const nowMs = () => Date.now();
 const asStr = v => (typeof v === "string" ? v : "");
 const uidList = v => toArr(v).filter(x => typeof x === "string" && x);
+const numOr0 = v => (Number.isFinite(Number(v)) ? Number(v) : 0);
+
+// Another user's profile data is untrusted: only plain, well-typed challenges get rendered.
+function cleanChallenge(ch) {
+    if (!ch || typeof ch !== "object" || ch.id == null || typeof ch.id === "object") return null;
+    return {
+        id: String(ch.id),
+        title: asStr(ch.title).slice(0, 80) || "Challenge",
+        metric: Object.hasOwn(CHALLENGE_LOOK, asStr(ch.metric)) ? ch.metric : "",
+        duration: Math.max(0, Math.min(365, Math.round(numOr0(ch.duration)))),
+        startDate: /^\d{4}-\d{2}-\d{2}$/.test(asStr(ch.startDate)) ? ch.startDate : "",
+        participants: uidList(ch.participants),
+    };
+}
 
 // Day keys are local dates (see today()/addDays in utils)
 const shiftDay = (ds, n) => addDays(n, ds);
@@ -58,18 +77,22 @@ export async function syncPublicProfile({ user, profile, totalXP = 0, streak = 0
     const level = getLevel(totalXP);
     const data = {
         uid: user.uid,
-        name: asStr(profile?.name) || asStr(user.name) || "Warrior",
-        totalXP: Number(totalXP) || 0,
-        streak: Number(streak) || 0,
+        name: (asStr(profile?.name) || asStr(user.name) || "Warrior").slice(0, 60),
+        totalXP: Math.max(0, Math.round(Number(totalXP) || 0)),
+        streak: Math.max(0, Math.round(Number(streak) || 0)),
         workouts: countWorkoutDays(workoutLog || {}),
         level,
-        rank: playerRank(system, level).id,
+        rank: asStr(playerRank(system, level).id),
         recentWorkouts: recentWorkoutsFrom(workoutLog, d),
         updatedAt: new Date().toISOString(),
     };
-    try { const h = await hashEmail(user.email); if (h) data.emailHash = h; } catch { }
     if (prev && Number(prev.level) > 0 && level > Number(prev.level)) data.levelUpDate = d;
-    await setDoc(doc(db, PUBLIC, user.uid), data, { merge: true });
+    // The email hash used to be published on the profile; it now lives only in emailIndex.
+    await setDoc(doc(db, PUBLIC, user.uid), { ...data, emailHash: deleteField() }, { merge: true });
+    try {
+        const h = await hashEmail(user.email);
+        if (h) await setDoc(doc(db, EMAIL_INDEX, h), { uid: user.uid });
+    } catch (e) { console.warn("Email index skipped:", e?.code || e); }
     return { ...(prev || {}), ...data };
 }
 
@@ -101,8 +124,8 @@ async function fetchSocial({ user, profile, totalXP, streak, workoutLog, system 
     me = snap.exists() ? snap.data() : {};
 
     const [listsMeSnap, reqSnap] = await Promise.all([
-        getDocs(query(collection(db, PUBLIC), where("friends", "array-contains", uid))),
-        getDocs(query(collection(db, PUBLIC), where("outgoingRequests", "array-contains", uid))),
+        getDocs(query(collection(db, PUBLIC), where("friends", "array-contains", uid), limit(MAX_QUERY))),
+        getDocs(query(collection(db, PUBLIC), where("outgoingRequests", "array-contains", uid), limit(MAX_QUERY))),
     ]);
     const listsMe = {}; listsMeSnap.forEach(s => { if (s.id !== uid) listsMe[s.id] = { ...s.data(), uid: s.id }; });
     const requesters = {}; reqSnap.forEach(s => { if (s.id !== uid) requesters[s.id] = { ...s.data(), uid: s.id }; });
@@ -199,7 +222,10 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
         friends.forEach(f => {
             const name = asStr(f.name) || "Warrior";
             toArr(f.recentWorkouts).forEach(w => {
-                if (w && asStr(w.date) >= weekAgo) feed.push({ type: "workout", user: name, uid: f.uid, date: w.date, data: w, time: w.date });
+                if (w && typeof w === "object" && asStr(w.date) >= weekAgo) {
+                    const data = { splitName: asStr(w.splitName) || "Training", calBurned: numOr0(w.calBurned), duration: numOr0(w.duration) };
+                    feed.push({ type: "workout", user: name, uid: f.uid, date: w.date, data, time: w.date });
+                }
             });
             const updated = asStr(f.updatedAt).slice(0, 10);
             if (Number(f.streak) >= 7 && Number(f.streak) % 7 === 0 && updated >= weekAgo) {
@@ -211,7 +237,7 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
         });
         [{ ...me, uid, name: profile.name || user.name || "You" }, ...friends].forEach(p => {
             toArr(p.posts).forEach(post => {
-                if (post && asStr(post.text)) feed.push({ type: "post", user: asStr(p.name) || "Warrior", uid: p.uid, id: post.id, text: post.text, time: asStr(post.time) || asStr(post.date) });
+                if (post && asStr(post.text) && (typeof post.id === "number" || typeof post.id === "string")) feed.push({ type: "post", user: asStr(p.name) || "Warrior", uid: p.uid, id: post.id, text: post.text, time: asStr(post.time) || asStr(post.date) });
             });
         });
         // Sort feed by date (newest first)
@@ -223,16 +249,17 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
         const list = [];
         const seen = new Set();
         [{ ...me, uid, name: "You" }, ...friends].forEach(p => {
-            toArr(p.groupChallenges).forEach(ch => {
-                if (!ch || !ch.id) return;
+            toArr(p.groupChallenges).forEach(raw => {
+                const ch = cleanChallenge(raw);
+                if (!ch) return;
                 const key = `${p.uid}:${ch.id}`;
                 if (seen.has(key)) return;
-                if (p.uid !== uid && !uidList(ch.participants).includes(uid)) return;
+                if (p.uid !== uid && !ch.participants.includes(uid)) return;
                 seen.add(key);
                 list.push({ ...ch, key, creatorName: p.uid === uid ? "You" : asStr(p.name) || "Friend" });
             });
         });
-        return list.sort((a, b) => asStr(b.startDate).localeCompare(asStr(a.startDate)));
+        return list.sort((a, b) => b.startDate.localeCompare(a.startDate));
     }, [me, uid, friends]);
 
     // ── Search by email ──
@@ -243,14 +270,15 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
         try {
             const h = await hashEmail(term);
             if (!h) throw new Error("hash unavailable");
-            const snap = await getDocs(query(collection(db, PUBLIC), where("emailHash", "==", h)));
-            if (!snap.empty) {
-                const foundDoc = snap.docs[0];
-                const fd = foundDoc.data();
-                if (foundDoc.id === uid) setSearchResult({ error: "That's you!" });
-                else if (friendIds.includes(foundDoc.id)) setSearchResult({ error: "Already friends!" });
-                else setSearchResult({ uid: foundDoc.id, name: asStr(fd.name) || "Warrior", email: term, totalXP: Number(fd.totalXP) || 0, streak: Number(fd.streak) || 0, theyRequested: uidList(fd.outgoingRequests).includes(uid), theyListMe: uidList(fd.friends).includes(uid) });
-            } else setSearchResult({ error: "No user found with that email (they need to open IGNITE's Social page once)." });
+            const idx = await getDoc(doc(db, EMAIL_INDEX, h));
+            const foundUid = idx.exists() ? asStr(idx.data()?.uid) : "";
+            const found = foundUid ? await getDoc(doc(db, PUBLIC, foundUid)) : null;
+            if (found?.exists()) {
+                const fd = found.data();
+                if (found.id === uid) setSearchResult({ error: "That's you!" });
+                else if (friendIds.includes(found.id)) setSearchResult({ error: "Already friends!" });
+                else setSearchResult({ uid: found.id, name: asStr(fd.name) || "Warrior", email: term, totalXP: numOr0(fd.totalXP), streak: numOr0(fd.streak), theyRequested: uidList(fd.outgoingRequests).includes(uid), theyListMe: uidList(fd.friends).includes(uid) });
+            } else setSearchResult({ error: "No user found with that email (they need to open IGNITE once)." });
         } catch (e) { console.error("Search error:", e); setSearchResult({ error: "Search failed." }); }
         setSearching(false);
     };

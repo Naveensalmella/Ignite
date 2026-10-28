@@ -8,18 +8,27 @@ import { Card, IconBadge, EmptyState } from '@/components/ui/kit';
 const fmtDate = (key, opts) => { const dt = parseDateKey(key); return isNaN(dt) ? String(key || "") : dt.toLocaleDateString("en-IN", opts); };
 
 // Phone camera photos are several MB; a Firestore document is capped at 1MB, so the
-// raw data URL would silently fail to save. Downscale + JPEG-compress first.
-function compressImage(file, maxDim = 900, quality = 0.7) {
+// raw data URL would fail to save. Downscale + JPEG-compress, stepping size/quality
+// down until the photo fits comfortably in one document.
+const MAX_PHOTO_CHARS = 600_000;
+const COMPRESS_STEPS = [[900, 0.7], [720, 0.6], [560, 0.5], [420, 0.45]];
+function compressImage(file) {
     return new Promise((resolve, reject) => {
         const url = URL.createObjectURL(file);
         const img = new Image();
         img.onload = () => {
             try {
-                const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-                const c = document.createElement("canvas");
-                c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
-                c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-                resolve(c.toDataURL("image/jpeg", quality));
+                let out = "";
+                for (const [maxDim, quality] of COMPRESS_STEPS) {
+                    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+                    const c = document.createElement("canvas");
+                    c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+                    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+                    out = c.toDataURL("image/jpeg", quality);
+                    if (out.length <= MAX_PHOTO_CHARS) break;
+                }
+                if (out.length > MAX_PHOTO_CHARS) reject(new Error("Image is too large even after compression"));
+                else resolve(out);
             } catch (err) { reject(err); } finally { URL.revokeObjectURL(url); }
         };
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Could not read image")); };
@@ -32,7 +41,15 @@ export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { 
     const [compareA, setCompareA] = useState(null);
     const [compareB, setCompareB] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [status, setStatus] = useState(null); // { tone: "error" | "info", text }
     const fileRef = useRef(null);
+
+    // Put one date's entry back to what it was (undefined = remove)
+    const restore = (date, entry) => setBodyPhotos(prev => {
+        const next = { ...(prev || {}) };
+        if (entry) next[date] = entry; else delete next[date];
+        return next;
+    });
 
     // Firestore data is untrusted: ignore null / photo-less entries
     const photos = bodyPhotos && typeof bodyPhotos === "object" ? bodyPhotos : {};
@@ -53,36 +70,51 @@ export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { 
         const weight = Number.isFinite(w) && w > 0 ? String(w) : "";
 
         setUploading(true);
+        setStatus(null);
+        const previous = photos[d];
+        let dataUrl;
         try {
-            const dataUrl = await compressImage(file);
-            // Update UI immediately
-            setBodyPhotos(prev => ({
-                ...(prev || {}),
-                [d]: { photo: dataUrl, date: d, note, weight }
-            }));
+            dataUrl = await compressImage(file);
+        } catch (err) {
+            console.error("Photo compress failed:", err);
+            setStatus({ tone: "error", text: "Couldn't use that photo. Please try a different image." });
+            setUploading(false);
+            return;
+        }
+        // Update UI immediately
+        setBodyPhotos(prev => ({
+            ...(prev || {}),
+            [d]: { photo: dataUrl, date: d, note, weight }
+        }));
+        try {
             // Save to subcollection (each photo = its own Firestore doc)
-            if (userId) await storeV2.saveBodyPhoto(userId, d, dataUrl, note, weight);
+            const res = userId ? await storeV2.saveBodyPhoto(userId, d, dataUrl, note, weight) : "saved";
+            if (res === "queued") setStatus({ tone: "info", text: "You're offline — the photo is stored on this device and will sync when you're back online." });
         } catch (err) {
             console.error("Photo save failed:", err);
-            window.alert("Couldn't add that photo. Please try a different image.");
+            restore(d, previous);
+            setStatus({ tone: "error", text: "Couldn't save that photo. Check your connection and try again." });
         } finally {
             setUploading(false);
         }
     };
 
-    // Delete photo — removes from Storage + Firestore subcollection
+    // Delete photo — removes the Firestore doc; put it back if that fails
     const deletePhoto = async (date) => {
         if (!window.confirm("Delete this progress photo?")) return;
-        setBodyPhotos(prev => {
-            const updated = { ...(prev || {}) };
-            delete updated[date];
-            return updated;
-        });
+        const previous = photos[date];
+        setStatus(null);
+        restore(date, undefined);
         if (compareA === date) setCompareA(null);
         if (compareB === date) setCompareB(null);
-        // Delete from Storage + subcollection
-        if (userId) {
-            try { await storeV2.deleteBodyPhoto(userId, date); } catch (e) { console.error("Delete error:", e); }
+        if (!userId) return;
+        try {
+            const res = await storeV2.deleteBodyPhoto(userId, date);
+            if (res === "queued") setStatus({ tone: "info", text: "You're offline — the photo will be deleted from your account when you're back online." });
+        } catch (e) {
+            console.error("Delete error:", e);
+            restore(date, previous);
+            setStatus({ tone: "error", text: "Couldn't delete that photo. Check your connection and try again." });
         }
     };
 
@@ -104,6 +136,13 @@ export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { 
                     </button>
                     <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={addPhoto} aria-label="Add progress photo" style={{ display: "none" }} />
                 </div>
+
+                {status && (
+                    <div role={status.tone === "error" ? "alert" : "status"} className="text-[12.5px] mt-3 px-3 py-2 rounded-xl"
+                        style={{ color: status.tone === "error" ? "var(--danger)" : "var(--text-secondary)", background: status.tone === "error" ? "color-mix(in srgb, var(--danger) 10%, transparent)" : "var(--ghost-bg)" }}>
+                        {status.text}
+                    </div>
+                )}
 
                 {/* View toggle */}
                 {sortedDates.length >= 2 && (
