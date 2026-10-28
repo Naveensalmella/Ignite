@@ -1,12 +1,20 @@
 "use client";
 import { useState } from 'react';
 import { today, toArr } from '@/utils';
+import useAppStore from '@/stores/useAppStore';
 
 // Streak Freeze — skip 1 day without losing streak
 // Costs 100 XP per freeze. Max 2 freezes stored.
-export default function StreakFreeze({ streak, totalXP, freezeData, setFreezeData, addXP }) {
+// Props: streak, totalXP, freezeData, setFreezeData (addXP is accepted but not used — see buyFreeze)
+export default function StreakFreeze({ streak = 0, totalXP = 0, freezeData, setFreezeData = () => { } }) {
     const d = today();
-    const data = freezeData || { freezesAvailable: 1, freezesUsed: [], lastEarned: null };
+    // Normalize — Firestore data may be missing fields or store arrays as objects
+    const data = {
+        ...(freezeData || {}),
+        freezesAvailable: Math.max(0, Number(freezeData?.freezesAvailable ?? 1) || 0),
+        freezesUsed: toArr(freezeData?.freezesUsed),
+        lastEarned: freezeData?.lastEarned ?? null,
+    };
     const [showConfirm, setShowConfirm] = useState(false);
 
     const FREEZE_COST = 100;
@@ -14,21 +22,26 @@ export default function StreakFreeze({ streak, totalXP, freezeData, setFreezeDat
 
     const buyFreeze = () => {
         if (totalXP < FREEZE_COST || data.freezesAvailable >= MAX_FREEZES) return;
-        addXP(-FREEZE_COST, "Bought streak freeze");
+        // Deduct the exact cost. addXP() applies the streak multiplier (so -100 could cost
+        // -150 XP), fires confetti and logs it as earned XP — so update totalXP directly.
+        // (addXP now also ignores amounts <= 0, which made freezes free.)
+        const st = useAppStore.getState();
+        st.setTotalXP(p => Math.max(0, (Number(p) || 0) - FREEZE_COST));
+        st.pushXpEvent?.(-FREEZE_COST, "Bought streak freeze", 1600);
         setFreezeData({ ...data, freezesAvailable: data.freezesAvailable + 1 });
     };
 
-    const useFreeze = () => {
-        if (data.freezesAvailable <= 0) return;
+    const applyFreeze = () => {
+        if (data.freezesAvailable <= 0 || data.freezesUsed.includes(d)) return;
         setFreezeData({
             ...data,
             freezesAvailable: data.freezesAvailable - 1,
-            freezesUsed: [...toArr(data.freezesUsed), d],
+            freezesUsed: [...data.freezesUsed, d],
         });
         setShowConfirm(false);
     };
 
-    const usedToday = data.freezesUsed?.includes(d);
+    const usedToday = data.freezesUsed.includes(d);
 
     return (
         <div className="gs" style={{ padding: 16 }}>
@@ -69,9 +82,9 @@ export default function StreakFreeze({ streak, totalXP, freezeData, setFreezeDat
 
             {showConfirm && (
                 <div className="fade-in" style={{ marginTop: 12, padding: 14, borderRadius: 10, background: "rgba(6,182,212,.06)", border: "1px solid rgba(6,182,212,.12)" }}>
-                    <div style={{ fontSize: 14, color: "#f3f4f6", marginBottom: 10 }}>Use a freeze for today? Your {streak}-day streak will be protected even if you don't train.</div>
+                    <div style={{ fontSize: 14, color: "#f3f4f6", marginBottom: 10 }}>Use a freeze for today? Your {streak}-day streak will be protected even if you don&apos;t train.</div>
                     <div style={{ display: "flex", gap: 8 }}>
-                        <button className="bp" onClick={useFreeze} style={{ flex: 1, padding: 10, background: "linear-gradient(135deg,#06b6d4,#0891b2)" }}>✓ Use Freeze</button>
+                        <button className="bp" onClick={applyFreeze} style={{ flex: 1, padding: 10, background: "linear-gradient(135deg,#06b6d4,#0891b2)" }}>✓ Use Freeze</button>
                         <button className="bg" onClick={() => setShowConfirm(false)} style={{ flex: 1, padding: 10 }}>Cancel</button>
                     </div>
                 </div>

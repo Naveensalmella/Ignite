@@ -1,85 +1,141 @@
 "use client";
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { requestWakeLock, releaseWakeLock } from './wakeLock';
-import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { today, toArr } from '@/utils';
+import { today, dateKey, toArr } from '@/utils';
+import { beep } from '@/lib/beep';
 
 const TAGS = ["Study", "Work", "Code", "Read", "Create", "Exercise", "Other"];
 const POMODORO = { work: 25, shortBreak: 5, longBreak: 15 };
 
 function Ring({ pct, color, size = 56, stroke = 5, children }) { const p = Number.isFinite(pct) ? pct : 0; const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, p / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset 1s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
+const STORE_KEY = "ignite-focus-timer";
+const GOAL_KEY = "ignite-focus-goal";
+const breakMinutes = (count) => (count > 0 && count % 4 === 0 ? POMODORO.longBreak : POMODORO.shortBreak);
+
+function loadTimer() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || null; } catch { return null; }
+}
+
 export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, addXP = () => { } }) {
   const d = today();
+  const [saved] = useState(loadTimer);
   const [tab, setTab] = useState("focus");
-  const [mode, setMode] = useState("pomodoro"); // pomodoro | freeform
-  const [isRunning, setIsRunning] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(POMODORO.work * 60);
-  const [phase, setPhase] = useState("work"); // work | break
-  const [pomCount, setPomCount] = useState(0);
-  const [tag, setTag] = useState("Study");
-  const [dailyGoal, setDailyGoal] = useState(120); // minutes
-  const [freeformElapsed, setFreeformElapsed] = useState(0);
-  const intervalRef = useRef(null);
+  const [mode, setMode] = useState(saved?.mode || "pomodoro"); // pomodoro | freeform
+  const [isRunning, setIsRunning] = useState(!!saved?.running);
+  const [phase, setPhase] = useState(saved?.phase || "work"); // work | break
+  const [pomCount, setPomCount] = useState(saved?.pomCount || 0);
+  const [tag, setTag] = useState(saved?.tag || "Study");
+  // Timestamp-based timing: accurate even when the tab is in the background
+  // and survives leaving the page (state is kept in localStorage).
+  const [endAt, setEndAt] = useState(saved?.endAt || null);            // pomodoro: when the phase ends
+  const [remainingMs, setRemainingMs] = useState(saved?.remainingMs ?? POMODORO.work * 60000); // pomodoro when paused
+  const [startedAt, setStartedAt] = useState(saved?.startedAt || null); // freeform: when (re)started
+  const [elapsedMs, setElapsedMs] = useState(saved?.elapsedMs || 0);    // freeform: banked time
+  const [now, setNow] = useState(() => Date.now());
+  const [dailyGoal, setDailyGoalRaw] = useState(() => { try { return Number(localStorage.getItem(GOAL_KEY)) || 120; } catch { return 120; } });
+  const setDailyGoal = (v) => { setDailyGoalRaw(v); try { localStorage.setItem(GOAL_KEY, String(v)); } catch { /* ignore */ } };
 
   const todaySessions = toArr(focusLog[d]);
-  const todayMinutes = todaySessions.reduce((s, sess) => s + (sess.duration || 0), 0);
+  const todayMinutes = todaySessions.reduce((s, sess) => s + (Number(sess?.duration) || 0), 0);
   const goalPct = Math.min(100, Math.round((todayMinutes / dailyGoal) * 100));
+
+  const timeLeft = Math.max(0, Math.ceil((isRunning && endAt ? endAt - now : remainingMs) / 1000));
+  const freeformElapsed = Math.floor((elapsedMs + (isRunning && startedAt ? now - startedAt : 0)) / 1000);
+
+  // Persist timer state
+  useEffect(() => {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ mode, running: isRunning, phase, pomCount, tag, endAt, remainingMs, startedAt, elapsedMs })); } catch { /* ignore */ }
+  }, [mode, isRunning, phase, pomCount, tag, endAt, remainingMs, startedAt, elapsedMs]);
 
   // Wake Lock
   useEffect(() => {
     if (isRunning) requestWakeLock();
     else releaseWakeLock();
-    return () => releaseWakeLock();
+    return () => { releaseWakeLock(); };
   }, [isRunning]);
 
-  // Timer logic
-  useEffect(() => {
-    if (!isRunning) { clearInterval(intervalRef.current); return; }
-    intervalRef.current = setInterval(() => {
-      if (mode === "pomodoro") {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            if (phase === "work") {
-              const dur = POMODORO.work;
-              logSession(dur);
-              setPomCount(p => p + 1);
-              const isLongBreak = (pomCount + 1) % 4 === 0;
-              setPhase("break");
-              return (isLongBreak ? POMODORO.longBreak : POMODORO.shortBreak) * 60;
-            } else {
-              setPhase("work");
-              return POMODORO.work * 60;
-            }
-          }
-          return prev - 1;
-        });
-      } else {
-        setFreeformElapsed(prev => prev + 1);
-      }
-    }, 1000);
-    return () => clearInterval(intervalRef.current);
-  }, [isRunning, mode, phase, pomCount]);
-
   const logSession = (durationMin) => {
-    const session = { duration: durationMin, tag, start: new Date().toISOString(), type: mode };
-    setFocusLog(prev => ({ ...prev, [d]: [...toArr(prev[d]), session] }));
-    addXP(Math.round(durationMin * 0.5), "Focus session");
+    if (durationMin < 1) return;
+    const day = today();
+    const session = { duration: durationMin, tag, start: new Date(Date.now() - durationMin * 60000).toISOString(), type: mode };
+    setFocusLog(prev => ({ ...prev, [day]: [...toArr(prev[day]), session] }));
+    addXP(Math.max(1, Math.round(durationMin * 0.5)), "Focus session");
   };
 
+  // Pomodoro phase finished (latest closure kept in a ref for the interval)
+  const onPhaseEndRef = useRef(null);
+  useEffect(() => {
+    onPhaseEndRef.current = () => {
+      beep(880, 0.2); setTimeout(() => beep(1100, 0.3), 200);
+      if (phase === "work") {
+        logSession(POMODORO.work);
+        const count = pomCount + 1;
+        setPomCount(count);
+        setPhase("break");
+        setEndAt(Date.now() + breakMinutes(count) * 60000);
+      } else {
+        // Break over — stop and wait for the user to start the next pomodoro
+        setPhase("work");
+        setIsRunning(false);
+        setEndAt(null);
+        setRemainingMs(POMODORO.work * 60000);
+      }
+    };
+  });
+
+  // Tick: re-render every second and detect the end of a pomodoro phase
+  useEffect(() => {
+    if (!isRunning) return;
+    const tick = () => {
+      const t = Date.now();
+      setNow(t);
+      if (mode === "pomodoro" && endAt && t >= endAt) onPhaseEndRef.current?.();
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [isRunning, mode, endAt]);
+
   const startTimer = () => {
-    if (mode === "pomodoro") { setTimeLeft(POMODORO.work * 60); setPhase("work"); }
-    else { setFreeformElapsed(0); }
+    const t = Date.now();
+    setNow(t);
+    if (mode === "pomodoro") {
+      const ms = remainingMs > 0 ? remainingMs : POMODORO.work * 60000;
+      setEndAt(t + ms);
+    } else {
+      setStartedAt(t);
+    }
     setIsRunning(true);
   };
 
-  const stopTimer = () => {
+  const pauseTimer = () => {
+    const t = Date.now();
+    if (mode === "pomodoro") { setRemainingMs(Math.max(0, (endAt || t) - t)); setEndAt(null); }
+    else { setElapsedMs(e => e + (startedAt ? t - startedAt : 0)); setStartedAt(null); }
     setIsRunning(false);
-    if (mode === "freeform" && freeformElapsed >= 60) {
-      logSession(Math.round(freeformElapsed / 60));
-    }
-    setFreeformElapsed(0);
   };
+
+  const stopTimer = () => {
+    const t = Date.now();
+    if (mode === "freeform") {
+      const total = elapsedMs + (isRunning && startedAt ? t - startedAt : 0);
+      if (total >= 60000) logSession(Math.round(total / 60000));
+      setElapsedMs(0); setStartedAt(null);
+    } else {
+      // Log the minutes actually focused in an unfinished work phase
+      if (phase === "work") {
+        const left = isRunning && endAt ? endAt - t : remainingMs;
+        const focused = Math.floor((POMODORO.work * 60000 - left) / 60000);
+        if (focused >= 1) logSession(focused);
+      }
+      setPhase("work"); setEndAt(null); setRemainingMs(POMODORO.work * 60000);
+    }
+    setIsRunning(false);
+  };
+
+  const hasProgress = isRunning || (mode === "pomodoro" ? remainingMs < POMODORO.work * 60000 || phase === "break" : elapsedMs > 0);
+  const switchMode = (m) => { if (!isRunning && !hasProgress) setMode(m); };
 
   const fmtTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
@@ -88,9 +144,9 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
     const days = [];
     for (let i = 6; i >= 0; i--) {
       const dt = new Date(); dt.setDate(dt.getDate() - i);
-      const ds = dt.toISOString().split("T")[0];
+      const ds = dateKey(dt);
       const sessions = toArr(focusLog[ds]);
-      const mins = sessions.reduce((s, sess) => s + (sess.duration || 0), 0);
+      const mins = sessions.reduce((s, sess) => s + (Number(sess?.duration) || 0), 0);
       days.push({ date: ds, label: dt.toLocaleDateString("en", { weekday: "narrow" }), minutes: mins, sessions: sessions.length, isToday: ds === d });
     }
     return days;
@@ -125,14 +181,14 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
           </div>
 
           {/* Mode selector */}
-          {!isRunning && (
+          {!isRunning && !hasProgress && (
             <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-              <div className={`gc ${mode === "pomodoro" ? "" : ""}`} onClick={() => setMode("pomodoro")} style={{ flex: 1, padding: 14, textAlign: "center", cursor: "pointer", border: mode === "pomodoro" ? "1px solid rgba(6,182,212,.2)" : "1px solid rgba(255,255,255,.04)", background: mode === "pomodoro" ? "rgba(6,182,212,.04)" : undefined }}>
+              <div className={`gc ${mode === "pomodoro" ? "" : ""}`} onClick={() => switchMode("pomodoro")} style={{ flex: 1, padding: 14, textAlign: "center", cursor: "pointer", border: mode === "pomodoro" ? "1px solid rgba(6,182,212,.2)" : "1px solid rgba(255,255,255,.04)", background: mode === "pomodoro" ? "rgba(6,182,212,.04)" : undefined }}>
                 <div style={{ fontSize: 20 }}>🍅</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: mode === "pomodoro" ? "#06b6d4" : "#f3f4f6", marginTop: 4 }}>Pomodoro</div>
                 <div style={{ fontSize: 10, color: "#6b7280" }}>25 min work + 5 break</div>
               </div>
-              <div className="gc" onClick={() => setMode("freeform")} style={{ flex: 1, padding: 14, textAlign: "center", cursor: "pointer", border: mode === "freeform" ? "1px solid rgba(16,185,129,.2)" : "1px solid rgba(255,255,255,.04)", background: mode === "freeform" ? "rgba(16,185,129,.04)" : undefined }}>
+              <div className="gc" onClick={() => switchMode("freeform")} style={{ flex: 1, padding: 14, textAlign: "center", cursor: "pointer", border: mode === "freeform" ? "1px solid rgba(16,185,129,.2)" : "1px solid rgba(255,255,255,.04)", background: mode === "freeform" ? "rgba(16,185,129,.04)" : undefined }}>
                 <div style={{ fontSize: 20 }}>⏱</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: mode === "freeform" ? "#10b981" : "#f3f4f6", marginTop: 4 }}>Free Focus</div>
                 <div style={{ fontSize: 10, color: "#6b7280" }}>Open-ended timer</div>
@@ -151,13 +207,14 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
 
           {/* Timer Display */}
           <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <Ring pct={mode === "pomodoro" ? ((1 - timeLeft / (phase === "work" ? POMODORO.work * 60 : (pomCount % 4 === 0 ? POMODORO.longBreak : POMODORO.shortBreak) * 60)) * 100) : 100} color={phase === "work" ? "#06b6d4" : "#22c55e"} size={180} stroke={8}>
+            <Ring pct={mode === "pomodoro" ? ((1 - timeLeft / ((phase === "work" ? POMODORO.work : breakMinutes(pomCount)) * 60)) * 100) : (freeformElapsed % 3600) / 36} color={phase === "work" ? "#06b6d4" : "#22c55e"} size={180} stroke={8}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 48, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>
                   {mode === "pomodoro" ? fmtTime(timeLeft) : fmtTime(freeformElapsed)}
                 </div>
-                {isRunning && (
+                {hasProgress && (
                   <div style={{ fontSize: 12, color: phase === "work" ? "#06b6d4" : "#22c55e", fontWeight: 600, marginTop: 4 }}>
+                    {!isRunning && "⏸ Paused · "}
                     {mode === "pomodoro" ? (phase === "work" ? "🍅 Focus Time" : "☕ Break Time") : `⏱ Focusing on ${tag}`}
                   </div>
                 )}
@@ -168,19 +225,19 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
           {/* Controls */}
           <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 8 }}>
             {!isRunning ? (
-              <button className="bp" onClick={startTimer} style={{ padding: "14px 40px", fontSize: 16 }}>▶ Start {mode === "pomodoro" ? "Pomodoro" : "Focus"}</button>
+              <button className="bp" onClick={startTimer} style={{ padding: "14px 40px", fontSize: 16 }}>▶ {hasProgress ? "Resume" : `Start ${mode === "pomodoro" ? "Pomodoro" : "Focus"}`}</button>
             ) : (
-              <>
-                <button className="bg" onClick={() => setIsRunning(false)} style={{ padding: "14px 20px" }}>⏸ Pause</button>
-                <button style={{ padding: "14px 24px", background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.2)", borderRadius: 12, color: "#ef4444", cursor: "pointer", fontSize: 14 }} onClick={stopTimer}>⏹ Stop</button>
-              </>
+              <button className="bg" onClick={pauseTimer} style={{ padding: "14px 20px" }}>⏸ Pause</button>
+            )}
+            {hasProgress && (
+              <button style={{ padding: "14px 24px", background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.2)", borderRadius: 12, color: "#ef4444", cursor: "pointer", fontSize: 14 }} onClick={stopTimer}>⏹ {mode === "pomodoro" && phase === "break" ? "End break" : "Stop & save"}</button>
             )}
           </div>
 
           {/* Today's sessions */}
           {todaySessions.length > 0 && (
             <div className="gs" style={{ marginTop: 16, padding: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>Today's Sessions</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>Today&apos;s Sessions</div>
               {todaySessions.map((sess, i) => (
                 <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: i < todaySessions.length - 1 ? "1px solid rgba(255,255,255,.03)" : "none" }}>
                   <span style={{ fontSize: 12, color: "#d1d5db" }}>{sess.tag || "Focus"} · {sess.type === "pomodoro" ? "🍅" : "⏱"}</span>
@@ -224,11 +281,11 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
               <div style={{ fontSize: 10, color: "#6b7280" }}>Sessions Today</div>
             </div>
             <div className="gc" style={{ padding: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#f59e0b", fontFamily: "Rajdhani,sans-serif" }}>{Object.values(focusLog).flat().length}</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#f59e0b", fontFamily: "Rajdhani,sans-serif" }}>{Object.values(focusLog).reduce((n, v) => n + toArr(v).length, 0)}</div>
               <div style={{ fontSize: 10, color: "#6b7280" }}>Total Sessions</div>
             </div>
             <div className="gc" style={{ padding: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#8b5cf6", fontFamily: "Rajdhani,sans-serif" }}>{Math.round(Object.values(focusLog).flat().reduce((s, sess) => s + (sess.duration || 0), 0) / 60)}h</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#8b5cf6", fontFamily: "Rajdhani,sans-serif" }}>{Math.round(Object.values(focusLog).reduce((n, v) => n + toArr(v).reduce((s, sess) => s + (Number(sess?.duration) || 0), 0), 0) / 6) / 10}h</div>
               <div style={{ fontSize: 10, color: "#6b7280" }}>Total Hours</div>
             </div>
           </div>

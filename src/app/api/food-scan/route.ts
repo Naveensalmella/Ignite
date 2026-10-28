@@ -1,19 +1,33 @@
-// File: src/app/api/food-scan/route.ts
+// Food recognition / nutrition estimates (Gemini) from a photo or a text description.
 import { NextRequest, NextResponse } from "next/server";
+import { geminiGenerate, AIError, clip } from "@/lib/ai";
 
-function extractFoods(text: string): any[] | null {
+type Food = { name: string; emoji: string; cal: number; protein: number; carbs: number; fat: number; fiber: number; serving: string };
+
+const MAX_IMAGE_CHARS = 4_000_000; // ~3 MB of base64
+
+const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) && x >= 0 ? Math.round(x * 10) / 10 : 0; };
+
+function extractFoods(text: string): Food[] | null {
   let clean = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-  clean = clean.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-  clean = clean.replace(/```thought[\s\S]*?```/g, "").trim();
-
-  // Find the JSON array — use greedy match to get the full array
+  clean = clean.replace(/```thought[\s\S]*?```/g, "").replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
   const start = clean.indexOf("[");
   const end = clean.lastIndexOf("]");
-  if (start === -1 || end === -1 || end <= start) return null;
-
+  if (start === -1 || end <= start) return null;
   try {
-    const foods = JSON.parse(clean.substring(start, end + 1));
-    return Array.isArray(foods) && foods.length > 0 ? foods : null;
+    const raw = JSON.parse(clean.substring(start, end + 1));
+    if (!Array.isArray(raw)) return null;
+    const foods = raw
+      .filter(f => f && typeof f.name === "string" && f.name.trim())
+      .slice(0, 20)
+      .map(f => ({
+        name: String(f.name).trim().slice(0, 80),
+        emoji: typeof f.emoji === "string" ? f.emoji.slice(0, 4) : "🍽️",
+        cal: Math.round(n(f.cal ?? f.calories)),
+        protein: n(f.protein), carbs: n(f.carbs ?? f.carbohydrates), fat: n(f.fat), fiber: n(f.fiber),
+        serving: typeof f.serving === "string" ? f.serving.slice(0, 60) : "1 serving",
+      }));
+    return foods.length > 0 ? foods : null;
   } catch { return null; }
 }
 
@@ -32,110 +46,41 @@ Return ONLY a JSON array, no other text:
 [{"name":"Food Name","emoji":"🍛","cal":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"serving":"portion size"}]`;
 
 export async function POST(req: NextRequest) {
+  let body: { description?: unknown; image?: unknown };
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request", foods: [] }, { status: 400 }); }
+
+  const image = typeof body.image === "string" ? body.image : "";
+  const description = clip(body.description, 1000).trim();
+
   try {
-    const { description, image } = await req.json();
-    const GEMINI_KEY = process.env.GEMINI_API_KEY;
-
-    // ── IMAGE ANALYSIS (Gemini) ──
     if (image) {
-      if (!GEMINI_KEY) {
-        return NextResponse.json({ error: "GEMINI_API_KEY not configured", foods: [] }, { status: 500 });
-      }
-
-      // Strip data URL prefix if present
+      if (image.length > MAX_IMAGE_CHARS) return NextResponse.json({ error: "That photo is too large. Try a smaller one.", foods: [] }, { status: 413 });
+      const match = /^data:(image\/[a-z+.-]+);base64,/i.exec(image);
+      const mimeType = match?.[1] || "image/jpeg";
       const base64Data = image.includes(",") ? image.split(",")[1] : image;
-
-      try {
-        const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_KEY}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{
-                parts: [
-                  { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-                  { text: FOOD_PROMPT },
-                ],
-              }],
-              generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
-            }),
-          }
-        );
-
-        const data = await r.json();
-
-        if (data.error) {
-          console.error("[Gemini] Error:", data.error.message);
-          return NextResponse.json({ error: data.error.message, foods: [] }, { status: 500 });
-        }
-
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        console.log("[Gemini] Response:", text.substring(0, 300));
-
-        const foods = extractFoods(text);
-        if (foods) {
-          console.log(`[Gemini] ✅ ${foods.length} items detected`);
-          return NextResponse.json({ foods, source: "gemini-vision" });
-        }
-
-        console.warn("[Gemini] No valid JSON in response");
-        return NextResponse.json({ error: "Could not identify food items. Try a clearer photo.", foods: [] });
-
-      } catch (e: any) {
-        console.error("[Gemini] Exception:", e.message);
-        return NextResponse.json({ error: "Scan failed. Try again.", foods: [] }, { status: 500 });
-      }
+      const text = await geminiGenerate(
+        [{ inlineData: { mimeType, data: base64Data } }, { text: FOOD_PROMPT }],
+        { temperature: 0.2, maxOutputTokens: 4096 },
+      );
+      const foods = extractFoods(text);
+      if (foods) return NextResponse.json({ foods, source: "gemini-vision" });
+      return NextResponse.json({ error: "Could not identify food items. Try a clearer photo or describe your meal.", foods: [] });
     }
 
-    // ── TEXT ANALYSIS (Gemini — unified with image analysis for consistent results) ──
     if (description) {
-      if (!GEMINI_KEY) {
-        return NextResponse.json({ error: "GEMINI_API_KEY not configured", foods: [] }, { status: 500 });
-      }
-
-      try {
-        const textPrompt = `${FOOD_PROMPT}\n\nThe user describes their food as: "${description}".\nAnalyze this description and return the JSON array.`;
-
-        const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_KEY}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: textPrompt }] }],
-              generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
-            }),
-          }
-        );
-
-        const data = await r.json();
-
-        if (data.error) {
-          console.error("[Gemini-Text] Error:", data.error.message);
-          return NextResponse.json({ error: data.error.message, foods: [] }, { status: 500 });
-        }
-
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        console.log("[Gemini-Text] Response:", text.substring(0, 300));
-
-        const foods = extractFoods(text);
-        if (foods) {
-          console.log(`[Gemini-Text] ✅ ${foods.length} items detected`);
-          return NextResponse.json({ foods, source: "gemini-text" });
-        }
-
-        console.warn("[Gemini-Text] No valid JSON in response");
-        return NextResponse.json({ error: "Could not analyze food. Try rephrasing.", foods: [] });
-
-      } catch (e: any) {
-        console.error("[Gemini-Text] Exception:", e.message);
-        return NextResponse.json({ error: "Analysis failed. Try again.", foods: [] }, { status: 500 });
-      }
+      const text = await geminiGenerate(
+        [{ text: `${FOOD_PROMPT}\n\nThe user describes their food as: "${description}".\nAnalyze this description and return the JSON array.` }],
+        { temperature: 0.2, maxOutputTokens: 4096 },
+      );
+      const foods = extractFoods(text);
+      if (foods) return NextResponse.json({ foods, source: "gemini-text" });
+      return NextResponse.json({ error: "Could not analyze that food. Try rephrasing.", foods: [] });
     }
 
-    return NextResponse.json({ error: "Send description or image", foods: [] }, { status: 400 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message, foods: [] }, { status: 500 });
+    return NextResponse.json({ error: "Send a description or a photo", foods: [] }, { status: 400 });
+  } catch (e) {
+    const err = e as AIError;
+    console.error("[food-scan]", err.message);
+    return NextResponse.json({ error: err.message || "Analysis failed. Try again.", foods: [] }, { status: err.status || 500 });
   }
 }

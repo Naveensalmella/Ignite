@@ -1,10 +1,9 @@
 "use client";
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { XP } from '../data';
 import { FOOD_DATABASE, FOOD_CATEGORIES, searchFoods, searchFoodsCombined } from '../data/foodDatabase';
 import { DIET_TEMPLATES, generateDayPlan, generateWeekPlan, getPlanDayTotals, getShoppingList, getSwapOptions as getMealSwaps } from '../data/mealPlanner';
-import { today, toArr } from '../utils';
+import { today, dateKey, toArr } from '../utils';
 import HistoryPanel from './HistoryPanel';
 import { formatNutritionHistory } from '../historyFormatters';
 import { localSync } from '@/utils/localSync';
@@ -74,7 +73,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const d = today();
   const todayLog = toArr(foodLog[d]).filter(f => f && typeof f === 'object' && f.name);
   const rawWater = foodLog[`water_${d}`];
-  const todayWater = typeof rawWater === 'number' ? rawWater : (rawWater?.entries ?? rawWater?.data ?? 0);
+  const todayWater = Number(typeof rawWater === 'object' && rawWater ? (rawWater.entries ?? rawWater.data) : rawWater) || 0;
   const [tab, setTab] = useState("log");
   const [selMeal, setSelMeal] = useState("Breakfast");
   const [search, setSearch] = useState("");
@@ -83,7 +82,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const [showCustom, setShowCustom] = useState(false);
   const [custom, setCustom] = useState({ name: "", cal: "", protein: "", carbs: "", fat: "", fiber: "" });
   const [selCat, setSelCat] = useState("All");
-  const [apiResults, setApiResults] = useState([]);
+  const [apiResults, setApiResults] = useState(null);
   const [apiSearching, setApiSearching] = useState(false);
 
   // Scan state
@@ -161,7 +160,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     const days = [];
     for (let i = 6; i >= 0; i--) {
       const dt = new Date(); dt.setDate(dt.getDate() - i);
-      const ds = dt.toISOString().split("T")[0];
+      const ds = dateKey(dt);
       const dayLog = toArr(foodLog[ds]);
       days.push({
         date: ds,
@@ -191,6 +190,13 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     setSelFood(null); setGrams(100);
   };
 
+  // Log an entry whose macros are already for its portion (meal-plan items, recent foods).
+  const logPortion = (food, meal = selMeal) => {
+    const entry = { ...food, meal, cal: Math.round(Number(food.cal) || 0), protein: Number(food.protein) || 0, carbs: Number(food.carbs) || 0, fat: Number(food.fat) || 0, fiber: Number(food.fiber) || 0, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+    setFoodLog(p => ({ ...p, [d]: [...toArr(p[d]), entry] }));
+    addXP(XP.food, "Food logged");
+  };
+
   const addCustomFood = () => {
     if (!custom.name.trim() || !custom.cal) return;
     addFood({ name: custom.name.trim(), emoji: "🍽️", cal: parseInt(custom.cal) || 0, protein: parseFloat(custom.protein) || 0, carbs: parseFloat(custom.carbs) || 0, fat: parseFloat(custom.fat) || 0, fiber: parseFloat(custom.fiber) || 0, category: "Custom" }, 100, selMeal);
@@ -198,8 +204,8 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   };
 
   const removeFood = (idx) => setFoodLog(p => ({ ...p, [d]: toArr(p[d]).filter((_, i) => i !== idx) }));
-  const addWater = () => setFoodLog(p => ({ ...p, [`water_${d}`]: (p[`water_${d}`] || 0) + 1 }));
-  const removeWater = () => setFoodLog(p => ({ ...p, [`water_${d}`]: Math.max(0, (p[`water_${d}`] || 0) - 1) }));
+  const addWater = () => setFoodLog(p => ({ ...p, [`water_${d}`]: (Number(p[`water_${d}`]) || 0) + 1 }));
+  const removeWater = () => setFoodLog(p => ({ ...p, [`water_${d}`]: Math.max(0, (Number(p[`water_${d}`]) || 0) - 1) }));
 
   // ── Scanner ──
   const startCam = async () => { try { const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 640 } } }); streamRef.current = s; if (videoRef.current) { videoRef.current.srcObject = s; videoRef.current.play() } } catch (e) { setScanError("Camera unavailable. Upload a photo instead.") } };
@@ -294,47 +300,41 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     setScanning(false);
   };
 
-  const analyze = async (b64) => {
-    // For image: describe to AI what to analyze
-    analyzeWithAI("Analyze this food photo. The image is a meal photo (base64 provided but you can't see it). Instead, I'll describe: this appears to be an Indian meal. Please estimate nutrition for a typical Indian meal plate with rice, curry, and sides. If you can identify specific foods from context, list them individually.");
-  };
-
   const analyzeText = async (desc) => {
     if (!desc.trim()) return;
     analyzeWithAI(`Analyze this meal and estimate nutrition for each food item separately: "${desc}". Use standard Indian serving sizes. Be specific with calories — don't round to nearest 100.`);
   };
   useEffect(() => () => stopCam(), []);
-  useEffect(() => { shSync.set(scanHistory); }, [scanHistory]);
+  useEffect(() => { shSync.set(scanHistory); }, [scanHistory, shSync]);
 
-  // API search (debounced — fires 500ms after typing stops)
+  // API search (debounced — fires 500ms after typing stops; stale responses are ignored)
   useEffect(() => {
-    if (!search || search.length < 3) { setApiResults([]); return; }
+    if (!search || search.length < 3) return;
+    let cancelled = false;
     const timer = setTimeout(async () => {
       setApiSearching(true);
-      try { const { api } = await searchFoodsCombined(search); setApiResults(api); } catch (e) { setApiResults([]); }
-      setApiSearching(false);
+      let api = [];
+      try { ({ api } = await searchFoodsCombined(search)); } catch { api = []; }
+      if (!cancelled) { setApiResults({ query: search, items: toArr(api) }); setApiSearching(false); }
     }, 500);
-    return () => clearTimeout(timer);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [search]);
+  const apiItems = search.length >= 3 && apiResults?.query === search ? apiResults.items : [];
 
   // ── Save/Load Plans ──
   const savePlan = () => {
     if (!planName.trim()) return;
-    const plan = { id: Date.now(), name: planName.trim(), type: planType.id, items: planItems, createdAt: d };
-    const newPlans = [...savedPlans, plan];
+    const plan = { id: editingPlan?.id || Date.now(), name: planName.trim(), type: planType.id, items: planItems, createdAt: editingPlan?.createdAt || d };
+    const newPlans = editingPlan ? savedPlans.map(p => p.id === editingPlan.id ? plan : p) : [...savedPlans, plan];
     setSavedPlans(newPlans);
     setFoodLog(p => ({ ...p, _savedPlans: newPlans }));
     setPlanName(""); setEditingPlan(null);
   };
 
   const loadPlan = (plan) => { setPlanItems(plan.items); setEditingPlan(plan); setPlanName(plan.name) };
-  const deletePlan = (id) => { const np = savedPlans.filter(p => p.id !== id); setSavedPlans(np); setFoodLog(p => ({ ...p, _savedPlans: np })) };
+  const deletePlan = (id) => { if (!window.confirm("Delete this plan?")) return; const np = savedPlans.filter(p => p.id !== id); setSavedPlans(np); setFoodLog(p => ({ ...p, _savedPlans: np })) };
   const addToPlan = (food, meal) => { setPlanItems(p => ({ ...p, [meal]: [...(p[meal] || []), { ...food, grams: 100 }] })) };
   const removeFromPlan = (meal, idx) => { setPlanItems(p => ({ ...p, [meal]: (p[meal] || []).filter((_, i) => i !== idx) })) };
-  const logEntirePlan = () => {
-    MEALS.forEach(meal => { (planItems[meal] || []).forEach(f => { addFood(f, f.grams || 100, meal) }) });
-    setTab("log");
-  };
 
   // ══ SCAN TAB ══
   if (tab === "scan") {
@@ -379,7 +379,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
                       <div className="text-[10px] text-gray-500">P:{scan.protein}g C:{scan.carbs}g F:{scan.fat}g</div>
                     </div>
                   </div>
-                  <button className="bp px-3 py-1.5 text-[11px]" onClick={() => addFood(scan, 100, selMeal)}>+ Add</button>
+                  <button className="bp px-3 py-1.5 text-[11px]" onClick={() => logPortion(scan, selMeal)}>+ Add</button>
                 </div>
               ))}
             </div>
@@ -494,7 +494,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     {/* Tabs */}
     <div className="flex gap-1.5 justify-center mb-4 flex-wrap">
       {[["log", "🍎 Log"], ["weekly", "📊 Weekly"], ["scan", "📸 Scan"], ["plan", "📋 Plans"], ["history", "📅 History"]].map(([k, l]) => (
-        <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"} p-[8px_14px]`} onClick={() => { if (k === "scan") { setTab("scan"); setTimeout(startCam, 100) } else setTab(k) }}>{l}</span>
+        <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"} p-[8px_14px]`} onClick={() => setTab(k)}>{l}</span>
       ))}
     </div>
 
@@ -587,7 +587,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
           <div className="text-[11px] text-gray-500 font-semibold mb-1.5">⚡ Quick Add — Recent</div>
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             {recentFoods.filter(f => f && f.name).slice(0, 8).map((f, i) => (
-              <div key={f.name + i} onClick={() => addFood(f, 100, selMeal)} className="shrink-0 px-3 py-2 rounded-[10px] bg-white/[.02] border border-white/[.06] cursor-pointer text-center min-w-[70px]">
+              <div key={f.name + i} role="button" tabIndex={0} title={`Add ${f.name} to ${selMeal}`} onClick={() => logPortion(f, selMeal)} className="shrink-0 px-3 py-2 rounded-[10px] bg-white/[.02] border border-white/[.06] cursor-pointer text-center min-w-[70px]">
                 <div className="text-[18px]">{f.emoji || "🍽️"}</div>
                 <div className="text-[10px] text-gray-200 mt-0.5">{f.name.length > 10 ? f.name.slice(0, 10) + "…" : f.name}</div>
                 <div className="text-[11px] text-gray-500">{f.cal || 0}cal</div>
@@ -607,9 +607,9 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         <div className="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2 mb-3 max-h-[300px] overflow-y-auto">
           {filtered.slice(0, 36).map((f, i) => (<div key={f.name + i} className="fc" onClick={() => { setSelFood(f); setGrams(100) }}><div className="text-xl">{f.emoji}</div><div className="text-[11px] font-medium text-gray-200 mt-[3px]">{f.name}</div><div className="text-[11px] text-gray-500">{f.cal}cal/100g</div></div>))}
         </div>
-        {filtered.length === 0 && search && !apiSearching && apiResults.length === 0 && <div className="text-center text-gray-500 py-3 text-[13px]">No food found for "{search}"</div>}
+        {filtered.length === 0 && search && !apiSearching && apiItems.length === 0 && <div className="text-center text-gray-500 py-3 text-[13px]">No food found for "{search}"</div>}
         {apiSearching && <div className="text-center py-2 text-xs text-cyan-500">Searching global database...</div>}
-        {apiResults.length > 0 && (<div className="mt-3"><div className="text-xs text-cyan-500 font-semibold mb-2">More from global database ({apiResults.length})</div><div className="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2 max-h-[200px] overflow-y-auto">{apiResults.map((f, i) => (<div key={"api" + i} className="fc border-cyan-500/[.15]" onClick={() => { setSelFood(f); setGrams(100); }}><div className="text-xl">{f.emoji}</div><div className="text-[11px] font-medium text-gray-200 mt-[3px]">{f.name}</div><div className="text-[11px] text-cyan-500">{f.cal}cal</div></div>))}</div></div>)}
+        {apiItems.length > 0 && (<div className="mt-3"><div className="text-xs text-cyan-500 font-semibold mb-2">More from global database ({apiItems.length})</div><div className="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2 max-h-[200px] overflow-y-auto">{apiItems.map((f, i) => (<div key={"api" + i} className="fc border-cyan-500/[.15]" onClick={() => { setSelFood(f); setGrams(100); }}><div className="text-xl">{f.emoji}</div><div className="text-[11px] font-medium text-gray-200 mt-[3px]">{f.name}</div><div className="text-[11px] text-cyan-500">{f.cal}cal</div></div>))}</div></div>)}
         <span onClick={() => setShowCustom(!showCustom)} className="text-xs text-emerald-500 cursor-pointer font-semibold">{showCustom ? "Cancel" : "+ Add Custom Food"}</span>
         {showCustom && (<div className="gs fade-in mt-[10px] border border-emerald-500/[.15]">
           <input className="inp mb-2" placeholder="Food name" value={custom.name} onChange={e => setCustom(p => ({ ...p, name: e.target.value }))} />
@@ -795,7 +795,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
                 })}
 
                 <div className="flex gap-2 mt-3">
-                  <button className="bp flex-1 p-[14px] text-sm" onClick={() => { Object.entries(generatedPlan).forEach(([meal, items]) => items.forEach(f => addFood(f, f.grams || 100, meal))); setTab("log"); }}>✅ Log This Plan Today</button>
+                  <button className="bp flex-1 p-[14px] text-sm" onClick={() => { Object.entries(generatedPlan).forEach(([meal, items]) => toArr(items).forEach(f => logPortion(f, meal))); setTab("log"); }}>✅ Log This Plan Today</button>
                   <button className="bg p-[14px_16px] text-xs" onClick={() => { const plan = generateDayPlan(selTemplate, target); setGeneratedPlan(plan); }}>🔄 Regenerate</button>
                 </div>
 
@@ -842,7 +842,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
                         </div>
                       );
                     })}
-                    <button className="bp w-full p-3 mt-2" onClick={() => { Object.entries(weekPlan[selWeekDay]).forEach(([meal, items]) => items.forEach(f => addFood(f, f.grams || 100, meal))); setTab("log"); }}>✅ Log {selWeekDay}'s Plan</button>
+                    <button className="bp w-full p-3 mt-2" onClick={() => { Object.entries(weekPlan[selWeekDay]).forEach(([meal, items]) => toArr(items).forEach(f => logPortion(f, meal))); setTab("log"); }}>✅ Log {selWeekDay}'s Plan</button>
                   </div>
                 );
               })()}

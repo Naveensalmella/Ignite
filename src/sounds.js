@@ -3,21 +3,21 @@
 // Lightweight, no files needed
 // ══════════════════════════════════════
 
-let audioCtx = null;
+import { getAudioCtx, getSoundEnabled } from '@/components/soundEngine';
+
+// Shares the single, lazily-created AudioContext from soundEngine (one context for the
+// whole app, unlocked on first user gesture) and honours its global mute switch too.
 let soundEnabled = true;
 
 export function setSoundEnabled(val) { soundEnabled = val; }
-export function isSoundEnabled() { return soundEnabled; }
-
-function getCtx() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    return audioCtx;
-}
+export function isSoundEnabled() { return soundEnabled && getSoundEnabled(); }
 
 function play(freq, duration = 0.15, type = "sine", vol = 0.3) {
-    if (!soundEnabled) return;
+    if (!isSoundEnabled()) return;
     try {
-        const ctx = getCtx();
+        const ctx = getAudioCtx();
+        // Not unlocked by a user gesture yet (autoplay policy) — skip instead of throwing/queueing
+        if (!ctx || ctx.state !== "running") return;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = type;
@@ -28,6 +28,7 @@ function play(freq, duration = 0.15, type = "sine", vol = 0.3) {
         gain.connect(ctx.destination);
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + duration);
+        osc.onended = () => { try { osc.disconnect(); gain.disconnect(); } catch { } };
     } catch { }
 }
 

@@ -1,12 +1,6 @@
 import { RANKS, STREAK_MULT } from '@/data/index';
 
 /**
- * Normalize a day-keyed log object from Firestore.
- * Firestore sometimes stores arrays as objects with numeric keys.
- * This converts { "2025-01-01": {0: {...}, 1: {...}} } back to
- *               { "2025-01-01": [{...}, {...}] }
- */
-/**
  * Safely convert a value to an array.
  * Firestore stores JS arrays as objects with numeric keys — this handles that.
  */
@@ -16,6 +10,25 @@ export function toArr(v) {
   return [];
 }
 
+// Habit ids completed on a day. habitLog[date] is normally { habitId: true|false },
+// but older data stored an array of ids (possibly as a numeric-key object).
+export function habitDoneIds(day) {
+  if (!day) return [];
+  if (Array.isArray(day)) return day.filter(Boolean);
+  if (typeof day === 'object') {
+    const keys = Object.keys(day);
+    if (keys.length > 0 && keys.every(k => !isNaN(k))) return Object.values(day).filter(v => typeof v === 'string');
+    return keys.filter(k => day[k] === true);
+  }
+  return [];
+}
+
+/**
+ * Normalize a day-keyed log object from Firestore.
+ * Firestore sometimes stores arrays as objects with numeric keys.
+ * This converts { "2025-01-01": {0: {...}, 1: {...}} } back to
+ *               { "2025-01-01": [{...}, {...}] }
+ */
 export function normalizeDayLog(log) {
   if (!log || typeof log !== 'object') return {};
   const out = {};
@@ -126,4 +139,30 @@ export function bmiCol(b) {
   return "#ef4444";
 }
 
-export const today = () => new Date().toISOString().split("T")[0];
+// ── Date keys ──
+// All day-keyed logs use the user's LOCAL calendar date (YYYY-MM-DD).
+// toISOString() is UTC and shifts the day for anyone not on UTC
+// (e.g. 00:00–05:30 in India was logged as "yesterday").
+export function dateKey(date = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Parse a YYYY-MM-DD key as a LOCAL date (new Date("YYYY-MM-DD") parses as UTC).
+export function parseDateKey(key) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(key || "");
+  if (!m) return new Date(key);
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+// Date key `n` days before/after `from` (negative = past).
+export function addDays(n, from = new Date()) {
+  const d = from instanceof Date ? new Date(from) : parseDateKey(from);
+  d.setDate(d.getDate() + n);
+  return dateKey(d);
+}
+
+export const today = () => dateKey();

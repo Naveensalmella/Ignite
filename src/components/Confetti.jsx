@@ -11,6 +11,7 @@ export function ConfettiBlast({ trigger }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
@@ -51,6 +52,7 @@ export function ConfettiBlast({ trigger }) {
       });
       frame++;
       if (alive && frame < 300) animRef.current = requestAnimationFrame(animate);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height); // don't leave frozen particles on screen
     };
     animRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animRef.current);
@@ -79,7 +81,7 @@ export function XPPopup({ events }) {
           fontFamily: "Rajdhani,sans-serif", letterSpacing: 1,
           animation: "fadeUp .4s ease both",
         }}>
-          +{ev.xp} XP · {ev.reason}
+          +{ev.xp ?? ev.amount ?? 0} XP · {ev.reason}
         </div>
       ))}
     </div>

@@ -1,81 +1,131 @@
 "use client";
 import { create } from 'zustand';
 import { DEFAULT_HABITS, DAILY_PENALTY } from '@/data/index';
-import { getLevel, getRank, getStreakMult, today, normalizeDayLog } from '@/utils';
+import { getLevel, getRank, getStreakMult, today, addDays, parseDateKey, normalizeDayLog, toArr } from '@/utils';
 import { checkMilestone } from '@/data/gamingSystem';
-import storeV2 from '@/store-v2';
-import store from '@/store';
+import { hasDayWorkout } from '@/lib/workoutHelpers';
+import storeV2, { DAY_COLLECTIONS, encodeDayDoc } from '@/store-v2';
 import { play, hapticTap } from '@/components/soundEngine';
-import { playXP, playLevelUp } from '@/sounds';
+import { playLevelUp } from '@/sounds';
 
-// ────────────────────────────────────────
-// MAIN APP STORE — replaces App.jsx state
-// ────────────────────────────────────────
+// Fields stored on the main users/{uid} document.
+const PROFILE_FIELDS = [
+  'profile', 'habits', 'tasks', 'totalXP', 'streak', 'lastCheck', 'pillarProg',
+  'routineData', 'masteryData', 'bodyData', 'challengeData', 'programData',
+  'freezeData', 'programState', 'loginData', 'activeTitle', 'questChainData',
+];
+
+// Caps that keep single documents well under Firestore's 1 MB limit.
+const MAX_CHATS = 30;
+const MAX_MESSAGES_PER_CHAT = 60;
+const MAX_ACTIVITY = 200;
+const MAX_TRACKER_PHOTO_CHARS = 900_000;
+
+// Body-tracker photos (base64) live in their own document so they can never push
+// the main user document past 1 MB. Keep the newest photos that fit.
+function capTrackerPhotos(photos) {
+  const list = toArr(photos).filter(Boolean);
+  const kept = [];
+  let size = 0;
+  for (let i = list.length - 1; i >= 0; i--) {
+    size += JSON.stringify(list[i]).length;
+    if (size > MAX_TRACKER_PHOTO_CHARS) break;
+    kept.unshift(list[i]);
+  }
+  return kept;
+}
+
+const EMPTY_DATA = {
+  profile: {}, workoutLog: {}, foodLog: {}, journal: {}, habits: DEFAULT_HABITS,
+  habitLog: {}, tasks: [], finances: [], chatHistory: [], focusLog: {}, pillarProg: {},
+  activityLog: [], routineData: null, masteryData: null, bodyData: null,
+  challengeData: null, programData: null, freezeData: null, programState: {},
+  xpLog: {}, loginData: {}, questChainData: {}, bodyPhotos: {},
+  totalXP: 0, streak: 0, lastCheck: '', activeTitle: null,
+};
+
+// Every document the app would write for the current state: path key → { path, data }.
+function buildDocs(s) {
+  const docs = new Map();
+  const main = { email: s.user?.email || null };
+  PROFILE_FIELDS.forEach(f => { main[f] = s[f] ?? null; });
+  if (main.bodyData && typeof main.bodyData === 'object') {
+    const { photos, ...rest } = main.bodyData;
+    main.bodyData = rest;
+    docs.set('bodyData/photos', { path: ['bodyData', 'photos'], data: { photos: capTrackerPhotos(photos) } });
+  }
+  docs.set('main', { path: null, data: main });
+
+  for (const { field, subcol } of DAY_COLLECTIONS) {
+    for (const [date, value] of Object.entries(s[field] || {})) {
+      if (value === null || value === undefined) continue;
+      docs.set(`${subcol}/${date}`, { path: [subcol, date], data: encodeDayDoc(value) });
+    }
+  }
+
+  const chats = toArr(s.chatHistory).slice(0, MAX_CHATS).map(c =>
+    c && Array.isArray(c.messages) ? { ...c, messages: c.messages.slice(-MAX_MESSAGES_PER_CHAT) } : c
+  );
+  docs.set('chatHistory/current', { path: ['chatHistory', 'current'], data: { messages: chats } });
+  docs.set('finances/ledger', { path: ['finances', 'ledger'], data: { entries: toArr(s.finances) } });
+  docs.set('activityLog/recent', { path: ['activityLog', 'recent'], data: { entries: toArr(s.activityLog).slice(0, MAX_ACTIVITY) } });
+  return docs;
+}
+
+const isDayDocKey = (key) => DAY_COLLECTIONS.some(c => key.startsWith(`${c.subcol}/`));
+
+// Consecutive days with a workout (or a streak freeze) ending today — or ending
+// yesterday when today isn't done yet, so the streak isn't "lost" mid-day.
+export function computeStreak(workoutLog, freezeData) {
+  const frozen = new Set(toArr(freezeData?.freezesUsed));
+  const active = (k) => hasDayWorkout(workoutLog, k) || frozen.has(k);
+  let k = today();
+  if (!active(k)) k = addDays(-1);
+  let streak = 0;
+  for (let i = 0; i < 3650 && active(k); i++) {
+    streak++;
+    k = addDays(-1, k);
+  }
+  return streak;
+}
+
+// Save bookkeeping (module-level: one signed-in user per tab).
+let lastSaved = new Map();   // doc key → JSON of what Firestore has
+let saving = null;           // in-flight save promise
+let saveQueued = false;
 
 const useAppStore = create((set, get) => ({
   // ── Auth & UI ──
   user: null,
   loading: true,
+  dataReady: false,      // true once the user's data loaded successfully
+  loadError: null,       // message when loading failed (saving stays disabled)
+  syncStatus: 'idle',    // idle | saving | saved | error | offline
   page: 'dashboard',
-  isMobile: false,
-  sideOpen: false,
-  moreOpen: false,
-  showExitModal: false,
   showTutorial: false,
 
-  // ── User Data ──
-  profile: {},
-  workoutLog: {},
-  foodLog: {},
-  journal: {},
-  habits: DEFAULT_HABITS,
-  habitLog: {},
-  tasks: [],
-  finances: [],
-  chatHistory: [],
-  focusLog: {},
-  pillarProg: {},
-  activityLog: [],
-  routineData: null,
-  masteryData: null,
-  bodyData: null,
-  challengeData: null,
-  programData: null,
-  freezeData: null,
-  programState: {},
-  xpLog: {},
-  loginData: {},
-  questChainData: {},
-  bodyPhotos: {},
+  ...EMPTY_DATA,
 
-  // ── XP & Gamification ──
-  totalXP: 0,
-  streak: 0,
-  lastCheck: '',
+  // ── XP & Gamification (transient) ──
   xpEvents: [],
   confetti: 0,
   levelUp: null,
-  levelUpShow: null,
   milestone: null,
-  activeTitle: null,
-  shareCard: null,
 
-  // ── Setters (simple) ──
+  // ── Setters ──
   setUser: (user) => set({ user }),
   setLoading: (loading) => set({ loading }),
   setPage: (page) => {
+    if (!page || page === get().page) return;
     play("navTap");
     set({ page });
-    // Sync URL hash
-    if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', `#${page}`);
+    // Push a history entry so the browser/phone Back button returns to the previous page.
+    if (typeof window !== 'undefined' && window.location.hash !== `#${page}`) {
+      window.history.pushState({ page }, '', `#${page}`);
     }
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
   },
-  setPageSilent: (page) => set({ page }), // no sound, no URL change
-  setIsMobile: (isMobile) => set({ isMobile }),
-  setSideOpen: (sideOpen) => set({ sideOpen }),
-  setMoreOpen: (moreOpen) => set({ moreOpen }),
-  setShowExitModal: (showExitModal) => set({ showExitModal }),
+  setPageSilent: (page) => set({ page }),
   setShowTutorial: (showTutorial) => set({ showTutorial }),
 
   setProfile: (v) => set(s => ({ profile: typeof v === 'function' ? v(s.profile) : v })),
@@ -104,185 +154,237 @@ const useAppStore = create((set, get) => ({
   setActiveTitle: (activeTitle) => set({ activeTitle }),
   setTotalXP: (v) => set(s => ({ totalXP: typeof v === 'function' ? v(s.totalXP) : v })),
   setStreak: (streak) => set({ streak }),
-  setLastCheck: (lastCheck) => set({ lastCheck }),
   setXpEvents: (v) => set(s => ({ xpEvents: typeof v === 'function' ? v(s.xpEvents) : v })),
-  setConfetti: (v) => set(s => ({ confetti: typeof v === 'function' ? v(s.confetti) : v })),
   setLevelUp: (levelUp) => set({ levelUp }),
-  setLevelUpShow: (levelUpShow) => set({ levelUpShow }),
   setMilestone: (milestone) => set({ milestone }),
-  setShareCard: (shareCard) => set({ shareCard }),
+
+  // Short-lived toast in the XP feed (also used for info like penalties).
+  pushXpEvent: (amount, reason, ms = 1800) => {
+    const id = Date.now() + Math.random();
+    set(s => ({ xpEvents: [...s.xpEvents, { id, amount, reason }] }));
+    setTimeout(() => set(s => ({ xpEvents: s.xpEvents.filter(e => e.id !== id) })), ms);
+  },
 
   // ── Activity logger ──
   logActivity: (type, detail) => {
     const entry = { id: Date.now(), type, detail, date: today(), time: new Date().toLocaleTimeString(), timestamp: Date.now() };
-    set(s => ({ activityLog: [entry, ...s.activityLog].slice(0, 200) }));
+    set(s => ({ activityLog: [entry, ...toArr(s.activityLog)].slice(0, MAX_ACTIVITY) }));
   },
 
   // ── Add XP (with streak multiplier, confetti, level-up) ──
-  addXP: (amount, reason) => {
-    const { streak, logActivity: log } = get();
+  addXP: (amount, reason = "") => {
+    const { streak, logActivity, pushXpEvent } = get();
     const mult = getStreakMult(streak);
-    const actual = Math.floor(amount * mult);
+    const actual = Math.floor((Number(amount) || 0) * mult);
+    if (actual <= 0) return;
 
-    set(s => ({ confetti: s.confetti + 1 }));
+    const prevXP = get().totalXP || 0;
+    const nextXP = prevXP + actual;
+    const oldLv = getLevel(prevXP);
+    const newLv = getLevel(nextXP);
+    set(s => ({ totalXP: nextXP, confetti: s.confetti + 1 }));
 
-    set(s => {
-      const oldLv = getLevel(s.totalXP);
-      const nxp = s.totalXP + actual;
-      const nLv = getLevel(nxp);
+    if (newLv > oldLv) {
+      setTimeout(() => {
+        const info = { level: newLv, rank: getRank(newLv) };
+        set({ levelUp: info });
+        playLevelUp();
+      }, 300);
+    }
+    try {
+      const ms = checkMilestone(prevXP, nextXP);
+      if (ms) setTimeout(() => set({ milestone: ms }), 800);
+    } catch { /* milestone data is optional */ }
 
-      if (nLv > oldLv) {
-        setTimeout(() => {
-          set({ levelUp: { level: nLv, rank: getRank(nLv) }, levelUpShow: { level: nLv, rank: getRank(nLv) } });
-          playLevelUp();
-        }, 300);
-      }
-
-      // Check milestones
-      try {
-        const ms = checkMilestone(s.totalXP, nxp);
-        if (ms) setTimeout(() => set({ milestone: ms }), 800);
-      } catch { }
-
-      return { totalXP: nxp };
-    });
-
-    const id = Date.now() + Math.random();
-    set(s => ({ xpEvents: [...s.xpEvents, { id, amount: actual, reason: reason + (mult > 1 ? ` (×${mult})` : "") }] }));
-    setTimeout(() => set(s => ({ xpEvents: s.xpEvents.filter(e => e.id !== id) })), 1600);
-
-    log("xp", `+${actual} XP: ${reason}`);
+    pushXpEvent(actual, reason + (mult > 1 ? ` (×${mult})` : ""), 1600);
+    logActivity("xp", `+${actual} XP: ${reason}`);
     play('xpGain');
     hapticTap();
 
-    if ((reason || "").includes("Workout")) {
-      setTimeout(() => set({ shareCard: { type: "workout", data: { splitName: reason, calBurned: amount * 2, exercises: [], duration: 1800 } } }), 1500);
-    }
-    playXP();
+    // Log XP source for the daily breakdown
+    const r = reason || "";
+    const cat = /Workout|Training/.test(r) ? "Training"
+      : /Food|Nutrition/.test(r) ? "Nutrition"
+        : /Quest|Habit/.test(r) ? "Quest"
+          : /Focus/.test(r) ? "Focus"
+            : /Journal|Mood/.test(r) ? "Wellness"
+              : /Login/.test(r) ? "Login"
+                : /Combo/.test(r) ? "Combo"
+                  : /Challenge/.test(r) ? "Challenge" : "Other";
+    const d = today();
+    set(s => ({ xpLog: { ...(s.xpLog || {}), [d]: [...toArr((s.xpLog || {})[d]), { amount: actual, category: cat, reason: r, time: Date.now() }] } }));
+  },
 
-    // Log XP source for breakdown
-    try {
-      const xpDate = today();
-      const xpCat = (reason || "").includes("Workout") || (reason || "").includes("Training") ? "Training" : (reason || "").includes("Food") || (reason || "").includes("Nutrition") ? "Nutrition" : (reason || "").includes("Quest") || (reason || "").includes("Habit") ? "Quest" : (reason || "").includes("Focus") ? "Focus" : (reason || "").includes("Journal") || (reason || "").includes("Mood") ? "Wellness" : (reason || "").includes("Login") ? "Login" : (reason || "").includes("Combo") ? "Combo" : (reason || "").includes("Challenge") ? "Challenge" : "Other";
-      set(s => ({ xpLog: { ...(s.xpLog || {}), [xpDate]: [...((s.xpLog || {})[xpDate] || []), { amount: actual, category: xpCat, reason: reason || "", time: Date.now() }] } }));
-    } catch (e) { console.error("XP log error:", e); }
+  // ── Daily check: missed-day penalty + streak (runs once per day, only after data loaded) ──
+  runDailyCheck: () => {
+    const s = get();
+    if (!s.dataReady) return;
+    const d = today();
+    const updates = { streak: computeStreak(s.workoutLog, s.freezeData) };
+    if (s.lastCheck !== d) {
+      if (s.lastCheck && /^\d{4}-\d{2}-\d{2}$/.test(s.lastCheck) && parseDateKey(s.lastCheck) < parseDateKey(d)) {
+        const frozen = new Set(toArr(s.freezeData?.freezesUsed));
+        let missed = 0;
+        // Days strictly between the last check and today (capped at a year).
+        for (let k = addDays(1, s.lastCheck), i = 0; k < d && i < 365; k = addDays(1, k), i++) {
+          if (!hasDayWorkout(s.workoutLog, k) && !frozen.has(k)) missed++;
+        }
+        const penalty = missed * DAILY_PENALTY;
+        if (penalty > 0) {
+          updates.totalXP = Math.max(0, (s.totalXP || 0) - penalty);
+          setTimeout(() => get().pushXpEvent(-penalty, `${missed} day${missed > 1 ? "s" : ""} missed`, 3000), 600);
+        }
+      }
+      updates.lastCheck = d;
+    }
+    set(updates);
   },
 
   // ── Load user data from Firestore ──
   loadUserData: async (uid) => {
+    set({ dataReady: false, loadError: null });
     try {
-      const d = await storeV2.getUserProfile(uid);
-      if (!d) { set({ showTutorial: true }); return; }
+      let d = await storeV2.getUserProfile(uid);
 
-      // Set profile & scalar fields
-      set({
-        profile: d.profile || {},
-        habits: d.habits || DEFAULT_HABITS,
-        tasks: d.tasks || [],
-        pillarProg: d.pillarProg || {},
-        routineData: d.routineData || null,
-        masteryData: d.masteryData || null,
-        bodyData: d.bodyData || null,
-        challengeData: d.challengeData || null,
-        programData: d.programData || null,
-        freezeData: d.freezeData || null,
-        programState: d.programState || {},
-        loginData: d.loginData || {},
-        activeTitle: d.activeTitle || null,
-        questChainData: d.questChainData || {},
-        totalXP: d.totalXP !== undefined ? d.totalXP : 0,
-        streak: d.streak !== undefined ? d.streak : 0,
-        lastCheck: d.lastCheck || '',
-        showTutorial: !d.tutorialDone,
-      });
-
-      // Run migration if needed
-      if (!d._migrated) {
-        console.log('[IGNITE] Running one-time data migration...');
-        await storeV2.migrateUserData(uid);
-        console.log('[IGNITE] Migration complete');
+      if (d && !d._migrated) {
+        await storeV2.migrateUserData(uid, d);
+        d = { ...d, _migrated: true };
       }
 
-      // Load subcollections in parallel
-      const [workouts, food, journals, xp, focus, habits_log, chats, finances_data, activity, photos] = await Promise.all([
-        storeV2.getWorkouts(uid),
-        storeV2.getFoodLog(uid),
-        storeV2.getJournal(uid),
-        storeV2.getXpLog(uid),
-        storeV2.getFocusLog(uid),
-        storeV2.getHabitLog(uid),
-        storeV2.getChatHistory(uid),
-        storeV2.getFinances(uid),
-        storeV2.getActivityLog(uid),
-        storeV2.getBodyPhotos(uid),
-      ]);
+      const [dayLogs, chats, finances, activity, photos, trackerPhotos] = d
+        ? await Promise.all([
+          storeV2.getDayLogs(uid),
+          storeV2.getChatHistory(uid),
+          storeV2.getFinances(uid),
+          storeV2.getActivityLog(uid),
+          storeV2.getBodyPhotos(uid).catch(() => ({})), // photos are optional
+          storeV2.getTrackerPhotos(uid),
+        ])
+        : [{}, [], [], [], {}, null];
 
-      // Normalize day-keyed logs — Firestore can store arrays as objects
+      const main = d || {};
+      const pick = (field) => {
+        const fromSub = dayLogs[field] || {};
+        // Fall back to the legacy main-document copy only if the subcollection is empty.
+        return Object.keys(fromSub).length > 0 ? fromSub : (main[field] || {});
+      };
+
       set({
-        workoutLog: Object.keys(workouts).length > 0 ? workouts : (d.workoutLog || {}),
-        foodLog: normalizeDayLog(Object.keys(food).length > 0 ? food : (d.foodLog || {})),
-        journal: Object.keys(journals).length > 0 ? journals : (d.journal || {}),
-        xpLog: normalizeDayLog(Object.keys(xp).length > 0 ? xp : (d.xpLog || {})),
-        focusLog: normalizeDayLog(Object.keys(focus).length > 0 ? focus : (d.focusLog || {})),
-        habitLog: normalizeDayLog(Object.keys(habits_log).length > 0 ? habits_log : (d.habitLog || {})),
-        chatHistory: Array.isArray(chats) ? chats : Object.values(chats || {}),
-        finances: Array.isArray(finances_data) ? finances_data : Object.values(finances_data || {}),
-        activityLog: Array.isArray(activity) ? activity : Object.values(activity || {}),
-        bodyPhotos: Object.keys(photos).length > 0 ? photos : (d.bodyPhotos || {}),
+        profile: main.profile || {},
+        habits: toArr(main.habits).length ? toArr(main.habits) : DEFAULT_HABITS,
+        tasks: toArr(main.tasks),
+        pillarProg: main.pillarProg || {},
+        routineData: main.routineData || null,
+        masteryData: main.masteryData || null,
+        bodyData: main.bodyData
+          ? { ...main.bodyData, photos: trackerPhotos ?? toArr(main.bodyData.photos) }
+          : (trackerPhotos?.length ? { photos: trackerPhotos } : null),
+        challengeData: main.challengeData || null,
+        programData: main.programData || null,
+        freezeData: main.freezeData || null,
+        programState: main.programState || {},
+        loginData: main.loginData || {},
+        activeTitle: main.activeTitle || null,
+        questChainData: main.questChainData || {},
+        totalXP: Number(main.totalXP) || 0,
+        streak: Number(main.streak) || 0,
+        lastCheck: main.lastCheck || '',
+        showTutorial: !main.tutorialDone,
+
+        workoutLog: pick('workoutLog'),
+        foodLog: normalizeDayLog(pick('foodLog')),
+        journal: pick('journal'),
+        xpLog: normalizeDayLog(pick('xpLog')),
+        focusLog: normalizeDayLog(pick('focusLog')),
+        habitLog: normalizeDayLog(pick('habitLog')),
+        chatHistory: toArr(chats),
+        finances: toArr(finances),
+        activityLog: toArr(activity),
+        bodyPhotos: photos || {},
       });
-    } catch (e) { console.error("Load error:", e); set({ showTutorial: true }); }
+
+      // Snapshot what Firestore already has so the first save only writes real changes.
+      lastSaved = new Map();
+      if (d) {
+        for (const [key, { data }] of buildDocs(get())) lastSaved.set(key, JSON.stringify(data));
+        // Legacy tracker photos still inside the main doc → move them on the first save.
+        if (trackerPhotos === null && toArr(main.bodyData?.photos).length > 0) {
+          lastSaved.delete('bodyData/photos');
+          lastSaved.delete('main');
+        }
+      }
+      set({ dataReady: true, syncStatus: 'idle' });
+      get().runDailyCheck();
+    } catch (e) {
+      console.error("Load error:", e);
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      set({
+        loadError: offline
+          ? "You're offline. Connect to the internet to load your data."
+          : "We couldn't load your data. Your progress is safe — please try again.",
+      });
+    }
   },
 
-  // ── Save all data to Firestore ──
+  // ── Save: write only documents that changed since the last successful save ──
   saveData: async () => {
+    if (saving) { saveQueued = true; return saving; }
     const s = get();
-    if (!s.user) return;
+    if (!s.user || !s.dataReady) return;
     const uid = s.user.uid;
 
-    try {
-      // Save scalar/profile to main doc
-      await storeV2.saveUserProfile(uid, {
-        profile: s.profile, habits: s.habits, tasks: s.tasks, totalXP: s.totalXP,
-        streak: s.streak, lastCheck: s.lastCheck, pillarProg: s.pillarProg,
-        routineData: s.routineData, masteryData: s.masteryData, bodyData: s.bodyData,
-        challengeData: s.challengeData, programData: s.programData, freezeData: s.freezeData,
-        programState: s.programState, loginData: s.loginData, activeTitle: s.activeTitle,
-        questChainData: s.questChainData, email: s.user.email,
-        lastSaved: new Date().toISOString(),
-      });
+    const docs = buildDocs(s);
+    const writes = [];
+    const deletes = [];
+    let mainChanged = null;
+    for (const [key, { path, data }] of docs) {
+      const json = JSON.stringify(data);
+      if (lastSaved.get(key) === json) continue;
+      if (key === 'main') mainChanged = { data, json };
+      else writes.push({ key, path, data, json });
+    }
+    for (const key of lastSaved.keys()) {
+      if (isDayDocKey(key) && !docs.has(key)) deletes.push(key);
+    }
+    if (!mainChanged && writes.length === 0 && deletes.length === 0) return;
 
-      // Save subcollections in parallel
-      const ops = [];
-      if (s.workoutLog) for (const [date, data] of Object.entries(s.workoutLog)) { if (data) ops.push(storeV2.saveWorkout(uid, date, data)); }
-      if (s.foodLog) for (const [date, data] of Object.entries(s.foodLog)) { if (data) ops.push(storeV2.saveFoodEntry(uid, date, typeof data === 'object' && !Array.isArray(data) ? data : { entries: data })); }
-      if (s.journal) for (const [date, data] of Object.entries(s.journal)) { if (data) ops.push(storeV2.saveJournalEntry(uid, date, typeof data === 'object' ? data : { entry: data })); }
-      if (s.xpLog) for (const [date, data] of Object.entries(s.xpLog)) { if (data) ops.push(storeV2.saveXpEntry(uid, date, Array.isArray(data) ? { events: data } : data)); }
-      if (s.focusLog) for (const [date, data] of Object.entries(s.focusLog)) { if (data) ops.push(storeV2.saveFocusEntry(uid, date, Array.isArray(data) ? { sessions: data } : data)); }
-      if (s.habitLog) for (const [date, data] of Object.entries(s.habitLog)) { if (data) ops.push(storeV2.saveHabitEntry(uid, date, typeof data === 'object' ? data : { data })); }
-      if (s.chatHistory?.length > 0) ops.push(storeV2.saveChatHistory(uid, s.chatHistory));
-      if (s.finances?.length > 0) ops.push(storeV2.saveFinances(uid, s.finances));
-      if (s.activityLog?.length > 0) ops.push(storeV2.saveActivityLog(uid, s.activityLog));
-      await Promise.all(ops);
-    } catch (e) { console.error("Save error:", e); }
+    set({ syncStatus: 'saving' });
+    saving = (async () => {
+      try {
+        // Sub-documents first, so data moved out of the main doc is stored before it's removed there.
+        await storeV2.commit(uid, writes, deletes.map(k => k.split('/')));
+        writes.forEach(w => lastSaved.set(w.key, w.json));
+        deletes.forEach(k => lastSaved.delete(k));
+        if (mainChanged) {
+          await storeV2.saveUserProfile(uid, mainChanged.data);
+          lastSaved.set('main', mainChanged.json);
+        }
+        set({ syncStatus: 'saved' });
+      } catch (e) {
+        console.error("Save error:", e);
+        const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+        set({ syncStatus: offline ? 'offline' : 'error' });
+      } finally {
+        saving = null;
+        if (saveQueued) { saveQueued = false; setTimeout(() => get().saveData(), 500); }
+      }
+    })();
+    return saving;
   },
 
   // ── Logout ──
   logout: async () => {
-    const { saveData: save } = get();
-    try { await save(); } catch { }
+    try { await get().saveData(); } catch { /* best effort */ }
     const { signOut } = await import('firebase/auth');
     const { auth } = await import('@/lib/firebase');
-    try { await signOut(auth); } catch { }
-    set({
-      user: null, foodLog: {}, habits: DEFAULT_HABITS, habitLog: {},
-      tasks: [], journal: {}, finances: [], profile: {},
-      chatHistory: [], totalXP: 0, workoutLog: {}, streak: 0,
-      pillarProg: {}, activityLog: [], focusLog: {}, routineData: null,
-      masteryData: null, bodyData: null, xpLog: {}, loginData: {},
-      activeTitle: null, questChainData: {}, challengeData: null,
-      programData: null, freezeData: null, bodyPhotos: {},
-      page: 'dashboard',
-    });
+    try { await signOut(auth); } catch { /* ignore */ }
+    lastSaved = new Map();
+    // Clear per-user caches so the next account on this device starts clean.
+    try {
+      ['ignite-prs', 'ignite-challenge-progress', 'ignite-scan-history', 'ignite-week-muscles', 'ignite-oracle-chats', 'ignite-oracle-active']
+        .forEach(k => localStorage.removeItem(k));
+    } catch { /* ignore */ }
+    set({ ...EMPTY_DATA, user: null, dataReady: false, loadError: null, syncStatus: 'idle', page: 'dashboard', xpEvents: [] });
   },
 
   // ── Computed: appState (for components that need the bundle) ──
@@ -304,3 +406,8 @@ const useAppStore = create((set, get) => ({
 }));
 
 export default useAppStore;
+
+// Dev-only handle for debugging in the browser console (never in production builds).
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  window.__igniteStore = useAppStore;
+}

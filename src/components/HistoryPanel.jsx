@@ -3,17 +3,18 @@
 // IGNITE — PhonePe-Style History Panel
 // Reusable date-grouped, expandable history view
 // ═══════════════════════════════════════
-"use client";
 import { useState } from 'react';
+import { today as todayKey, addDays, parseDateKey } from '@/utils';
 
 // Format date into human labels
 function formatDateLabel(dateStr) {
-    const d = new Date(dateStr + 'T00:00:00');
+    if (typeof dateStr !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr === "unknown" ? "Undated" : String(dateStr || "Undated");
+    const d = parseDateKey(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
     const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yStr = yesterday.toISOString().split("T")[0];
+    // Day keys are LOCAL dates (see today()/dateKey in utils)
+    const today = todayKey();
+    const yStr = addDays(-1, today);
 
     if (dateStr === today) return "Today";
     if (dateStr === yStr) return "Yesterday";
@@ -47,9 +48,10 @@ function formatDateLabel(dateStr) {
   emptyText: "No history yet"
 */
 
-export default function HistoryPanel({ entries = [], title = "History", emptyText = "No history yet. Start today!" }) {
+export default function HistoryPanel({ entries: rawEntries = [], title = "History", emptyText = "No history yet. Start today!" }) {
     const [expandedId, setExpandedId] = useState(null);
     const [limit, setLimit] = useState(20);
+    const entries = Array.isArray(rawEntries) ? rawEntries.filter(e => e && typeof e === "object") : [];
 
     if (entries.length === 0) {
         return (
@@ -147,11 +149,11 @@ export default function HistoryPanel({ entries = [], title = "History", emptyTex
                                 {isExpanded && (
                                     <div className="fade-in" style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.04)" }}>
                                         {/* Detail rows */}
-                                        {entry.details && entry.details.length > 0 && (
-                                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: entry.items ? 10 : 0 }}>
+                                        {Array.isArray(entry.details) && entry.details.length > 0 && (
+                                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: entry.items?.length ? 10 : 0 }}>
                                                 {entry.details.map((d, i) => (
                                                     <div key={i} style={{ padding: "6px 0" }}>
-                                                        <div style={{ fontSize: 10, color: "#6b7280" }}>{d.label}</div>
+                                                        <div style={{ fontSize: 11, color: "#6b7280" }}>{d.label}</div>
                                                         <div style={{ fontSize: 13, fontWeight: 600, color: d.color || "#e5e7eb" }}>{d.value}</div>
                                                     </div>
                                                 ))}
@@ -159,9 +161,9 @@ export default function HistoryPanel({ entries = [], title = "History", emptyTex
                                         )}
 
                                         {/* Sub-items */}
-                                        {entry.items && entry.items.length > 0 && (
+                                        {Array.isArray(entry.items) && entry.items.length > 0 && (
                                             <div>
-                                                <div style={{ fontSize: 10, color: "#6b7280", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1.5, marginBottom: 6 }}>DETAILS</div>
+                                                <div style={{ fontSize: 11, color: "#6b7280", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1.5, marginBottom: 6 }}>DETAILS</div>
                                                 {entry.items.map((item, i) => (
                                                     <div key={i} style={{
                                                         display: "flex", alignItems: "center", gap: 8,
@@ -170,7 +172,7 @@ export default function HistoryPanel({ entries = [], title = "History", emptyTex
                                                         <span style={{ fontSize: 14, width: 20, textAlign: "center" }}>{item.icon || "·"}</span>
                                                         <div style={{ flex: 1 }}>
                                                             <div style={{ fontSize: 12, color: "#d1d5db" }}>{item.text}</div>
-                                                            {item.sub && <div style={{ fontSize: 10, color: "#4b5563" }}>{item.sub}</div>}
+                                                            {item.sub && <div style={{ fontSize: 11, color: "#4b5563" }}>{item.sub}</div>}
                                                         </div>
                                                         {item.value && <span style={{ fontSize: 11, color: item.valueColor || "#6b7280", fontWeight: 600 }}>{item.value}</span>}
                                                     </div>

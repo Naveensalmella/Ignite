@@ -1,11 +1,14 @@
-import { WorkoutEntry, WorkoutLog, TrainingType } from './types';
+import { WorkoutEntry, WorkoutLog, TrainingType, GymDetail } from './types';
 
-export function normalizeDayEntries(raw: any): WorkoutEntry[] {
-    if (!raw) return [];
-    if (Array.isArray(raw)) return raw;
+type LegacyDay = Partial<WorkoutEntry> & Partial<Pick<GymDetail, 'exercises' | 'totalSets' | 'totalReps' | 'maxWeight' | 'musclesWorked'>>;
+
+export function normalizeDayEntries(input: unknown): WorkoutEntry[] {
+    if (!input || typeof input !== 'object') return [];
+    if (Array.isArray(input)) return input.filter(e => e && typeof e === 'object') as WorkoutEntry[];
+    const raw = input as LegacyDay;
     return [{
         id: `${raw.date || 'legacy'}_gym_legacy`,
-        date: raw.date,
+        date: raw.date || '',
         trainingType: 'gym',
         splitName: raw.splitName || 'Training',
         duration: raw.duration || 0,

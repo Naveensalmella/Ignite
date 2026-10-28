@@ -1,20 +1,17 @@
 "use client";
-import { useEffect, useRef, lazy, Suspense } from 'react';
+import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 
-import { DEFAULT_HABITS, navItems, DAILY_PENALTY } from '@/data/index';
-import { getLevel, getRank, today, toArr } from '@/utils';
+import { today } from '@/utils';
+import useAppStore, { computeStreak } from '@/stores/useAppStore';
+import { auth, isFirebaseConfigured } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import store from '@/store';
-import storeV2 from '@/store-v2';
-import useAppStore from '@/stores/useAppStore';
-import { auth } from '@/lib/firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { isDayFrozen } from './StreakFreeze';
-import { registerSW, startNotifScheduler } from '@/notifications';
+import { registerSW, startNotifScheduler, stopNotifScheduler } from '@/notifications';
 import { applyAccent } from './AccentPicker';
-import { play } from './soundEngine';
 
 // ── Lazy-loaded page components (code splitting) ──
 const AuthPage = lazy(() => import('./AuthPage'));
+const IntroPage = lazy(() => import('./IntroPage'));
 const Dashboard = lazy(() => import('./Dashboard'));
 const TrainingPage = lazy(() => import('./TrainingPage'));
 const Nutrition = lazy(() => import('./Nutrition'));
@@ -41,231 +38,235 @@ const ShareCard = lazy(() => import('./ShareCard'));
 import XPToast from './XPToast';
 import LevelUpOverlay from './LevelUpOverlay';
 import HeaderXPBar from './HeaderXPBar';
-import { ConfettiBlast, LevelUpCelebration } from './Confetti';
-import PullToRefresh from './PullToRefresh';
+import { ConfettiBlast } from './Confetti';
 import { MilestoneOverlay } from './GamingHub';
-import BottomNav from './BottomNav';
+import BottomNav, { SideNav, PAGE_KEYS, pageTitle } from './BottomNav';
 import PageTransition from './PageTransition';
 import ErrorBoundary from './ErrorBoundary';
+import SplashScreen from './SplashScreen';
 import { SkeletonPage } from './Loading';
 import { DashboardSkeleton, TrainingSkeleton, NutritionSkeleton } from './ui/Skeleton';
 
-// Global error handler
-if (typeof window !== 'undefined') {
-    const ro = window.onerror;
-    window.onerror = (msg, ...args) => {
-        if (typeof msg === 'string' && msg.includes('ResizeObserver')) return true;
-        return ro ? ro(msg, ...args) : false;
+// Store fields that are persisted — any change schedules an auto-save.
+const PERSISTED = [
+    'profile', 'habits', 'tasks', 'totalXP', 'streak', 'lastCheck', 'pillarProg', 'routineData',
+    'masteryData', 'bodyData', 'challengeData', 'programData', 'freezeData', 'programState',
+    'loginData', 'activeTitle', 'questChainData', 'workoutLog', 'foodLog', 'journal', 'xpLog',
+    'focusLog', 'habitLog', 'chatHistory', 'finances', 'activityLog',
+];
+const SAVE_DELAY = 1500;
+
+const hashPage = () => {
+    if (typeof window === 'undefined') return null;
+    const h = window.location.hash.replace('#', '');
+    return PAGE_KEYS.has(h) ? h : null;
+};
+
+function FullScreenMessage({ icon, title, children }) {
+    return (
+        <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg)" }}>
+            <div className="gs max-w-[380px] w-full text-center p-7">
+                <div className="text-[44px] mb-3">{icon}</div>
+                <div className="text-xl font-extrabold font-heading tracking-wide mb-2" style={{ color: "var(--text-primary)" }}>{title}</div>
+                {children}
+            </div>
+        </div>
+    );
+}
+
+function SyncBadge({ status }) {
+    const map = {
+        saving: { color: "#f59e0b", label: "Saving…" },
+        saved: { color: "#22c55e", label: "Saved" },
+        error: { color: "#ef4444", label: "Not saved — retrying" },
+        offline: { color: "#f59e0b", label: "Offline — will sync" },
     };
-    window.onerror = (msg, src, line, col, err) => { console.error("Global error:", msg, err); return false; };
-    window.onunhandledrejection = (e) => { console.error("Unhandled promise:", e.reason); };
+    const s = map[status];
+    if (!s) return null;
+    return (
+        <span className="sync-badge" title={s.label} aria-live="polite">
+            <span className="sync-dot" style={{ background: s.color }} />
+            <span className="sync-label">{s.label}</span>
+        </span>
+    );
 }
 
-// ── Loading fallback for lazy components ──
-function PageLoader() {
-    return <SkeletonPage />;
-}
-
-export default function App({ externalUser = null }) {
-    // ── Pull state from Zustand store ──
+export default function App() {
     const {
-        user, setUser, loading, setLoading,
-        page, setPage, setPageSilent,
-        sideOpen, setSideOpen, moreOpen, setMoreOpen,
-        isMobile, setIsMobile,
-        showExitModal, setShowExitModal,
+        user, loading, dataReady, loadError, syncStatus, page, setPage, setPageSilent,
         showTutorial, setShowTutorial,
-
-        // Data
         profile, setProfile, workoutLog, setWorkoutLog, foodLog, setFoodLog,
         journal, setJournal, habits, setHabits, habitLog, setHabitLog,
-        tasks, setTasks, finances, setFinances, chatHistory, setChatHistory,
+        tasks, setTasks, finances, setFinances, setChatHistory,
         focusLog, setFocusLog, pillarProg, setPillarProg,
         activityLog, routineData, setRoutineData,
-        masteryData, setMasteryData, bodyData, setBodyData,
-        challengeData, setChallengeData, programData, setProgramData,
+        bodyData, setBodyData, challengeData, setChallengeData, programData, setProgramData,
         freezeData, setFreezeData, programState, setProgramState,
         xpLog, loginData, setLoginData, activeTitle, setActiveTitle,
         questChainData, setQuestChainData, bodyPhotos, setBodyPhotos,
-
-        // XP & Gamification
-        totalXP, setTotalXP, streak, setStreak, lastCheck, setLastCheck,
-        xpEvents, confetti, levelUp, setLevelUp, levelUpShow, setLevelUpShow,
-        milestone, setMilestone, shareCard,
-        addXP, getAppState,
-
-        // Actions
-        loadUserData, saveData, logout,
+        totalXP, streak, xpEvents, confetti, levelUp, setLevelUp,
+        milestone, setMilestone, addXP, getAppState, loadUserData, logout,
     } = useAppStore();
 
     const saveTimer = useRef(null);
+    const [showIntro, setShowIntro] = useState(() => {
+        try { return typeof window !== 'undefined' && !localStorage.getItem("ignite_visited"); } catch { return false; }
+    });
 
-    // Apply saved accent color + register service worker
+    // ── One-time browser setup ──
     useEffect(() => {
-        applyAccent(localStorage.getItem('ignite-accent') || 'emerald');
+        try { applyAccent(localStorage.getItem('ignite-accent') || 'emerald'); } catch { /* ignore */ }
         registerSW();
     }, []);
 
-    // ── URL hash sync: read hash on load ──
+    // ── Firebase auth: the single source of the signed-in user ──
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const hash = window.location.hash.replace('#', '');
-        if (hash && hash !== page) {
-            setPageSilent(hash);
-        }
-        const onHashChange = () => {
-            const h = window.location.hash.replace('#', '');
-            if (h) setPageSilent(h);
-        };
-        window.addEventListener('hashchange', onHashChange);
-        return () => window.removeEventListener('hashchange', onHashChange);
-    }, []);
-
-    // Start notification scheduler when user is logged in
-    useEffect(() => {
-        if (!user) return;
-        const d = today();
-        startNotifScheduler(() => ({
-            todayWorkout: !!workoutLog[d],
-            streak,
-        }));
-    }, [user, workoutLog, streak]);
-
-    // Responsive check
-    useEffect(() => {
-        const ck = () => setIsMobile(window.innerWidth < 768);
-        ck(); window.addEventListener("resize", ck);
-        return () => window.removeEventListener("resize", ck);
-    }, []);
-
-    // Firebase Auth listener
-    useEffect(() => {
-        const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                const u = {
-                    uid: firebaseUser.uid,
-                    email: firebaseUser.email,
-                    name: firebaseUser.displayName || firebaseUser.email.split('@')[0],
-                    username: firebaseUser.uid,
-                };
-                setUser(u);
-                try { await store.saveUserData(firebaseUser.uid, { email: firebaseUser.email }, true); } catch { }
-                await loadUserData(u.uid);
+        if (!isFirebaseConfigured) { useAppStore.getState().setLoading(false); return; }
+        const unsub = onAuthStateChanged(auth, async (fbUser) => {
+            const st = useAppStore.getState();
+            if (fbUser) {
+                st.setUser({
+                    uid: fbUser.uid,
+                    email: fbUser.email,
+                    name: fbUser.displayName || (fbUser.email || 'Warrior').split('@')[0],
+                    username: fbUser.uid,
+                });
+                st.setLoading(false);
+                await st.loadUserData(fbUser.uid);
             } else {
-                setUser(null);
+                st.setUser(null);
+                st.setLoading(false);
             }
-            setLoading(false);
         });
         return () => unsub();
     }, []);
 
-    // Debounced auto-save
+    // ── Navigation: URL hash ⇄ page, with real browser history ──
     useEffect(() => {
-        if (!user) return;
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => { saveData(); }, 2000);
-        return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-    }, [user, foodLog, habits, habitLog, tasks, journal, finances, profile,
-        chatHistory, totalXP, workoutLog, streak, lastCheck, pillarProg,
-        activityLog, focusLog, routineData, masteryData, bodyData,
-        challengeData, programData, freezeData, programState,
-        xpLog, loginData, activeTitle, questChainData]);
+        const initial = hashPage();
+        if (initial) setPageSilent(initial);
+        window.history.replaceState({ page: initial || useAppStore.getState().page }, '', window.location.href);
+        const onPop = () => setPageSilent(hashPage() || 'dashboard');
+        window.addEventListener('popstate', onPop);
+        return () => window.removeEventListener('popstate', onPop);
+    }, [setPageSilent]);
 
-    // Streak & penalty check
+    // ── Auto-save: debounce any change to persisted data ──
     useEffect(() => {
-        if (!user) return;
-        const d = today();
-        if (lastCheck === d) return;
-        if (lastCheck && lastCheck !== d) {
-            const ck = new Date(lastCheck); const td = new Date(d);
-            let missed = 0; const dt = new Date(ck); dt.setDate(dt.getDate() + 1);
-            while (dt < td) {
-                const ds = dt.toISOString().split("T")[0];
-                if (!workoutLog[ds]) missed++;
-                dt.setDate(dt.getDate() + 1);
-            }
-            if (missed > 0) {
-                const actualMissed = missed - toArr(freezeData?.freezesUsed).filter(fd => {
-                    const fDate = new Date(fd);
-                    return fDate > ck && fDate < td;
-                }).length;
-                const pen = Math.max(0, actualMissed) * DAILY_PENALTY;
-                if (pen <= 0) { setLastCheck(d); return; }
-                setTotalXP(p => Math.max(0, p - pen));
-                const id = Date.now();
-                useAppStore.getState().setXpEvents(p => [...p, { id, amount: -pen, reason: `${missed} day${missed > 1 ? "s" : ""} missed!` }]);
-                setTimeout(() => useAppStore.getState().setXpEvents(p => p.filter(e => e.id !== id)), 2500);
-            }
-        }
-        try {
-            let s = 0; const dt2 = new Date(); dt2.setDate(dt2.getDate() - 1);
-            for (let i = 0; i < 365; i++) {
-                const ds = dt2.toISOString().split("T")[0];
-                if ((workoutLog || {})[ds] || isDayFrozen(freezeData, ds)) { s++; dt2.setDate(dt2.getDate() - 1); } else break;
-            }
-            setStreak(s);
-        } catch (e) { console.error("Streak calc error:", e); }
-        setLastCheck(d);
-    }, [user, habitLog, lastCheck]);
-
-    // AI action handler
-    const handleAI = (a) => {
-        if (!a) return;
-        try {
-            const x = typeof a === "string" ? JSON.parse(a) : a;
-            if (x.type === "add_task") setTasks(p => [...p, { id: Date.now(), text: x.text, done: false, priority: x.priority || "medium", created: today() }]);
-            if (x.type === "add_habit") setHabits(p => [...p, { id: `h${Date.now()}`, name: x.name, icon: x.icon || "⭐", pillar: x.pillar || "power" }]);
-            if (x.type === "navigate") setPage(x.page);
-        } catch { }
-    };
-
-    // Exit confirmation + save-on-exit
-    useEffect(() => {
-        window.history.pushState({ ignite: true }, "");
-        const handlePopState = () => { setShowExitModal(true); window.history.pushState({ ignite: true }, ""); };
-        const handleBeforeUnload = (e) => {
-            if (useAppStore.getState().user && saveTimer.current) {
-                clearTimeout(saveTimer.current);
-                useAppStore.getState().saveData();
-            }
-            e.preventDefault(); e.returnValue = ""; return "";
+        const schedule = () => {
+            if (saveTimer.current) clearTimeout(saveTimer.current);
+            saveTimer.current = setTimeout(() => { saveTimer.current = null; useAppStore.getState().saveData(); }, SAVE_DELAY);
         };
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === "hidden" && useAppStore.getState().user) {
-                if (saveTimer.current) clearTimeout(saveTimer.current);
-                useAppStore.getState().saveData();
-            }
+        const flush = () => {
+            if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+            useAppStore.getState().saveData();
         };
-        window.addEventListener("popstate", handlePopState);
-        window.addEventListener("beforeunload", handleBeforeUnload);
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-        return () => { window.removeEventListener("popstate", handlePopState); window.removeEventListener("beforeunload", handleBeforeUnload); document.removeEventListener("visibilitychange", handleVisibilityChange); };
+        const unsub = useAppStore.subscribe((cur, prev) => {
+            if (!cur.user || !cur.dataReady) return;
+            if (PERSISTED.some(k => cur[k] !== prev[k])) schedule();
+        });
+        const onHidden = () => { if (document.visibilityState === 'hidden') flush(); };
+        const onVisible = () => { if (document.visibilityState === 'visible') useAppStore.getState().runDailyCheck(); };
+        const onOnline = () => flush();
+        document.addEventListener('visibilitychange', onHidden);
+        document.addEventListener('visibilitychange', onVisible);
+        window.addEventListener('pagehide', flush);
+        window.addEventListener('online', onOnline);
+        return () => {
+            unsub();
+            document.removeEventListener('visibilitychange', onHidden);
+            document.removeEventListener('visibilitychange', onVisible);
+            window.removeEventListener('pagehide', flush);
+            window.removeEventListener('online', onOnline);
+            if (saveTimer.current) clearTimeout(saveTimer.current);
+        };
     }, []);
 
-    // Loading screen
-    if (loading) return (
-        <div className="flex items-center justify-center h-screen bg-[#060a0c]">
-            <div className="text-center">
-                <div className="text-[44px] mb-3" style={{ animation: "float 2s ease-in-out infinite", filter: "drop-shadow(0 0 15px rgba(16,185,129,.5))" }}>🔥</div>
-                <div className="text-emerald-500 text-[22px] font-black tracking-[6px] font-heading">IGNITE</div>
-                <div className="text-gray-500 text-xs mt-2">Loading your data...</div>
-            </div>
-        </div>
-    );
+    // Retry a failed save after a short pause.
+    useEffect(() => {
+        if (syncStatus !== 'error') return;
+        const t = setTimeout(() => useAppStore.getState().saveData(), 10000);
+        return () => clearTimeout(t);
+    }, [syncStatus]);
 
-    if (!user) return <Suspense fallback={<PageLoader />}><AuthPage /></Suspense>;
+    // ── Keep the streak in sync with logged workouts / freezes ──
+    useEffect(() => {
+        if (!dataReady) return;
+        const next = computeStreak(workoutLog, freezeData);
+        if (next !== useAppStore.getState().streak) useAppStore.getState().setStreak(next);
+    }, [dataReady, workoutLog, freezeData]);
 
-    // Onboarding for new users
-    const handleOnboardingComplete = async (profileData) => {
-        setProfile(p => ({ ...p, ...profileData }));
-        await store.saveUserData(user.uid, { profile: { ...profile, ...profileData } });
-    };
+    // ── Publish the public profile once per session so friends can find this user ──
+    useEffect(() => {
+        if (!user || !dataReady) return;
+        const t = setTimeout(() => {
+            const st = useAppStore.getState();
+            import('./SocialPage')
+                .then(m => m.syncPublicProfile?.({ user: st.user, profile: st.profile, totalXP: st.totalXP, streak: st.streak, workoutLog: st.workoutLog }))
+                .catch(() => { /* social is optional */ });
+        }, 3000);
+        return () => clearTimeout(t);
+    }, [user, dataReady]);
 
-    if (!profile.onboardingComplete) {
-        return <Suspense fallback={<PageLoader />}><OnboardingPage onComplete={handleOnboardingComplete} /></Suspense>;
+    // ── Reminder notifications while signed in ──
+    useEffect(() => {
+        if (!user || !dataReady) return;
+        startNotifScheduler(() => {
+            const st = useAppStore.getState();
+            const d = today();
+            const day = st.workoutLog[d];
+            return { todayWorkout: Array.isArray(day) ? day.length > 0 : !!day, streak: st.streak };
+        });
+        return () => stopNotifScheduler();
+    }, [user, dataReady]);
+
+    // ════════════════ Gates ════════════════
+    if (!isFirebaseConfigured) {
+        return (
+            <FullScreenMessage icon="⚙️" title="Setup needed">
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                    Firebase isn&apos;t configured for this deployment. Add the <code>NEXT_PUBLIC_FIREBASE_*</code> environment variables (see README) and redeploy.
+                </p>
+            </FullScreenMessage>
+        );
     }
 
-    // Tutorial overlay
+    if (loading) return <SplashScreen />;
+
+    if (!user) {
+        if (showIntro) {
+            return (
+                <Suspense fallback={<SplashScreen />}>
+                    <IntroPage onGetStarted={() => { try { localStorage.setItem("ignite_visited", "true"); } catch { /* ignore */ } setShowIntro(false); }} />
+                </Suspense>
+            );
+        }
+        return <Suspense fallback={<SplashScreen />}><AuthPage /></Suspense>;
+    }
+
+    if (loadError) {
+        return (
+            <FullScreenMessage icon="📡" title="Couldn't load your data">
+                <p className="text-sm mb-5" style={{ color: "var(--text-secondary)" }}>{loadError}</p>
+                <div className="flex gap-[10px]">
+                    <button type="button" className="bp flex-1" onClick={() => loadUserData(user.uid)}>Try again</button>
+                    <button type="button" className="bg flex-1" onClick={logout}>Sign out</button>
+                </div>
+            </FullScreenMessage>
+        );
+    }
+
+    if (!dataReady) return <SplashScreen message="Loading your progress…" />;
+
+    // Onboarding for new users
+    if (!profile.onboardingComplete) {
+        const handleOnboardingComplete = (profileData) => {
+            setProfile(p => ({ ...p, ...profileData, onboardingComplete: true }));
+            useAppStore.getState().saveData();
+        };
+        return <Suspense fallback={<SplashScreen />}><OnboardingPage onComplete={handleOnboardingComplete} /></Suspense>;
+    }
+
     const handleTutorialComplete = async () => {
         setShowTutorial(false);
         await store.saveUserData(user.uid, { tutorialDone: true });
@@ -273,80 +274,66 @@ export default function App({ externalUser = null }) {
 
     const appState = getAppState();
 
-    const pages = {
-        dashboard: <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} foodLog={foodLog} focusLog={focusLog} habitLog={habitLog} freezeData={freezeData} setFreezeData={setFreezeData} addXP={addXP} xpLog={xpLog} loginData={loginData} setLoginData={setLoginData} />,
-        training: <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} masteryData={masteryData} setMasteryData={setMasteryData} programState={programState} setProgramState={setProgramState} />,
-        nutrition: <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} profile={profile} />,
-        dailyquest: <DailyQuestPage habits={habits} setHabits={setHabits} habitLog={habitLog} setHabitLog={setHabitLog} addXP={addXP} workoutLog={workoutLog} />,
-        missions: <MissionsPage tasks={tasks} setTasks={setTasks} addXP={addXP} />,
-        focus: <FocusTimer addXP={addXP} focusLog={focusLog} setFocusLog={setFocusLog} />,
-        wellness: <Wellness journal={journal} setJournal={setJournal} addXP={addXP} />,
-        finance: <FinancePage finances={finances} setFinances={setFinances} addXP={addXP} />,
-        routine: <RoutinePage profile={profile} routineData={routineData} setRoutineData={setRoutineData} />,
-        growth: <GrowthPage pillarProg={pillarProg} setPillarProg={setPillarProg} />,
-        oracle: <FlameOracle appState={appState} addXP={addXP} setFoodLog={setFoodLog} setWorkoutLog={setWorkoutLog} setPage={setPage} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} routineData={routineData} setRoutineData={setRoutineData} />,
-        profile: <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} appState={appState} freezeData={freezeData} setPage={setPage} />,
-        body: <BodyTracker bodyData={bodyData} setBodyData={setBodyData} />,
-        challenges: <ChallengesPage challengeData={challengeData} setChallengeData={setChallengeData} addXP={addXP} />,
-        share: <ShareCard totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} />,
-        bodyphotos: <BodyProgress bodyPhotos={bodyPhotos} setBodyPhotos={setBodyPhotos} userId={user?.uid} />,
-        social: <SocialPage user={user} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} />,
-        gaming: <GamingHub appState={appState} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} profile={profile} loginData={loginData} setLoginData={setLoginData} xpLog={xpLog} activeTitle={activeTitle} setActiveTitle={setActiveTitle} questChainData={questChainData} setQuestChainData={setQuestChainData} />,
-        programs: <WorkoutPrograms programData={programData} setProgramData={setProgramData} addXP={addXP} />,
+    const renderPage = () => {
+        switch (page) {
+            case 'training': return <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} programState={programState} setProgramState={setProgramState} />;
+            case 'nutrition': return <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} profile={profile} />;
+            case 'dailyquest': return <DailyQuestPage habits={habits} setHabits={setHabits} habitLog={habitLog} setHabitLog={setHabitLog} addXP={addXP} workoutLog={workoutLog} />;
+            case 'missions': return <MissionsPage tasks={tasks} setTasks={setTasks} addXP={addXP} />;
+            case 'focus': return <FocusTimer addXP={addXP} focusLog={focusLog} setFocusLog={setFocusLog} />;
+            case 'wellness': return <Wellness journal={journal} setJournal={setJournal} addXP={addXP} />;
+            case 'finance': return <FinancePage finances={finances} setFinances={setFinances} addXP={addXP} />;
+            case 'routine': return <RoutinePage profile={profile} routineData={routineData} setRoutineData={setRoutineData} />;
+            case 'growth': return <GrowthPage pillarProg={pillarProg} setPillarProg={setPillarProg} />;
+            case 'oracle': return <FlameOracle appState={appState} addXP={addXP} setFoodLog={setFoodLog} setChatHistory={setChatHistory} setPage={setPage} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />;
+            case 'profile': return <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} appState={appState} freezeData={freezeData} setPage={setPage} />;
+            case 'body': return <BodyTracker bodyData={bodyData} setBodyData={setBodyData} />;
+            case 'challenges': return <ChallengesPage challengeData={challengeData} setChallengeData={setChallengeData} addXP={addXP} />;
+            case 'share': return <ShareCard totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} />;
+            case 'bodyphotos': return <BodyProgress bodyPhotos={bodyPhotos} setBodyPhotos={setBodyPhotos} userId={user?.uid} />;
+            case 'social': return <SocialPage user={user} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} />;
+            case 'gaming': return <GamingHub appState={appState} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} profile={profile} loginData={loginData} setLoginData={setLoginData} xpLog={xpLog} activeTitle={activeTitle} setActiveTitle={setActiveTitle} questChainData={questChainData} setQuestChainData={setQuestChainData} />;
+            case 'programs': return <WorkoutPrograms programData={programData} setProgramData={setProgramData} addXP={addXP} />;
+            default: return <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} foodLog={foodLog} focusLog={focusLog} habitLog={habitLog} freezeData={freezeData} setFreezeData={setFreezeData} addXP={addXP} xpLog={xpLog} loginData={loginData} setLoginData={setLoginData} profile={profile} />;
+        }
     };
 
-    const allNavItems = [...navItems.filter(n => !n.submenu), ...(navItems.find(n => n.submenu)?.submenu || [])];
-    const currentLabel = allNavItems.find(n => n.key === page)?.label || "IGNITE";
+    const fallback = page === "dashboard" ? <DashboardSkeleton /> : page === "training" ? <TrainingSkeleton /> : page === "nutrition" ? <NutritionSkeleton /> : <SkeletonPage />;
 
     return (
-        <ErrorBoundary>
+        <div className="app-shell">
             <XPToast xpEvents={xpEvents} />
             <MilestoneOverlay milestone={milestone} onClose={() => setMilestone(null)} />
-            <BottomNav active={page} setPage={setPage} />
             {levelUp && <LevelUpOverlay level={levelUp.level} rank={levelUp.rank} onClose={() => setLevelUp(null)} />}
-            {showTutorial && <Suspense fallback={<PageLoader />}><OnboardingTutorial onComplete={handleTutorialComplete} /></Suspense>}
+            {showTutorial && <Suspense fallback={null}><OnboardingTutorial onComplete={handleTutorialComplete} /></Suspense>}
 
-            <div className="app-shell flex flex-col h-screen bg-[#060a0c] overflow-hidden relative w-full">
-                <div className="fixed -top-[20%] -right-[10%] w-[600px] h-[600px] rounded-full pointer-events-none z-0" style={{ background: "radial-gradient(circle,rgba(16,185,129,.025),transparent 70%)" }} />
+            <SideNav active={page} setPage={setPage} />
 
-                {/* Main Content */}
-                <main className="flex-1 pb-[70px] overflow-auto relative z-[1]">
-                    <header className="px-6 py-3 flex justify-between items-center bg-[rgba(6,10,12,.92)] backdrop-blur-[20px] border-b border-emerald-500/5 fixed top-0 left-0 right-0 z-30 gap-3">
-                        <div className="app-header">
-                            <h2 className="text-base font-bold text-gray-100 font-heading tracking-[1px]">{currentLabel}</h2>
-                        </div>
+            <header className="app-header">
+                <div className="app-header-inner">
+                    <h1 className="page-title">{pageTitle(page)}</h1>
+                    <SyncBadge status={syncStatus} />
+                    <div className="app-header-xp">
                         <HeaderXPBar totalXP={totalXP} streak={streak} />
-                    </header>
-                    <div className="px-[min(24px,4vw)] pt-[72px] pb-[70px] max-w-[1120px] mx-auto overflow-x-hidden overflow-y-auto flex-1" style={{ padding: "14px min(24px, 4vw)", paddingTop: 72, paddingBottom: 70 }}>
-                        <PullToRefresh onRefresh={async () => { if (user) await loadUserData(user.uid); }}>
-                            <PageTransition pageKey={page}>
-                                <Suspense fallback={page === "dashboard" ? <DashboardSkeleton /> : page === "training" ? <TrainingSkeleton /> : page === "nutrition" ? <NutritionSkeleton /> : <PageLoader />}>
-                                    {pages[page]}
-                                </Suspense>
-                            </PageTransition>
-                        </PullToRefresh>
                     </div>
-                </main>
+                </div>
+            </header>
 
-                {/* Overlays */}
-                <ConfettiBlast trigger={confetti} />
-                {levelUpShow && <LevelUpCelebration level={levelUpShow.level} rank={levelUpShow.rank} onClose={() => setLevelUpShow(null)} />}
+            <main className="app-main">
+                <div className="app-content">
+                    <ErrorBoundary key={page}>
+                        <PageTransition pageKey={page}>
+                            <Suspense fallback={fallback}>
+                                {renderPage()}
+                            </Suspense>
+                        </PageTransition>
+                    </ErrorBoundary>
+                </div>
+            </main>
 
-                {/* Exit Modal */}
-                {showExitModal && (
-                    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-[rgba(3,4,7,.85)] backdrop-blur-lg">
-                        <div className="gs fade-in max-w-[360px] w-[90%] text-center p-7 border border-emerald-500/15">
-                            <div className="text-[40px] mb-3">🔥</div>
-                            <div className="text-xl font-extrabold text-gray-100 font-heading tracking-[1px]">Leave IGNITE?</div>
-                            <p className="text-gray-500 text-[13px] mt-2 mb-6">Your progress is saved, but your streak depends on you coming back.</p>
-                            <div className="flex gap-[10px]">
-                                <button onClick={() => setShowExitModal(false)} className="bp flex-1 p-[14px]">Stay & Train</button>
-                                <button onClick={() => { setShowExitModal(false); window.history.go(-2); }} className="bg flex-1 p-[14px] !text-red-500">Leave</button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </ErrorBoundary>
+            <BottomNav active={page} setPage={setPage} />
+
+            <ConfettiBlast trigger={confetti} />
+        </div>
     );
 }

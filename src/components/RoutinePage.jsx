@@ -1,6 +1,7 @@
 "use client";
-import { useState, useMemo } from 'react';
-import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
+import { useState, useMemo, useEffect } from 'react';
+import { StaggerContainer, StaggerItem } from './PageTransition';
+import { today, toArr } from '@/utils';
 
 const TEMPLATES = {
   default: {
@@ -78,12 +79,16 @@ const CATS = {
   leisure: { color: "#ec4899", label: "Leisure" },
 };
 
+// Firestore data is untrusted: routine may be an object with numeric keys, blocks may lack ids
+const normRoutine = (r) => toArr(r).filter(b => b && typeof b === "object").map((b, i) => (b.id != null ? b : { ...b, id: `r${i}` }));
+const asObj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
+
 export default function RoutinePage({ routineData = null, setRoutineData = () => { } }) {
-  const d = new Date().toISOString().split("T")[0];
-  const data = routineData || {};
-  const routine = data.routine || [];
-  const daily = data.daily || {};
-  const todayDone = daily[d]?.done || [];
+  const d = today();
+  const data = asObj(routineData);
+  const routine = useMemo(() => normRoutine(routineData?.routine), [routineData]);
+  const daily = asObj(data.daily);
+  const todayDone = toArr(asObj(daily[d]).done);
 
   const [showTemplates, setShowTemplates] = useState(routine.length === 0);
   const [customMode, setCustomMode] = useState(false);
@@ -96,11 +101,15 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
   const [addMode, setAddMode] = useState(false);
   const [newName, setNewName] = useState("");
   const [newTime, setNewTime] = useState("08:00");
-  const [newIcon, setNewIcon] = useState("⭐");
+  const newIcon = "⭐";
   const [newCat, setNewCat] = useState("work");
 
-  // Current time for highlighting
-  const now = new Date();
+  // Current time for highlighting — re-render every minute so the NOW marker moves
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(t);
+  }, []);
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
   const getMin = (t) => { const [h, m] = (t || "00:00").split(":").map(Number); return h * 60 + m; };
@@ -115,45 +124,51 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
 
   // Stats
   const totalBlocks = routine.length;
-  const doneCount = todayDone.length;
+  const doneCount = routine.filter(b => todayDone.includes(b.id)).length;
   const pct = totalBlocks > 0 ? Math.round((doneCount / totalBlocks) * 100) : 0;
 
   const catStats = useMemo(() => {
     const stats = {};
     routine.forEach(b => {
       const cat = b.category || "work";
-      stats[cat] = (stats[cat] || 0) + (b.duration || 30);
+      stats[cat] = (stats[cat] || 0) + (Number(b.duration) || 30);
     });
     return Object.entries(stats).sort((a, b) => b[1] - a[1]);
   }, [routine]);
 
   // Handlers
+  // All writes are functional and merge into the latest stored data (no stale snapshots)
+  const update = (fn) => setRoutineData(prev => {
+    const p = asObj(prev);
+    return { ...p, ...fn({ routine: normRoutine(p.routine), daily: asObj(p.daily) }) };
+  });
+
+  // Switching routine keeps past days' history but clears today's checks (block ids differ)
+  const setNewRoutine = (blocks) => update(({ daily: dl }) => ({ routine: blocks, daily: { ...dl, [d]: { done: [] } } }));
+
   const applyTemplate = (key) => {
     const template = TEMPLATES[key];
-    setRoutineData({ routine: template.blocks, daily: {} });
+    if (routine.length > 0 && !window.confirm(`Replace your current routine with the ${template.name} template?`)) return;
+    setNewRoutine(template.blocks);
     setShowTemplates(false);
   };
 
-  const toggleDone = (blockId) => {
-    const done = todayDone.includes(blockId) ? todayDone.filter(x => x !== blockId) : [...todayDone, blockId];
-    setRoutineData({ ...data, daily: { ...daily, [d]: { done } } });
-  };
+  const toggleDone = (blockId) => update(({ daily: dl }) => {
+    const cur = toArr(asObj(dl[d]).done);
+    const done = cur.includes(blockId) ? cur.filter(x => x !== blockId) : [...cur, blockId];
+    return { daily: { ...dl, [d]: { done } } };
+  });
 
-  const markAllDone = () => {
-    setRoutineData({ ...data, daily: { ...daily, [d]: { done: routine.map(b => b.id) } } });
-  };
+  const markAllDone = () => update(({ routine: r, daily: dl }) => ({ daily: { ...dl, [d]: { done: r.map(b => b.id) } } }));
 
   const addBlock = () => {
     if (!newName.trim()) return;
-    const block = { id: Date.now().toString(), time: newTime, name: newName.trim(), icon: newIcon, duration: 30, category: newCat };
-    const updated = [...routine, block].sort((a, b) => getMin(a.time) - getMin(b.time));
-    setRoutineData({ ...data, routine: updated });
+    const block = { id: Date.now().toString(), time: newTime || "08:00", name: newName.trim(), icon: newIcon, duration: 30, category: newCat };
+    update(({ routine: r }) => ({ routine: [...r, block].sort((a, b) => getMin(a.time) - getMin(b.time)) }));
     setNewName(""); setAddMode(false);
   };
 
-  const removeBlock = (id) => {
-    setRoutineData({ ...data, routine: routine.filter(b => b.id !== id) });
-  };
+  const removeBlock = (id) => update(({ routine: r }) => ({ routine: r.filter(b => b.id !== id) }));
 
   const resetRoutine = () => {
     if (window.confirm("Reset entire routine? This removes all blocks.")) {
@@ -173,7 +188,7 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
     setCustomBlocks(updated);
     setCustomName('');
     // Auto-increment time
-    const mins = getMin(customTime) + customDuration;
+    const mins = ((getMin(customTime) || 0) + customDuration) % 1440; // wrap past midnight so the time input stays valid
     const nextH = Math.floor(mins / 60).toString().padStart(2, '0');
     const nextM = (mins % 60).toString().padStart(2, '0');
     setCustomTime(`${nextH}:${nextM}`);
@@ -181,7 +196,7 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
 
   const saveCustomPlan = () => {
     if (customBlocks.length < 2) return;
-    setRoutineData({ routine: customBlocks, daily: {} });
+    setNewRoutine(customBlocks);
     setCustomMode(false);
     setCustomBlocks([]);
     setShowTemplates(false);
@@ -201,12 +216,12 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
         {/* Add activity form */}
         <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <input className="inp" type="time" value={customTime} onChange={e => setCustomTime(e.target.value)} style={{ width: 100 }} />
+            <input className="inp" type="time" aria-label="Start time" value={customTime} onChange={e => setCustomTime(e.target.value)} style={{ width: 100 }} />
             <input className="inp" placeholder="Activity name" value={customName} onChange={e => setCustomName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCustomBlock()} style={{ flex: 1 }} />
           </div>
 
           {/* Icon picker */}
-          <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 4 }}>Icon</div>
+          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Icon</div>
           <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
             {ICONS.map(icon => (
               <span key={icon} onClick={() => setCustomIcon(icon)} style={{ fontSize: 18, padding: "4px 6px", borderRadius: 8, cursor: "pointer", background: customIcon === icon ? "rgba(16,185,129,.15)" : "transparent", border: customIcon === icon ? "1px solid rgba(16,185,129,.2)" : "1px solid transparent" }}>{icon}</span>
@@ -214,20 +229,20 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
           </div>
 
           {/* Duration */}
-          <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 4 }}>Duration</div>
+          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Duration</div>
           <div style={{ display: "flex", gap: 6, marginBottom: 10, overflowX: "auto" }}>
             {DURATIONS.map(dur => (
-              <span key={dur} className={`chip ${customDuration === dur ? "chip-a" : "chip-i"}`} onClick={() => setCustomDuration(dur)} style={{ fontSize: 10, flexShrink: 0 }}>
+              <span key={dur} className={`chip ${customDuration === dur ? "chip-a" : "chip-i"}`} onClick={() => setCustomDuration(dur)} style={{ fontSize: 11, flexShrink: 0 }}>
                 {dur >= 60 ? `${dur / 60}h` : `${dur}m`}
               </span>
             ))}
           </div>
 
           {/* Category */}
-          <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 4 }}>Category</div>
+          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Category</div>
           <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
             {Object.entries(CATS).map(([key, cat]) => (
-              <span key={key} className={`chip ${customCat === key ? "chip-a" : "chip-i"}`} onClick={() => setCustomCat(key)} style={{ fontSize: 10 }}>{cat.label}</span>
+              <span key={key} className={`chip ${customCat === key ? "chip-a" : "chip-i"}`} onClick={() => setCustomCat(key)} style={{ fontSize: 11 }}>{cat.label}</span>
             ))}
           </div>
 
@@ -248,7 +263,7 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, color: "#f3f4f6" }}>{block.icon} {block.name}</div>
-                  <div style={{ fontSize: 10, color: "#6b7280" }}>{block.time} · {block.duration >= 60 ? `${block.duration / 60}h` : `${block.duration}m`}</div>
+                  <div style={{ fontSize: 11, color: "#6b7280" }}>{block.time} · {block.duration >= 60 ? `${block.duration / 60}h` : `${block.duration}m`}</div>
                 </div>
                 <span onClick={() => setCustomBlocks(customBlocks.filter(b => b.id !== block.id))} style={{ fontSize: 14, color: "#4b5563", cursor: "pointer" }}>×</span>
               </div>
@@ -271,6 +286,7 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
           <div style={{ fontSize: 32, marginBottom: 8 }}>📅</div>
           <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>Set Up Your Day</div>
           <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Choose a template to get started</div>
+          {routine.length > 0 && <span onClick={() => setShowTemplates(false)} style={{ display: "inline-block", marginTop: 8, fontSize: 12, color: "#6b7280", cursor: "pointer" }}>← Back to my routine</span>}
         </div>
 
         <StaggerContainer>
@@ -315,7 +331,7 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
           <div className="gs" style={{ marginBottom: 14, padding: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>Today's Progress</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>Today&apos;s Progress</div>
                 <div style={{ fontSize: 11, color: "#6b7280" }}>{doneCount}/{totalBlocks} completed</div>
               </div>
               <div style={{ position: "relative", width: 48, height: 48 }}>
@@ -330,7 +346,7 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
             {/* Category breakdown */}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {catStats.map(([cat, mins]) => (
-                <span key={cat} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 100, background: `${CATS[cat]?.color || "#6b7280"}12`, color: CATS[cat]?.color || "#6b7280", border: `1px solid ${CATS[cat]?.color || "#6b7280"}20` }}>
+                <span key={cat} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 100, background: `${CATS[cat]?.color || "#6b7280"}12`, color: CATS[cat]?.color || "#6b7280", border: `1px solid ${CATS[cat]?.color || "#6b7280"}20` }}>
                   {CATS[cat]?.label || cat} · {Math.round(mins / 60)}h
                 </span>
               ))}
@@ -353,12 +369,12 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
             <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif", marginBottom: 10 }}>Add Activity</div>
               <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                <input className="inp" type="time" value={newTime} onChange={e => setNewTime(e.target.value)} style={{ width: 110 }} />
+                <input className="inp" type="time" aria-label="Start time" value={newTime} onChange={e => setNewTime(e.target.value)} style={{ width: 110 }} />
                 <input className="inp" placeholder="Activity name" value={newName} onChange={e => setNewName(e.target.value)} style={{ flex: 1 }} />
               </div>
               <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
                 {Object.entries(CATS).map(([key, cat]) => (
-                  <span key={key} className={`chip ${newCat === key ? "chip-a" : "chip-i"}`} onClick={() => setNewCat(key)} style={{ fontSize: 10 }}>{cat.label}</span>
+                  <span key={key} className={`chip ${newCat === key ? "chip-a" : "chip-i"}`} onClick={() => setNewCat(key)} style={{ fontSize: 11 }}>{cat.label}</span>
                 ))}
               </div>
               <button className="bp" onClick={addBlock} disabled={!newName.trim()} style={{ width: "100%", padding: 10, fontSize: 13 }}>Add to Routine</button>
@@ -370,7 +386,6 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
         {routine.map((block, i) => {
           const isDone = todayDone.includes(block.id);
           const isCurrent = i === currentIdx;
-          const isPast = nowMin > getMin(block.time) + (block.duration || 30);
           const cat = CATS[block.category] || CATS.work;
 
           return (
@@ -390,8 +405,8 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 600, color: isDone ? "#6b7280" : "#f3f4f6", textDecoration: isDone ? "line-through" : "none" }}>{block.name}</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                          <span style={{ fontSize: 10, color: "#6b7280" }}>{block.time}</span>
-                          {block.duration > 0 && <span style={{ fontSize: 10, color: "#4b5563" }}>· {block.duration >= 60 ? `${Math.floor(block.duration / 60)}h${block.duration % 60 > 0 ? ` ${block.duration % 60}m` : ""}` : `${block.duration}m`}</span>}
+                          <span style={{ fontSize: 11, color: "#6b7280" }}>{block.time}</span>
+                          {block.duration > 0 && <span style={{ fontSize: 11, color: "#4b5563" }}>· {block.duration >= 60 ? `${Math.floor(block.duration / 60)}h${block.duration % 60 > 0 ? ` ${block.duration % 60}m` : ""}` : `${block.duration}m`}</span>}
                           <span style={{ fontSize: 11, padding: "1px 5px", borderRadius: 100, background: `${cat.color}12`, color: cat.color }}>{cat.label}</span>
                         </div>
                       </div>

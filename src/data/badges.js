@@ -3,6 +3,9 @@
 // Auto-checks and awards badges based on user data
 // ═══════════════════════════════════════
 
+import { toArr } from '@/utils';
+import { countWorkoutDays, getTotalCal } from '@/lib/workoutHelpers';
+
 export const BADGES = [
   // ── TRAINING ──
   { id: "first_blood", name: "First Blood", icon: "🩸", desc: "Complete your first workout", category: "Training", rarity: "common" },
@@ -75,8 +78,9 @@ export function getRarityColor(rarity) {
 // Check which badges the user has earned
 export function checkBadges({ totalXP, level, streak, workoutLog, foodLog, journal, focusLog, pillarProg }) {
   const earned = [];
-  const totalWorkouts = Object.keys(workoutLog || {}).length;
-  const totalCal = Object.values(workoutLog || {}).reduce((s, w) => s + (w.calBurned || 0), 0);
+  // workoutLog[date] may be a single legacy object or an array of entries
+  const totalWorkouts = countWorkoutDays(workoutLog || {});
+  const totalCal = getTotalCal(workoutLog || {});
 
   // Training
   if (totalWorkouts >= 1) earned.push("first_blood");
@@ -108,25 +112,25 @@ export function checkBadges({ totalXP, level, streak, workoutLog, foodLog, journ
   if (level >= 109) earned.push("rank_sovereign");
 
   // Nutrition
-  const foodDays = Object.keys(foodLog || {}).filter(k => !k.startsWith("water_") && Array.isArray(foodLog[k]) && foodLog[k].length > 0).length;
+  const foodDays = Object.keys(foodLog || {}).filter(k => !k.startsWith("water_") && toArr(foodLog[k]).length > 0).length;
   if (foodDays >= 7) earned.push("fuel_7");
   if (foodDays >= 30) earned.push("fuel_30");
   // Check if any day has 8+ water
-  const anyFullWater = Object.keys(foodLog || {}).some(k => k.startsWith("water_") && foodLog[k] >= 8);
+  const anyFullWater = Object.keys(foodLog || {}).some(k => k.startsWith("water_") && Number(foodLog[k]) >= 8);
   if (anyFullWater) earned.push("hydrated");
 
   // Wellness
-  const journalEntries = Object.values(journal || {}).filter(e => e.entry && e.entry.length > 10).length;
+  const journalEntries = Object.values(journal || {}).filter(e => typeof e?.entry === "string" && e.entry.length > 10).length;
   if (journalEntries >= 10) earned.push("journal_10");
   if (journalEntries >= 50) earned.push("journal_50");
   // Gratitude streak check
-  const gratDays = Object.values(journal || {}).filter(e => e.gratitude && e.gratitude.filter(g => g && g.trim()).length >= 3).length;
+  const gratDays = Object.values(journal || {}).filter(e => toArr(e?.gratitude).filter(g => typeof g === "string" && g.trim()).length >= 3).length;
   if (gratDays >= 7) earned.push("grateful_7");
 
   // Focus
-  const allFocusSessions = Object.values(focusLog || {}).flat();
+  const allFocusSessions = Object.values(focusLog || {}).flatMap(v => toArr(v));
   const totalFocusSessions = allFocusSessions.length;
-  const totalFocusMinutes = allFocusSessions.reduce((s, sess) => s + (sess.duration || 0), 0);
+  const totalFocusMinutes = allFocusSessions.reduce((s, sess) => s + (Number(sess?.duration) || 0), 0);
   if (totalFocusSessions >= 10) earned.push("focus_10");
   if (totalFocusSessions >= 50) earned.push("focus_50");
   if (totalFocusMinutes >= 600) earned.push("focus_10h");

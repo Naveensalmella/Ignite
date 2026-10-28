@@ -1,54 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { groqRequest, AIError, clip } from '@/lib/ai';
 
-export async function POST(req: NextRequest) {
-    const { prompt } = await req.json();
-    const GROQ_KEY = process.env.GROQ_API_KEY;
-    if (!GROQ_KEY) return NextResponse.json({ error: "No API key" }, { status: 500 });
+const BODY_PARTS = ["chest", "back", "shoulders", "arms", "core", "legs", "glutes", "cardio"];
 
-    try {
-        const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_KEY}` },
-            body: JSON.stringify({
-                model: "openai/gpt-oss-120b",
-                temperature: 0.3,
-                max_tokens: 1024,
-                messages: [
-                    {
-                        role: "system",
-                        content: `You are a workout generator. Return ONLY valid JSON, nothing else. No emojis, no explanation, no markdown, no thinking tags. Just a raw JSON object.
+const SYSTEM = `You are a workout generator. Return ONLY valid JSON, nothing else. No emojis, no explanation, no markdown, no thinking tags. Just a raw JSON object.
 
 Format:
 {"name":"Workout Name","exercises":[{"name":"Exercise Name","reps":12,"sets":3,"rest":60,"bodyPart":"chest"}]}
 
 Rules:
 - 4 to 10 exercises
-- bodyPart must be one of: chest, back, shoulders, arms, core, legs, glutes, cardio
-- reps must be a number
+- bodyPart must be one of: ${BODY_PARTS.join(", ")}
+- reps must be a number; for timed exercises (planks, holds, cardio intervals) omit reps and give "duration" in seconds
 - sets must be a number
 - rest in seconds
-- No emojis anywhere in the JSON`
-                    },
-                    { role: "user", content: prompt }
-                ],
-            }),
-        });
+- No emojis anywhere in the JSON`;
 
-        const data = await r.json();
-        const text = data.choices?.[0]?.message?.content || "";
-        const clean = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+type RawExercise = { name?: unknown; reps?: unknown; sets?: unknown; rest?: unknown; duration?: unknown; bodyPart?: unknown };
 
-        const start = clean.indexOf("{");
-        const end = clean.lastIndexOf("}");
-        if (start === -1 || end === -1) return NextResponse.json({ error: "No workout generated" }, { status: 400 });
+const num = (v: unknown, min: number, max: number, fallback: number) => {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
+};
 
-        const workout = JSON.parse(clean.substring(start, end + 1));
-        if (!workout.exercises || !Array.isArray(workout.exercises)) {
-            return NextResponse.json({ error: "Invalid workout format" }, { status: 400 });
-        }
+export async function POST(req: NextRequest) {
+  let prompt = "";
+  try { ({ prompt } = await req.json()); } catch { return NextResponse.json({ error: "Invalid request" }, { status: 400 }); }
+  prompt = clip(prompt, 500).trim();
+  if (!prompt) return NextResponse.json({ error: "Describe the workout you want" }, { status: 400 });
 
-        return NextResponse.json({ workout });
-    } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
+  try {
+    const r = await groqRequest({
+      temperature: 0.3,
+      max_tokens: 1024,
+      messages: [{ role: "system", content: SYSTEM }, { role: "user", content: prompt }],
+    });
+    const data = await r.json();
+    const text: string = data.choices?.[0]?.message?.content || "";
+    const clean = text.replace(/<think>[\s\S]*?<\/think>/g, "").replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+
+    const start = clean.indexOf("{");
+    const end = clean.lastIndexOf("}");
+    if (start === -1 || end <= start) return NextResponse.json({ error: "Couldn't generate a workout. Try describing it differently." }, { status: 422 });
+
+    let parsed: { name?: unknown; exercises?: RawExercise[] };
+    try { parsed = JSON.parse(clean.substring(start, end + 1)); } catch {
+      return NextResponse.json({ error: "Couldn't generate a workout. Try again." }, { status: 422 });
     }
+    const exercises = (Array.isArray(parsed.exercises) ? parsed.exercises : [])
+      .filter(e => e && typeof e.name === "string" && e.name.trim())
+      .slice(0, 12)
+      .map(e => {
+        const bodyPart = BODY_PARTS.includes(String(e.bodyPart).toLowerCase()) ? String(e.bodyPart).toLowerCase() : "core";
+        const base = { name: String(e.name).trim().slice(0, 80), sets: num(e.sets, 1, 10, 3), rest: num(e.rest, 0, 300, 45), bodyPart };
+        return e.duration && !e.reps
+          ? { ...base, duration: num(e.duration, 5, 600, 30) }
+          : { ...base, reps: num(e.reps, 1, 100, 12) };
+      });
+    if (exercises.length === 0) return NextResponse.json({ error: "Couldn't generate a workout. Try again." }, { status: 422 });
+
+    return NextResponse.json({ workout: { name: clip(parsed.name || "AI Workout", 80), exercises } });
+  } catch (e) {
+    const err = e as AIError;
+    return NextResponse.json({ error: err.message || "AI request failed" }, { status: err.status || 500 });
+  }
 }

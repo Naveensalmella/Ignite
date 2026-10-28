@@ -1,6 +1,5 @@
 "use client";
 import { useState, useMemo } from 'react';
-import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 
 const PILLARS = [
   { id: "mind", label: "Mind", icon: "⚡", color: "#06b6d4", desc: "Knowledge, learning, intellectual growth" },
@@ -226,9 +225,9 @@ function Ring({ pct, color, size = 60, stroke = 5, children }) { const p = Numbe
 
 export default function GrowthPage({ pillarProg = {}, setPillarProg = () => { } }) {
   const [selPillar, setSelPillar] = useState("mind");
-  const pp = pillarProg || {};
+  const pp = useMemo(() => (pillarProg && typeof pillarProg === "object" ? pillarProg : {}), [pillarProg]);
 
-  const toggle = (id) => setPillarProg(p => ({ ...p, [id]: !p[id] }));
+  const toggle = (id) => setPillarProg(p => { const prev = p && typeof p === "object" ? p : {}; return { ...prev, [id]: !prev[id] }; });
 
   const pillarStats = useMemo(() => {
     const stats = {};
@@ -271,7 +270,7 @@ export default function GrowthPage({ pillarProg = {}, setPillarProg = () => { } 
           }}>
           <div style={{ fontSize: 22 }}>{p.icon}</div>
           <div style={{ fontSize: 11, fontWeight: 600, color: selPillar === p.id ? p.color : "#e5e7eb", marginTop: 4 }}>{p.label}</div>
-          <div style={{ fontSize: 10, color: "#4b5563" }}>{s.pct}%</div>
+          <div style={{ fontSize: 11, color: "#4b5563" }}>{s.pct}%</div>
         </div>);
       })}
     </div>
@@ -313,8 +312,8 @@ export default function GrowthPage({ pillarProg = {}, setPillarProg = () => { } 
               <div style={{ fontSize: 11, color: "#4b5563" }}>{tierDone}/{tier.missions.length} complete</div>
             </div>
           </div>
-          {!unlocked && <span style={{ fontSize: 10, color: "#4b5563" }}>🔒 Complete Tier {tier.tier - 1} first</span>}
-          {tierComplete && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 100, background: `${pillar.color}12`, color: pillar.color, fontWeight: 600 }}>Mastered ✓</span>}
+          {!unlocked && <span style={{ fontSize: 11, color: "#4b5563" }}>🔒 Complete Tier {tier.tier - 1} first</span>}
+          {tierComplete && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: `${pillar.color}12`, color: pillar.color, fontWeight: 600 }}>Mastered ✓</span>}
         </div>
 
         {unlocked && tier.missions.map(m => {

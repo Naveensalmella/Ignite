@@ -647,33 +647,28 @@ export const COMBAT_PROGRAMS = {
 };
 
 // Helper to get today's workout from a program
-export function getTodayWorkout(program, currentWeek, currentDay) {
+// currentWeek: 0-based week since the program started.
+// sessionIndex: how many sessions of this program were already completed —
+// rotates through the phase's day pattern (A, B, A, …) regardless of weekday.
+export function getTodayWorkout(program, currentWeek = 0, sessionIndex = 0) {
     if (!program) return null;
 
-    // For combat programs
+    // Combat programs: one curriculum week at a time
     if (program.curriculum) {
-        const weekData = program.curriculum[Math.min(currentWeek, program.curriculum.length - 1)];
-        return weekData;
+        return program.curriculum[Math.max(0, Math.min(currentWeek, program.curriculum.length - 1))];
     }
 
-    // For gym programs
-    const phase = program.phases.find((p, i) => {
-        const startWeek = program.phases.slice(0, i).reduce((s, ph) => {
-            const match = ph.weeks.match(/(\d+)-(\d+)/);
-            return match ? parseInt(match[1]) - 1 : s;
-        }, 0);
-        const match = p.weeks.match(/(\d+)-(\d+)/);
-        if (match) {
-            return currentWeek >= parseInt(match[0]) - 1 && currentWeek <= parseInt(match[1]) - 1;
-        }
-        return false;
-    }) || program.phases[0];
+    // Gym programs: phases are "1-4", "5-8", … (1-based, inclusive)
+    const phases = program.phases || [];
+    const phase = phases.find(p => {
+        const m = /(\d+)\s*-\s*(\d+)/.exec(p.weeks || "");
+        return m && currentWeek >= Number(m[1]) - 1 && currentWeek <= Number(m[2]) - 1;
+    }) || phases[phases.length - 1];
 
-    if (!phase) return null;
+    if (!phase || !phase.weekPattern?.length) return null;
 
-    const dayIdx = currentDay % phase.weekPattern.length;
-    const dayKey = phase.weekPattern[dayIdx];
-    const isDeload = program.deloadEvery && (currentWeek + 1) % program.deloadEvery === 0;
+    const dayKey = phase.weekPattern[Math.abs(sessionIndex) % phase.weekPattern.length];
+    const isDeload = !!program.deloadEvery && (currentWeek + 1) % program.deloadEvery === 0;
 
     return {
         phase: phase.name,

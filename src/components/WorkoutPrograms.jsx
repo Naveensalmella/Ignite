@@ -1,7 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { today } from '@/utils';
-import { XP } from '@/data/index';
+import { today, toArr } from '@/utils';
 
 const PROGRAMS = [
   {
@@ -132,42 +131,70 @@ const PROGRAMS = [
   },
 ];
 
-export default function WorkoutPrograms({ programData, setProgramData, addXP }) {
+// Firestore data is untrusted: normalize programData so missing / mangled fields can't crash the page
+const asObj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
+// Prefer the canonical schedule from PROGRAMS (stored copies may come back with arrays as numeric-key objects)
+const scheduleOf = (prog) => {
+  const canon = PROGRAMS.find(p => p.id === prog?.id);
+  const sched = canon ? canon.schedule : toArr(prog?.schedule);
+  return sched.filter(w => w && typeof w === "object").map(w => ({ ...w, days: toArr(w.days).filter(x => x && typeof x === "object").map(x => ({ ...x, exercises: toArr(x.exercises) })) }));
+};
+const normalize = (pd) => {
+  const p = asObj(pd);
+  const a = p.active && typeof p.active === "object" ? p.active : null;
+  return {
+    ...p,
+    // Fill display fields (color/icon/name) from the canonical program if the stored copy lacks them
+    active: a ? { color: "#10b981", ...(PROGRAMS.find(pr => pr.id === a.id) || {}), ...a, currentWeek: Math.max(1, Number(a.currentWeek) || 1), currentDay: Math.max(1, Number(a.currentDay) || 1) } : null,
+    completed: toArr(p.completed).filter(c => c && typeof c === "object"),
+    dayLog: asObj(p.dayLog),
+  };
+};
+
+export default function WorkoutPrograms({ programData, setProgramData = () => { }, addXP = () => { } }) {
   const d = today();
-  const data = programData || { active: null, completed: [], dayLog: {} };
+  const data = normalize(programData);
   const [tab, setTab] = useState(data.active ? "active" : "browse");
 
   const save = (nd) => setProgramData(nd);
 
   const startProgram = (prog) => {
-    save({ ...data, active: { ...prog, startDate: d, currentWeek: 1, currentDay: 1 } });
+    // Drop day-log entries left over from an earlier (quit) run of this program so progress starts at 0
+    const dayLog = Object.fromEntries(Object.entries(data.dayLog).filter(([k]) => !k.startsWith(`${prog.id}_`)));
+    save({ ...data, dayLog, active: { ...prog, startDate: d, currentWeek: 1, currentDay: 1 } });
     setTab("active");
   };
 
+  const act = data.active;
+  const schedule = act ? scheduleOf(act) : [];
+  const weekData = act ? schedule[act.currentWeek - 1] || null : null;
+  const dayData = weekData ? weekData.days[act.currentDay - 1] || null : null;
+  const totalDays = schedule.reduce((s, w) => s + w.days.length, 0);
+  const doneDays = act ? Object.keys(data.dayLog).filter(k => k.startsWith(`${act.id}_`)).length : 0;
+  const progPct = totalDays > 0 ? Math.min(100, (doneDays / totalDays) * 100) : 0;
+
   const completeDay = () => {
-    if (!data.active) return;
-    const key = `${data.active.id}_w${data.active.currentWeek}_d${data.active.currentDay}`;
+    if (!act) return;
+    const key = `${act.id}_w${act.currentWeek}_d${act.currentDay}`;
     const newLog = { ...data.dayLog, [key]: { date: d, completed: true } };
-    let nextDay = data.active.currentDay + 1;
-    let nextWeek = data.active.currentWeek;
-    const weekData = data.active.schedule[nextWeek - 1];
+    let nextDay = act.currentDay + 1;
+    let nextWeek = act.currentWeek;
     if (nextDay > (weekData?.days?.length || 7)) { nextDay = 1; nextWeek++; }
-    const totalWeeks = data.active.schedule.length;
+    const totalWeeks = schedule.length;
     if (nextWeek > totalWeeks && nextDay === 1) {
-      addXP(300, `Program complete: ${data.active.name}`);
-      save({ ...data, active: null, completed: [...data.completed, { name: data.active.name, completedDate: d }], dayLog: newLog });
+      addXP(300, `Program complete: ${act.name}`);
+      save({ ...data, active: null, completed: [...data.completed, { name: act.name, completedDate: d }], dayLog: newLog });
       setTab("browse");
       return;
     }
     addXP(15, "Program day complete");
-    save({ ...data, active: { ...data.active, currentWeek: nextWeek, currentDay: nextDay }, dayLog: newLog });
+    save({ ...data, active: { ...act, currentWeek: nextWeek, currentDay: nextDay }, dayLog: newLog });
   };
 
-  const act = data.active;
-  const weekData = act ? act.schedule[act.currentWeek - 1] : null;
-  const dayData = weekData ? weekData.days[act.currentDay - 1] : null;
-  const totalDays = act ? act.schedule.reduce((s, w) => s + w.days.length, 0) : 0;
-  const doneDays = act ? Object.keys(data.dayLog).filter(k => k.startsWith(act.id)).length : 0;
+  const quitProgram = () => {
+    if (!window.confirm("Quit this program? Your progress will be lost.")) return;
+    save({ ...data, active: null });
+  };
 
   return (
     <div>
@@ -223,12 +250,12 @@ export default function WorkoutPrograms({ programData, setProgramData, addXP }) 
                     <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{act.icon} {act.name}</div>
                     <div style={{ fontSize: 13, color: "#6b7280" }}>Week {act.currentWeek} · Day {act.currentDay} · {weekData?.name}</div>
                   </div>
-                  <span onClick={() => save({ ...data, active: null })} style={{ fontSize: 12, color: "#ef4444", cursor: "pointer" }}>Quit</span>
+                  <span onClick={quitProgram} role="button" style={{ fontSize: 12, color: "#ef4444", cursor: "pointer" }}>Quit</span>
                 </div>
                 <div style={{ height: 10, background: "rgba(255,255,255,.04)", borderRadius: 5, overflow: "hidden", marginBottom: 8 }}>
-                  <div style={{ height: "100%", width: `${(doneDays / totalDays) * 100}%`, background: act.color, borderRadius: 5, transition: "width .5s" }} />
+                  <div style={{ height: "100%", width: `${progPct}%`, background: act.color, borderRadius: 5, transition: "width .5s" }} />
                 </div>
-                <div style={{ fontSize: 12, color: "#6b7280" }}>{doneDays}/{totalDays} days complete · {Math.round((doneDays / totalDays) * 100)}%</div>
+                <div style={{ fontSize: 12, color: "#6b7280" }}>{doneDays}/{totalDays} days complete · {Math.round(progPct)}%</div>
               </div>
 
               {dayData && (
@@ -244,7 +271,7 @@ export default function WorkoutPrograms({ programData, setProgramData, addXP }) 
               {/* Week overview */}
               <div className="gs">
                 <div className="sl">Week {act.currentWeek} Overview</div>
-                {weekData?.days.map((wd, i) => {
+                {(weekData?.days || []).map((wd, i) => {
                   const key = `${act.id}_w${act.currentWeek}_d${i + 1}`;
                   const done = !!data.dayLog[key];
                   const isCurrent = i + 1 === act.currentDay;

@@ -25,34 +25,56 @@ function Toggle({ on, onToggle, label, desc }) {
     );
 }
 
+const DEFAULT_SETTINGS = {
+    enabled: false,
+    trainingReminder: true,
+    trainingTime: 8,
+    mealReminder: true,
+    streakWarning: true,
+    warningTime: 21,
+    focusReminder: false,
+    journalReminder: false,
+};
+
+// Corrupt/partial localStorage must not crash the Profile page — merge over defaults
+function loadSettings() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem("ignite-notif-settings") || "null");
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? { ...DEFAULT_SETTINGS, ...parsed } : { ...DEFAULT_SETTINGS };
+    } catch { return { ...DEFAULT_SETTINGS }; }
+}
+
+function safePermission() {
+    try { return typeof window === "undefined" ? "unsupported" : getNotifPermission(); } catch { return "unsupported"; }
+}
+
 export default function NotificationSettings() {
-    const [permission, setPermission] = useState(getNotifPermission());
-    const [settings, setSettings] = useState(() => {
-        return JSON.parse(localStorage.getItem("ignite-notif-settings") || JSON.stringify({
-            enabled: false,
-            trainingReminder: true,
-            trainingTime: 8,
-            mealReminder: true,
-            streakWarning: true,
-            warningTime: 21,
-            focusReminder: false,
-            journalReminder: false,
-        }));
-    });
+    const [permission, setPermission] = useState(safePermission);
+    const [settings, setSettings] = useState(loadSettings);
+    const [requesting, setRequesting] = useState(false);
 
     useEffect(() => {
-        localStorage.setItem("ignite-notif-settings", JSON.stringify(settings));
+        try { localStorage.setItem("ignite-notif-settings", JSON.stringify(settings)); } catch { }
     }, [settings]);
 
     const toggle = (key) => setSettings(s => ({ ...s, [key]: !s[key] }));
 
     const enableNotifs = async () => {
-        const result = await requestNotifPermission();
-        setPermission(result);
-        if (result === "granted") {
-            setSettings(s => ({ ...s, enabled: true }));
-            sendNotification("🔥 IGNITE Notifications Active!", "You'll now receive training reminders and streak alerts.", "welcome");
+        if (requesting) return;
+        setRequesting(true);
+        try {
+            const result = await requestNotifPermission();
+            setPermission(result);
+            if (result === "granted") {
+                setSettings(s => ({ ...s, enabled: true }));
+                sendNotification("🔥 IGNITE Notifications Active!", "You'll now receive training reminders and streak alerts.", "welcome");
+            }
+        } catch (e) {
+            // Older Safari only supports the callback form / may throw
+            console.error("Notification permission error:", e);
+            setPermission(safePermission());
         }
+        setRequesting(false);
     };
 
     if (permission === "unsupported") {
@@ -72,7 +94,7 @@ export default function NotificationSettings() {
                     <div style={{ fontSize: 11, color: "#6b7280" }}>Stay on track with reminders</div>
                 </div>
                 {permission !== "granted" && (
-                    <button className="bp" onClick={enableNotifs} style={{ padding: "8px 16px", fontSize: 12 }}>Enable</button>
+                    <button className="bp" onClick={enableNotifs} disabled={requesting || permission === "denied"} style={{ padding: "8px 16px", fontSize: 12 }}>{requesting ? "..." : "Enable"}</button>
                 )}
             </div>
 

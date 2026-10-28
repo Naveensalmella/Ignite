@@ -1,5 +1,6 @@
 "use client";
 import { useState } from 'react';
+import { getRank, today } from '@/utils';
 
 const GOALS = [
   { id: "lose", icon: "🔥", label: "Lose Fat", desc: "Burn fat, get lean and defined" },
@@ -55,8 +56,14 @@ const GENDERS = [
   { id: "other", icon: "⚧", label: "Other" },
 ];
 
-export default function OnboardingPage({ onComplete }) {
+// Sane bounds so typos like "0", "-5" or "1750" can't produce a broken BMI/calorie target
+const inRange = (v, min, max) => { const n = parseFloat(v); return Number.isFinite(n) && n >= min && n <= max; };
+const BOUNDS = { age: [10, 100], weight: [25, 300], height: [100, 250] };
+
+export default function OnboardingPage({ onComplete = () => { } }) {
   const [step, setStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const [data, setData] = useState({
     name: "", age: "", gender: "", weight: "", height: "",
     goal: "", fitnessLevel: "", trainingType: "",
@@ -79,31 +86,40 @@ export default function OnboardingPage({ onComplete }) {
 
   const canNext = () => {
     if (step === 0) return data.name.trim().length >= 2;
-    if (step === 1) return data.age && data.gender && data.weight && data.height;
+    if (step === 1) return !!data.gender && inRange(data.age, ...BOUNDS.age) && inRange(data.weight, ...BOUNDS.weight) && inRange(data.height, ...BOUNDS.height);
     if (step === 2) return data.goal && data.fitnessLevel;
     if (step === 3) return data.trainingType && data.fightingStyle;
     if (step === 4) return data.dailyTime && data.focusAreas.length > 0;
-    return true;
+    return !submitting;
   };
 
-  const finish = () => {
-    onComplete({
-      name: data.name.trim(),
-      age: data.age,
-      gender: data.gender,
-      weight: data.weight,
-      height: data.height,
-      goal: data.goal,
-      fitnessLevel: data.fitnessLevel,
-      trainingType: data.trainingType,
-      fightingStyle: data.fightingStyle,
-      dailyTime: data.dailyTime,
-      focusAreas: data.focusAreas,
-      nutritionGoal: data.goal === "lose" ? "lose" : data.goal === "muscle" ? "gain" : "maintain",
-      activityLevel: data.fitnessLevel === "beginner" ? "1.375" : data.fitnessLevel === "advanced" ? "1.725" : "1.55",
-      onboardingComplete: true,
-      joined: new Date().toISOString().split("T")[0],
-    });
+  const finish = async () => {
+    if (submitting) return;
+    setSubmitting(true); setError("");
+    try {
+      await onComplete({
+        name: data.name.trim(),
+        age: data.age,
+        gender: data.gender,
+        weight: data.weight,
+        height: data.height,
+        goal: data.goal,
+        fitnessLevel: data.fitnessLevel,
+        trainingType: data.trainingType,
+        fightingStyle: data.fightingStyle,
+        dailyTime: data.dailyTime,
+        focusAreas: data.focusAreas,
+        nutritionGoal: data.goal === "lose" ? "lose" : data.goal === "muscle" ? "gain" : "maintain",
+        activityLevel: data.fitnessLevel === "beginner" ? "1.375" : data.fitnessLevel === "advanced" ? "1.725" : "1.55",
+        onboardingComplete: true,
+        joined: today(),
+      });
+    } catch (e) {
+      // Save failed — surface it and re-enable the button instead of failing silently
+      console.error("Onboarding save error:", e);
+      setError("Couldn't save your profile. Check your connection and try again.");
+      setSubmitting(false);
+    }
   };
 
   const cardStyle = (selected) => ({
@@ -135,7 +151,7 @@ export default function OnboardingPage({ onComplete }) {
           <div className="fade-in" style={{ textAlign: "center" }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>⚔️</div>
             <h2 style={{ fontSize: 24, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>Build Your Warrior Profile</h2>
-            <p style={{ color: "#6b7280", fontSize: 14, marginTop: 8, marginBottom: 28 }}>Let's set up your training based on your body, goals, and style. This takes 2 minutes.</p>
+            <p style={{ color: "#6b7280", fontSize: 14, marginTop: 8, marginBottom: 28 }}>Let&apos;s set up your training based on your body, goals, and style. This takes 2 minutes.</p>
             <div style={{ textAlign: "left" }}>
               <label style={{ fontSize: 12, color: "#6b7280", display: "block", marginBottom: 6 }}>What should we call you?</label>
               <input className="inp" placeholder="Your name" value={data.name} onChange={e => update("name", e.target.value)}
@@ -209,7 +225,7 @@ export default function OnboardingPage({ onComplete }) {
                   style={{ ...cardStyle(data.fitnessLevel === fl.id), flex: 1, textAlign: "center", padding: 14 }}>
                   <div style={{ fontSize: 24 }}>{fl.icon}</div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: data.fitnessLevel === fl.id ? "#10b981" : "#e5e7eb", marginTop: 4 }}>{fl.label}</div>
-                  <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{fl.desc}</div>
+                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{fl.desc}</div>
                 </div>
               ))}
             </div>
@@ -262,7 +278,7 @@ export default function OnboardingPage({ onComplete }) {
                 <div key={t.id} onClick={() => update("dailyTime", t.id)}
                   style={{ ...cardStyle(data.dailyTime === t.id), flex: 1, textAlign: "center", padding: 12 }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: data.dailyTime === t.id ? "#10b981" : "#e5e7eb", fontFamily: "Rajdhani,sans-serif" }}>{t.label}</div>
-                  <div style={{ fontSize: 10, color: "#6b7280" }}>{t.desc}</div>
+                  <div style={{ fontSize: 11, color: "#6b7280" }}>{t.desc}</div>
                 </div>
               ))}
             </div>
@@ -297,7 +313,7 @@ export default function OnboardingPage({ onComplete }) {
                 </div>
                 <div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{data.name}</div>
-                  <div style={{ fontSize: 12, color: "#10b981" }}>Level 1 · Spark</div>
+                  <div style={{ fontSize: 12, color: "#10b981" }}>Level 1 · {getRank(1).name}</div>
                 </div>
               </div>
 
@@ -316,7 +332,7 @@ export default function OnboardingPage({ onComplete }) {
                   ["Focus", data.focusAreas.map(a => BODY_PARTS.find(b => b.id === a)?.label).join(", ")],
                 ].map(([l, v]) => (
                   <div key={l} style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
-                    <div style={{ fontSize: 10, color: "#6b7280", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>{l}</div>
+                    <div style={{ fontSize: 11, color: "#6b7280", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>{l}</div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: "#e5e7eb" }}>{v}</div>
                   </div>
                 ))}
@@ -325,10 +341,18 @@ export default function OnboardingPage({ onComplete }) {
           </div>
         )}
 
+        {/* Step 1 validation hint */}
+        {step === 1 && !canNext() && (data.age || data.weight || data.height) && (
+          <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 12 }}>
+            Enter age {BOUNDS.age[0]}–{BOUNDS.age[1]}, weight {BOUNDS.weight[0]}–{BOUNDS.weight[1]} kg, height {BOUNDS.height[0]}–{BOUNDS.height[1]} cm and pick a gender.
+          </div>
+        )}
+        {error && <div style={{ fontSize: 12, color: "#ef4444", marginTop: 12, textAlign: "center" }}>{error}</div>}
+
         {/* Navigation Buttons */}
         <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
           {step > 0 && (
-            <button onClick={() => setStep(s => s - 1)}
+            <button onClick={() => setStep(s => s - 1)} disabled={submitting}
               style={{ flex: "0 0 auto", padding: "14px 24px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", color: "#e5e7eb", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
               ← Back
             </button>
@@ -336,7 +360,7 @@ export default function OnboardingPage({ onComplete }) {
           <button onClick={() => { if (step < totalSteps - 1) setStep(s => s + 1); else finish(); }}
             disabled={!canNext()}
             style={{ flex: 1, padding: 14, background: canNext() ? "linear-gradient(135deg,#10b981,#059669)" : "rgba(255,255,255,.03)", color: canNext() ? "#fff" : "#4b5563", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: canNext() ? "pointer" : "not-allowed", fontFamily: "inherit", letterSpacing: 1, boxShadow: canNext() ? "0 4px 16px rgba(16,185,129,.25)" : "none", transition: "all .25s" }}>
-            {step === totalSteps - 1 ? "BEGIN YOUR JOURNEY →" : "NEXT →"}
+            {step === totalSteps - 1 ? (submitting ? "SAVING..." : "BEGIN YOUR JOURNEY →") : "NEXT →"}
           </button>
         </div>
       </div>

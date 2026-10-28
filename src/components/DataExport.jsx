@@ -1,49 +1,88 @@
 "use client";
-import { useState } from 'react';
-import { getLevel, getRank } from '@/utils';
+import { useState, useRef, useEffect } from 'react';
+import { getLevel, getRank, toArr, today, parseDateKey } from '@/utils';
+import { countWorkoutDays, getTotalCal, getDayCal, getDayDuration, getDaySplit, hasDayWorkout } from '@/lib/workoutHelpers';
+import { APP_VERSION, VERSION_LABEL } from '@/version';
+
+// ctx.roundRect is missing in older Safari/Firefox — fall back to a manual path
+function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    if (typeof ctx.roundRect === "function") { ctx.roundRect(x, y, w, h, r); return; }
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Revoking synchronously can cancel the download in Safari/Firefox
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 // Generate PDF report in browser using canvas
-export default function DataExport({ appState, totalXP, streak, workoutLog, profile }) {
+export default function DataExport({ appState: rawAppState = {}, totalXP = 0, streak = 0, workoutLog: rawWorkoutLog = {}, profile: rawProfile = {} }) {
+    const appState = rawAppState || {};
+    const workoutLog = rawWorkoutLog || {};
+    const profile = rawProfile || {};
     const [exporting, setExporting] = useState(false);
     const [done, setDone] = useState(false);
+    const doneTimer = useRef(null);
+    useEffect(() => () => clearTimeout(doneTimer.current), []);
 
     const exportPDF = async () => {
+        if (exporting) return;
         setExporting(true);
 
         try {
             const lv = getLevel(totalXP);
             const rank = getRank(lv);
             const d = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
-            const totalWorkouts = Object.keys(workoutLog || {}).length;
-            const totalCal = Object.values(workoutLog || {}).reduce((s, w) => s + (w.calBurned || 0), 0);
+            // workoutLog[date] may be a legacy single object or an array of entries
+            const totalWorkouts = countWorkoutDays(workoutLog);
+            const totalCal = Math.round(getTotalCal(workoutLog));
             const foodLog = appState.foodLog || {};
             const journal = appState.journal || {};
             const focusLog = appState.focusLog || {};
-            const habits = appState.habits || [];
             const habitLog = appState.habitLog || {};
-            const finances = appState.finances || [];
+            const finances = toArr(appState.finances);
 
-            const foodDays = Object.keys(foodLog).filter(k => !k.startsWith("water_") && Array.isArray(foodLog[k]) && foodLog[k].length > 0).length;
+            const foodDays = Object.keys(foodLog).filter(k => !k.startsWith("water_") && toArr(foodLog[k]).length > 0).length;
             const journalDays = Object.values(journal).filter(e => e?.entry?.length > 10).length;
-            const focusSessions = Object.values(focusLog).flat().length;
-            const totalQuests = Object.values(habitLog).reduce((s, arr) => s + (Array.isArray(arr) ? arr.length : 0), 0);
+            const focusSessions = Object.values(focusLog).reduce((s, v) => s + toArr(v).length, 0);
+            // habitLog[date] is {habitId: bool} (legacy: array of ids) — count completed quests
+            const totalQuests = Object.values(habitLog).reduce((s, v) => s + (Array.isArray(v) ? v.length : v && typeof v === "object" ? Object.values(v).filter(x => x === true).length : 0), 0);
 
-            // Recent workouts (last 10)
-            const recentWorkouts = Object.entries(workoutLog)
-                .sort((a, b) => b[0].localeCompare(a[0]))
+            // Recent workouts (last 10 days with a workout)
+            const recentWorkouts = Object.keys(workoutLog)
+                .filter(date => hasDayWorkout(workoutLog, date))
+                .sort((a, b) => b.localeCompare(a))
                 .slice(0, 10)
-                .map(([date, w]) => ({
-                    date: new Date(date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
-                    name: w.splitName || "Training",
-                    cal: w.calBurned || 0,
-                    dur: w.duration ? `${Math.floor(w.duration / 60)}m ${w.duration % 60}s` : "—",
-                }));
+                .map(date => {
+                    const dur = Math.round(getDayDuration(workoutLog, date));
+                    const parsed = parseDateKey(date);
+                    return {
+                        date: isNaN(parsed.getTime()) ? date : parsed.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+                        name: String(getDaySplit(workoutLog, date) || "Training"),
+                        cal: Math.round(getDayCal(workoutLog, date)),
+                        dur: dur ? `${Math.floor(dur / 60)}m ${dur % 60}s` : "—",
+                    };
+                });
 
             // Build PDF using canvas → image → downloadable
             const canvas = document.createElement("canvas");
             const W = 595, H = 842; // A4 proportions
             canvas.width = W * 2; canvas.height = H * 2;
             const ctx = canvas.getContext("2d");
+            if (!ctx) throw new Error("Canvas not supported");
             ctx.scale(2, 2);
 
             // Background
@@ -81,7 +120,7 @@ export default function DataExport({ appState, totalXP, streak, workoutLog, prof
             const profileItems = [
                 [`Name: ${profile.name || "—"}`, `Age: ${profile.age || "—"}`],
                 [`Weight: ${profile.weight || "—"} kg`, `Height: ${profile.height || "—"} cm`],
-                [`Goal: ${(profile.goal || "—").toUpperCase()}`, `Level: ${profile.fitnessLevel || "—"}`],
+                [`Goal: ${String(profile.goal || "—").toUpperCase()}`, `Level: ${profile.fitnessLevel || "—"}`],
                 [`Training: ${profile.trainingType || "—"}`, `Daily Time: ${profile.dailyTime || 45} min`],
             ];
             profileItems.forEach(([left, right]) => {
@@ -100,7 +139,7 @@ export default function DataExport({ appState, totalXP, streak, workoutLog, prof
 
             // Stats boxes
             const stats = [
-                ["⚡", `${totalXP.toLocaleString()}`, "Total XP"],
+                ["⚡", `${Number(totalXP || 0).toLocaleString()}`, "Total XP"],
                 ["⚔️", `Lv.${lv}`, rank.name],
                 ["🔥", `${streak}`, "Day Streak"],
                 ["🏋️", `${totalWorkouts}`, "Workouts"],
@@ -118,8 +157,7 @@ export default function DataExport({ appState, totalXP, streak, workoutLog, prof
                 const bx = 30 + col * (boxW + gap), by = y + 15 + row * (boxH + gap);
 
                 ctx.fillStyle = "rgba(255,255,255,0.03)";
-                ctx.beginPath();
-                ctx.roundRect(bx, by, boxW, boxH, 8);
+                roundRectPath(ctx, bx, by, boxW, boxH, 8);
                 ctx.fill();
 
                 ctx.fillStyle = "#10b981";
@@ -178,25 +216,18 @@ export default function DataExport({ appState, totalXP, streak, workoutLog, prof
             // ── FOOTER ──
             ctx.fillStyle = "#4b5563";
             ctx.font = "10px Inter, sans-serif";
-            ctx.fillText(`IGNITE v2.0 · ${profile.name || "Warrior"} · ${rank.emoji} ${rank.name} · Generated ${d}`, 30, H - 25);
+            ctx.fillText(`IGNITE ${VERSION_LABEL} · ${profile.name || "Warrior"} · ${rank.emoji} ${rank.name} · Generated ${d}`, 30, H - 25);
 
             ctx.fillStyle = "#10b981";
             ctx.fillRect(30, H - 35, W - 60, 1);
 
             // Convert to PDF-like download (PNG image of the report)
-            canvas.toBlob((blob) => {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `IGNITE-Report-${new Date().toISOString().split("T")[0]}.png`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                setDone(true);
-                setTimeout(() => setDone(false), 3000);
-            }, "image/png");
-
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+            if (!blob) throw new Error("Could not render report image");
+            downloadBlob(blob, `IGNITE-Report-${today()}.png`);
+            setDone(true);
+            clearTimeout(doneTimer.current);
+            doneTimer.current = setTimeout(() => setDone(false), 3000);
         } catch (e) {
             console.error("Export error:", e);
         }
@@ -205,16 +236,16 @@ export default function DataExport({ appState, totalXP, streak, workoutLog, prof
 
     // Also keep JSON export option
     const exportJSON = () => {
-        const data = {
-            exportDate: new Date().toISOString(), appVersion: "2.0", profile, totalXP, streak, workoutLog,
-            ...Object.fromEntries(["foodLog", "habitLog", "habits", "tasks", "journal", "finances", "focusLog", "pillarProg", "routineData", "masteryData", "bodyData", "challengeData", "freezeData", "oracleChats"].map(k => [k, appState[k]])),
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url; a.download = `ignite-backup-${new Date().toISOString().split("T")[0]}.json`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        try {
+            const data = {
+                exportDate: new Date().toISOString(), appVersion: APP_VERSION, profile, totalXP, streak, workoutLog,
+                ...Object.fromEntries(["foodLog", "habitLog", "habits", "tasks", "journal", "finances", "focusLog", "pillarProg", "routineData", "masteryData", "bodyData", "challengeData", "freezeData", "programState", "xpLog", "loginData", "activeTitle", "questChainData", "oracleChats"].map(k => [k, appState[k] ?? null])),
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            downloadBlob(blob, `ignite-backup-${today()}.json`);
+        } catch (e) {
+            console.error("JSON export error:", e);
+        }
     };
 
     return (

@@ -1,7 +1,6 @@
 "use client";
-import { useState, useMemo } from 'react';
-import { today } from '@/utils';
-import { XP } from '@/data/index';
+import { useState } from 'react';
+import { today, toArr, addDays, parseDateKey } from '@/utils';
 
 const CHALLENGES = [
   { id: "c1", name: "30 Days of Training", icon: "⚔️", desc: "Train every single day for 30 days", cat: "fitness", color: "#10b981", xpReward: 500 },
@@ -18,55 +17,60 @@ const CHALLENGES = [
   { id: "c12", name: "Drink 3L Water", icon: "💧", desc: "Drink 3 liters of water every day", cat: "fitness", color: "#06b6d4", xpReward: 250 },
 ];
 
-export default function ChallengesPage({ challengeData, setChallengeData, addXP }) {
+// Firestore data is untrusted: lists may be objects with numeric keys or contain nulls
+const asObj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
+const list = (v) => toArr(v).filter(x => x && typeof x === "object");
+
+export default function ChallengesPage({ challengeData, setChallengeData = () => { }, addXP = () => { } }) {
   const d = today();
-  const data = challengeData || { active: [], completed: [] };
-  const active = data.active || [];
-  const completed = data.completed || [];
+  const data = asObj(challengeData);
+  const active = list(data.active);
+  const completed = list(data.completed);
   const [tab, setTab] = useState("browse"); // browse | active | completed
 
-  const save = (newData) => setChallengeData(newData);
+  // Functional update so writes always merge into the latest stored data
+  const update = (fn) => setChallengeData(prev => {
+    const p = asObj(prev);
+    return { ...p, ...fn({ active: list(p.active), completed: list(p.completed) }) };
+  });
 
   const startChallenge = (challenge) => {
     if (active.find(a => a.id === challenge.id)) return;
-    save({ ...data, active: [...active, { ...challenge, startDate: d, checkedDays: [], day: 1 }] });
+    update(({ active: act }) => ({ active: [...act.filter(a => a.id !== challenge.id), { ...challenge, startDate: d, checkedDays: [], day: 1 }] }));
     setTab("active");
   };
 
   const checkDay = (chalId) => {
-    save({
-      ...data,
-      active: active.map(a => {
-        if (a.id !== chalId) return a;
-        const days = a.checkedDays || [];
-        if (days.includes(d)) return a;
-        const newDays = [...days, d];
-        // Check if completed (30 days)
-        if (newDays.length >= 30) {
-          // Move to completed
-          setTimeout(() => {
-            addXP(a.xpReward, `Challenge complete: ${a.name}`);
-            save({
-              ...data,
-              active: active.filter(x => x.id !== chalId),
-              completed: [...completed, { ...a, checkedDays: newDays, completedDate: d }],
-            });
-          }, 500);
-        }
-        return { ...a, checkedDays: newDays };
-      }),
-    });
+    const a = active.find(x => x.id === chalId);
+    if (!a) return;
+    const days = toArr(a.checkedDays);
+    if (days.includes(d)) return;
+    const newDays = [...days, d];
+    if (newDays.length >= 30) {
+      // Completed — move to completed in the same write (no delayed save with a stale snapshot)
+      update(({ active: act, completed: done }) => ({
+        active: act.filter(x => x.id !== chalId),
+        completed: [...done, { ...a, checkedDays: newDays, completedDate: d }],
+      }));
+      addXP(10, "Challenge day checked");
+      addXP(Number(a.xpReward) || 0, `Challenge complete: ${a.name}`);
+      setTab("completed");
+      return;
+    }
+    update(({ active: act }) => ({ active: act.map(x => x.id === chalId ? { ...x, checkedDays: newDays } : x) }));
     addXP(10, "Challenge day checked");
   };
 
   const quitChallenge = (chalId) => {
-    save({ ...data, active: active.filter(a => a.id !== chalId) });
+    if (!window.confirm("Quit this challenge? Your progress will be lost.")) return;
+    update(({ active: act }) => ({ active: act.filter(a => a.id !== chalId) }));
   };
 
+  // Date keys are local calendar dates — compare as local dates (DST-safe via rounding)
   const getDaysSinceStart = (startDate) => {
-    const start = new Date(startDate + 'T00:00:00');
-    const now = new Date(d + 'T00:00:00');
-    return Math.floor((now - start) / 86400000) + 1;
+    const start = parseDateKey(startDate);
+    if (isNaN(start)) return 1;
+    return Math.max(1, Math.round((parseDateKey(d) - start) / 86400000) + 1);
   };
 
   return (
@@ -114,7 +118,7 @@ export default function ChallengesPage({ challengeData, setChallengeData, addXP 
           {active.length === 0 && <div className="gs" style={{ textAlign: "center", padding: "30px 0" }}><div style={{ color: "#6b7280", fontSize: 14 }}>No active challenges. Browse and start one!</div></div>}
           {active.map(a => {
             const dayNum = getDaysSinceStart(a.startDate);
-            const checked = (a.checkedDays || []);
+            const checked = toArr(a.checkedDays);
             const todayChecked = checked.includes(d);
             const pct = Math.round((checked.length / 30) * 100);
             return (
@@ -127,7 +131,7 @@ export default function ChallengesPage({ challengeData, setChallengeData, addXP 
                       <div style={{ fontSize: 12, color: "#6b7280" }}>Day {dayNum} of 30 · {checked.length}/30 checked</div>
                     </div>
                   </div>
-                  <span onClick={() => quitChallenge(a.id)} style={{ color: "#4b5563", fontSize: 12, cursor: "pointer" }}>Quit</span>
+                  <span onClick={() => quitChallenge(a.id)} role="button" style={{ color: "#4b5563", fontSize: 12, cursor: "pointer" }}>Quit</span>
                 </div>
 
                 {/* Progress bar */}
@@ -139,7 +143,7 @@ export default function ChallengesPage({ challengeData, setChallengeData, addXP 
                 {/* 30-day grid */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 4, marginBottom: 12 }}>
                   {Array.from({ length: 30 }, (_, i) => {
-                    const dayDate = new Date(new Date(a.startDate + 'T00:00:00').getTime() + i * 86400000).toISOString().split("T")[0];
+                    const dayDate = a.startDate ? addDays(i, a.startDate) : "";
                     const isChecked = checked.includes(dayDate);
                     const isToday = dayDate === d;
                     const isFuture = dayDate > d;
@@ -175,7 +179,7 @@ export default function ChallengesPage({ challengeData, setChallengeData, addXP 
                 <span style={{ fontSize: 28 }}>🏆</span>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#22c55e" }}>{c.name}</div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Completed {new Date(c.completedDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · +{c.xpReward} XP earned</div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>Completed{c.completedDate && !isNaN(parseDateKey(c.completedDate)) ? ` ${parseDateKey(c.completedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ""} · +{c.xpReward} XP earned</div>
                 </div>
               </div>
             </div>

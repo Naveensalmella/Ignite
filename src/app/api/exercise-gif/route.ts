@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+// Bundled at build time (a runtime readFileSync of src/ isn't guaranteed to exist on serverless hosts).
+import exerciseGifs from '@/data/exerciseGifs.json';
 
-let exerciseGifs: any[] | null = null;
-
-function loadGifs() {
-    if (exerciseGifs) return exerciseGifs;
-    try {
-        const raw = readFileSync(join(process.cwd(), 'src/data/exerciseGifs.json'), 'utf8');
-        exerciseGifs = JSON.parse(raw);
-    } catch { exerciseGifs = []; }
-    return exerciseGifs!;
-}
+type GifEntry = { name: string; gif: string };
+const loadGifs = (): GifEntry[] => (Array.isArray(exerciseGifs) ? (exerciseGifs as GifEntry[]) : []);
 
 const cache = new Map<string, string | null>();
 
@@ -28,17 +20,17 @@ function cleanName(name: string): string {
 }
 
 export async function GET(req: NextRequest) {
-    const name = req.nextUrl.searchParams.get('name') || '';
+    const name = (req.nextUrl.searchParams.get('name') || '').slice(0, 100);
     if (!name) return NextResponse.json({ gif: null });
 
     const key = name.toLowerCase().trim();
-    if (cache.has(key)) return NextResponse.json({ gif: cache.get(key) });
+    if (cache.has(key)) return NextResponse.json({ gif: cache.get(key) }, { headers: { 'Cache-Control': 'public, max-age=86400' } });
 
     const search = cleanName(name);
     const words = search.split(' ').filter(w => w.length > 2);
     const list = loadGifs();
 
-    let match = list.find(e => e.name === search);
+    let match: GifEntry | null | undefined = list.find(e => e.name === search);
     if (!match) match = list.find(e => e.name.includes(search));
     if (!match) match = list.find(e => search.includes(e.name));
     if (!match && words.length > 0) {
@@ -51,6 +43,7 @@ export async function GET(req: NextRequest) {
     }
 
     const gif = match?.gif || null;
+    if (cache.size > 2000) cache.clear();
     cache.set(key, gif);
-    return NextResponse.json({ gif });
+    return NextResponse.json({ gif }, { headers: { 'Cache-Control': 'public, max-age=86400' } });
 }

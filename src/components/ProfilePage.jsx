@@ -1,8 +1,7 @@
 "use client";
 import { useState, useMemo } from 'react';
-import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { getLevel, getLevelProg, getRank, xpToNext, calcBMI, bmiCat, bmiCol, today } from '@/utils';
-import { RANKS, XP } from '@/data/index';
+import { getLevel, getLevelProg, getRank, xpToNext, calcBMI, bmiCat, toArr } from '@/utils';
+import { RANKS } from '@/data/index';
 import { BADGES, checkBadges, getRarityColor } from '@/data/badges';
 import YearHeatmap from './YearHeatmap';
 import ThemeToggle from './ThemeToggle';
@@ -10,15 +9,23 @@ import DataExport from './DataExport';
 import AccentPicker from './AccentPicker';
 import { VERSION_LABEL } from '@/version';
 import NotificationSettings from './NotificationSettings';
-import { hasDayWorkout, getDayCal, getDayDuration, getDaySplit, getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
+import { getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
 
-export default function ProfilePage({ profile = {}, setProfile = () => { }, totalXP = 0, streak = 0, workoutLog = {}, appState = {}, freezeData = null, setPage = () => { } }) {
+export default function ProfilePage({ profile: rawProfile = {}, setProfile = () => { }, user = null, onLogout = null, totalXP = 0, streak = 0, workoutLog = {}, appState = {}, setPage = () => { } }) {
+  const profile = rawProfile || {};
   const lv = getLevel(totalXP), rank = getRank(lv), prog = getLevelProg(totalXP), remain = xpToNext(totalXP);
-  const nextRank = RANKS.find(r => r.min > lv);
   const bmi = calcBMI(parseFloat(profile.weight), parseFloat(profile.height));
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState("overview");
+  const [loggingOut, setLoggingOut] = useState(false);
   const { journal, foodLog, focusLog, pillarProg, finances } = appState || {};
+
+  const handleLogout = async () => {
+    if (typeof onLogout !== "function" || loggingOut) return;
+    if (!window.confirm("Log out of IGNITE?")) return;
+    setLoggingOut(true);
+    try { await onLogout(); } catch (e) { console.error("Logout error:", e); setLoggingOut(false); }
+  };
 
   const totalWorkouts = countWorkoutDays(workoutLog);
   const totalCal = getTotalCal(workoutLog);
@@ -46,7 +53,7 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
         </div>
         <div style={{ fontSize: 24, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{profile.name || "Warrior"}</div>
         <span className="rank-badge" style={{ background: `${rank.color}15`, color: rank.color, border: `1px solid ${rank.color}25`, fontSize: 12, marginTop: 6, display: "inline-flex" }}>{rank.emoji} {rank.name} — Lv.{lv}</span>
-        {rank.title && <div style={{ fontSize: 13, color: `${rank.color}80`, marginTop: 6, fontStyle: "italic" }}>"{rank.title}"</div>}
+        {rank.title && <div style={{ fontSize: 13, color: `${rank.color}80`, marginTop: 6, fontStyle: "italic" }}>&ldquo;{rank.title}&rdquo;</div>}
         <div className="xp-bar-bg" style={{ height: 8, borderRadius: 4, marginTop: 12 }}><div className="xp-bar-fill" style={{ width: `${prog * 100}%`, background: `linear-gradient(90deg,${rank.color},#10b981)`, height: 8, borderRadius: 4 }} /></div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 4, color: "#6b7280" }}><span>{totalXP.toLocaleString()} XP</span><span>{remain.toLocaleString()} to Lv.{lv + 1}</span></div>
       </div>
@@ -57,7 +64,7 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
           <div key={label} className="gc" style={{ textAlign: "center", padding: 12 }}>
             <div style={{ fontSize: 16 }}>{icon}</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{val}</div>
-            <div style={{ fontSize: 10, color: "#6b7280" }}>{label}</div>
+            <div style={{ fontSize: 11, color: "#6b7280" }}>{label}</div>
           </div>
         ))}
       </div>
@@ -76,7 +83,7 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
           {[["Age", "age", "years"], ["Weight", "weight", "kg"], ["Height", "height", "cm"], ["Gender", "gender", ""]].map(([label, key, unit]) => (
             <div key={key} style={{ padding: 10, background: "rgba(255,255,255,.02)", borderRadius: 8 }}>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>{label}</div>
+              <div style={{ fontSize: 11, color: "#6b7280" }}>{label}</div>
               {editing && key !== "gender" ? <input className="inp" type="number" value={profile[key] || ""} onChange={e => update(key, e.target.value)} style={{ padding: 6, fontSize: 14, marginTop: 4 }} /> : <div style={{ fontSize: 16, fontWeight: 700, color: "#e5e7eb" }}>{profile[key] || "—"} {unit}</div>}
             </div>
           ))}
@@ -87,8 +94,8 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
       <div className="gs">
         <div className="sl">Training Preferences</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {[["Goal", profile.goal || "—"], ["Fitness Level", profile.fitnessLevel || "—"], ["Training Type", profile.trainingType || "—"], ["Fighting Style", profile.fightingStyle || "—"], ["Daily Time", `${profile.dailyTime || 45} min`], ["Focus", (profile.focusAreas || ["full"]).join(", ")]].map(([l, v]) => (
-            <div key={l} style={{ padding: 8 }}><div style={{ fontSize: 10, color: "#6b7280" }}>{l}</div><div style={{ fontSize: 14, fontWeight: 600, color: "#e5e7eb", textTransform: "capitalize" }}>{v}</div></div>
+          {[["Goal", profile.goal || "—"], ["Fitness Level", profile.fitnessLevel || "—"], ["Training Type", profile.trainingType || "—"], ["Fighting Style", profile.fightingStyle || "—"], ["Daily Time", `${profile.dailyTime || 45} min`], ["Focus", (toArr(profile.focusAreas).length ? toArr(profile.focusAreas) : ["full"]).join(", ")]].map(([l, v]) => (
+            <div key={l} style={{ padding: 8 }}><div style={{ fontSize: 11, color: "#6b7280" }}>{l}</div><div style={{ fontSize: 14, fontWeight: 600, color: "#e5e7eb", textTransform: "capitalize" }}>{v}</div></div>
           ))}
         </div>
       </div>
@@ -98,6 +105,17 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
       <div style={{ marginTop: 12 }}><AccentPicker /></div>
       <div style={{ marginTop: 12 }}><NotificationSettings /></div>
       <div style={{ marginTop: 12 }}><DataExport appState={appState} totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} /></div>
+
+      {/* Account */}
+      {typeof onLogout === "function" && (
+        <div className="gs" style={{ marginTop: 12, padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Account</div>
+            {user?.email && <div style={{ fontSize: 11, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>}
+          </div>
+          <button className="bg" onClick={handleLogout} disabled={loggingOut} style={{ padding: "10px 16px", fontSize: 13, color: "#ef4444", flexShrink: 0 }}>{loggingOut ? "Logging out..." : "Log Out"}</button>
+        </div>
+      )}
     </div>)}
 
     {/* ══ PHOTOS ══ */}
@@ -118,7 +136,7 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
         <div style={{ fontSize: 36 }}>🏅</div>
         <div style={{ fontSize: 22, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{earnedIds.length} / {BADGES.length} Unlocked</div>
         <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 8 }}>
-          {[["common", "#94a3b8"], ["rare", "#3b82f6"], ["epic", "#a855f7"], ["legendary", "#f59e0b"]].map(([r, c]) => (<span key={r} style={{ fontSize: 10, color: c, fontWeight: 600, textTransform: "capitalize" }}>{r}: {BADGES.filter(b => b.rarity === r && earnedIds.includes(b.id)).length}/{BADGES.filter(b => b.rarity === r).length}</span>))}
+          {[["common", "#94a3b8"], ["rare", "#3b82f6"], ["epic", "#a855f7"], ["legendary", "#f59e0b"]].map(([r, c]) => (<span key={r} style={{ fontSize: 11, color: c, fontWeight: 600, textTransform: "capitalize" }}>{r}: {BADGES.filter(b => b.rarity === r && earnedIds.includes(b.id)).length}/{BADGES.filter(b => b.rarity === r).length}</span>))}
         </div>
       </div>
       {categories.map(cat => (
@@ -147,7 +165,7 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
         <div style={{ fontSize: 22, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Rank Progression</div>
         <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Your path to the absolute</div>
       </div>
-      {RANKS.map((r, i) => {
+      {RANKS.map(r => {
         const isActive = rank.name === r.name;
         const isPast = lv >= r.min;
         const isFuture = !isPast;
@@ -159,10 +177,10 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 16, fontWeight: 700, color: isPast ? r.color : "#4b5563", fontFamily: "Rajdhani,sans-serif" }}>{r.name}</span>
                 {isActive && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: `${r.color}15`, color: r.color, fontWeight: 700 }}>CURRENT</span>}
-                {isPast && !isActive && <span style={{ fontSize: 10, color: "#22c55e" }}>✓</span>}
+                {isPast && !isActive && <span style={{ fontSize: 11, color: "#22c55e" }}>✓</span>}
               </div>
               <div style={{ fontSize: 12, color: "#6b7280" }}>Level {r.min}{r.max < 999999 ? `–${r.max}` : "+"}</div>
-              {r.title && <div style={{ fontSize: 11, color: `${r.color}70`, fontStyle: "italic" }}>"{r.title}"</div>}
+              {r.title && <div style={{ fontSize: 11, color: `${r.color}70`, fontStyle: "italic" }}>&ldquo;{r.title}&rdquo;</div>}
             </div>
             <div style={{ fontSize: 11, color: r.color, fontWeight: 700, fontFamily: "Rajdhani,sans-serif" }}>Tier {r.tier}</div>
           </div>
@@ -175,11 +193,11 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
       <div className="gs" style={{ marginBottom: 16 }}>
         <div className="sl">Lifetime Stats</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {[["⚡", `${totalXP.toLocaleString()}`, "Total XP"], ["⚔️", totalWorkouts, "Workouts"], ["🔥", `${totalCal.toLocaleString()}`, "Calories Burned"], ["📅", `${streak}`, "Current Streak"], ["🏅", earnedIds.length, "Badges Earned"], ["📝", Object.values(journal || {}).filter(e => e?.entry?.length > 10).length, "Journal Entries"], ["⏱", Object.values(focusLog || {}).flat().length, "Focus Sessions"], ["💰", (finances || []).length, "Transactions"]].map(([icon, val, label]) => (
+          {[["⚡", `${totalXP.toLocaleString()}`, "Total XP"], ["⚔️", totalWorkouts, "Workouts"], ["🔥", `${totalCal.toLocaleString()}`, "Calories Burned"], ["📅", `${streak}`, "Current Streak"], ["🏅", earnedIds.length, "Badges Earned"], ["📝", Object.values(journal || {}).filter(e => e?.entry?.length > 10).length, "Journal Entries"], ["⏱", Object.values(focusLog || {}).reduce((s, v) => s + toArr(v).length, 0), "Focus Sessions"], ["💰", toArr(finances).length, "Transactions"]].map(([icon, val, label]) => (
             <div key={label} style={{ padding: 12, background: "rgba(255,255,255,.02)", borderRadius: 8, textAlign: "center" }}>
               <div style={{ fontSize: 16 }}>{icon}</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{val}</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>{label}</div>
+              <div style={{ fontSize: 11, color: "#6b7280" }}>{label}</div>
             </div>
           ))}
         </div>
@@ -189,7 +207,7 @@ export default function ProfilePage({ profile = {}, setProfile = () => { }, tota
     {/* Version info */}
     <div style={{ textAlign: "center", padding: "24px 0 8px", opacity: 0.5 }}>
       <div style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, letterSpacing: 1 }}>IGNITE {VERSION_LABEL}</div>
-      <div style={{ fontSize: 10, color: "#374151", marginTop: 2 }}>Built with 🔥 by Naveen</div>
+      <div style={{ fontSize: 11, color: "#374151", marginTop: 2 }}>Built with 🔥 by Naveen</div>
     </div>
   </div>);
 }

@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   keywords: ["fitness", "self-improvement", "RPG", "workout tracker", "nutrition", "gamification"],
   authors: [{ name: "Naveen Salmella" }],
+  icons: {
+    icon: [{ url: "/ignite-logo.svg", type: "image/svg+xml" }, { url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icon-192.png", sizes: "192x192" }],
+  },
+  appleWebApp: { capable: true, title: "IGNITE", statusBarStyle: "black-translucent" },
   openGraph: {
     title: "IGNITE — Level Up Your Life",
     description: "The gamified self-improvement platform. Train, eat right, build habits, and level up.",
@@ -18,19 +23,23 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: "#07090d",
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#07090d" },
+  ],
 };
+
+// Apply the saved theme before first paint so there is no dark/light flash.
+const themeScript = `try{var t=localStorage.getItem("ignite-theme");if(t==="light"){document.documentElement.setAttribute("data-theme","light")}else{document.documentElement.classList.add("dark")}}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/ignite-logo.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-screen bg-[#07090d] text-[#f3f4f6] antialiased">
+      <body className="min-h-screen antialiased">
         {children}
       </body>
     </html>

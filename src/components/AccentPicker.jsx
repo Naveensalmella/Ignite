@@ -13,6 +13,7 @@ const ACCENTS = [
 ];
 
 function applyAccent(accent) {
+    if (typeof document === "undefined") return;
     const a = ACCENTS.find(x => x.id === accent) || ACCENTS[0];
     document.documentElement.style.setProperty("--accent", a.color);
     document.documentElement.style.setProperty("--accent-gradient", a.gradient);
@@ -36,7 +37,12 @@ function applyAccent(accent) {
 export { ACCENTS, applyAccent };
 
 export default function AccentPicker() {
-    const [accent, setAccent] = useState(() => localStorage.getItem("ignite-accent") || "emerald");
+    const [accent, setAccent] = useState(() => {
+        try {
+            const saved = localStorage.getItem("ignite-accent");
+            return ACCENTS.some(a => a.id === saved) ? saved : "emerald";
+        } catch { return "emerald"; }
+    });
 
     useEffect(() => {
         applyAccent(accent);
@@ -44,8 +50,7 @@ export default function AccentPicker() {
 
     const pick = (id) => {
         setAccent(id);
-        localStorage.setItem("ignite-accent", id);
-        applyAccent(id);
+        try { localStorage.setItem("ignite-accent", id); } catch { }
     };
 
     return (

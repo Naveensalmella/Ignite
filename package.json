@@ -1,6 +1,6 @@
 {
-  "name": "ignite-v3",
-  "version": "0.1.0",
+  "name": "ignite",
+  "version": "5.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
@@ -9,8 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.6.1",
     "firebase": "^12.16.0",
     "framer-motion": "^12.42.2",
     "howler": "^2.2.4",
@@ -18,8 +16,6 @@
     "next": "16.2.11",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "recharts": "^3.10.0",
-    "three": "^0.185.1",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

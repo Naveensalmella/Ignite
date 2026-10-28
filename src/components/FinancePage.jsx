@@ -1,6 +1,5 @@
 "use client";
 import { useState, useMemo } from 'react';
-import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { today, toArr } from '@/utils';
 
 const CATEGORIES = {
@@ -8,23 +7,30 @@ const CATEGORIES = {
   expense: ["Food", "Transport", "Shopping", "Bills", "Entertainment", "Health", "Education", "Rent", "Other"],
 };
 const CAT_COLORS = { Food: "#f59e0b", Transport: "#3b82f6", Shopping: "#ec4899", Bills: "#ef4444", Entertainment: "#8b5cf6", Health: "#10b981", Education: "#06b6d4", Rent: "#f97316", Other: "#6b7280", Salary: "#22c55e", Freelance: "#10b981", Investment: "#06b6d4", Gift: "#f59e0b", "Other Income": "#6b7280" };
+// Firestore data is untrusted: amounts may be strings/missing, dates may be missing, entries may be null
+const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const monthLabel = (m) => { const [y, mo] = String(m).split("-").map(Number); const dt = new Date(y, (mo || 1) - 1, 1); return isNaN(dt) ? m : dt.toLocaleDateString("en", { month: "short", year: "2-digit" }); };
 const CAT_ICONS = { Food: "🍽️", Transport: "🚗", Shopping: "🛍️", Bills: "📄", Entertainment: "🎮", Health: "💊", Education: "📚", Rent: "🏠", Other: "📌", Salary: "💰", Freelance: "💻", Investment: "📈", Gift: "🎁", "Other Income": "💵" };
 
 export default function FinancePage({ finances = [], setFinances = () => { }, addXP = () => { } }) {
   const d = today();
   const [tab, setTab] = useState("overview");
-  const [showAdd, setShowAdd] = useState(false);
   const [txType, setTxType] = useState("expense");
   const [txAmount, setTxAmount] = useState("");
   const [txCategory, setTxCategory] = useState("");
   const [txNote, setTxNote] = useState("");
   const [filterMonth, setFilterMonth] = useState(d.slice(0, 7)); // YYYY-MM
 
+  const amountVal = parseFloat(txAmount);
+  const amountValid = Number.isFinite(amountVal) && amountVal > 0;
+
   const addTransaction = () => {
-    if (!txAmount || !txCategory) return;
-    const tx = { id: Date.now(), type: txType, amount: parseFloat(txAmount), category: txCategory, note: txNote, date: d };
+    if (!amountValid || !txCategory) return;
+    const tx = { id: Date.now(), type: txType, amount: Math.round(amountVal * 100) / 100, category: txCategory, note: txNote.trim(), date: d };
     setFinances(prev => [tx, ...toArr(prev)]);
-    setTxAmount(""); setTxCategory(""); setTxNote(""); setShowAdd(false);
+    setTxAmount(""); setTxCategory(""); setTxNote("");
+    setFilterMonth(d.slice(0, 7));
+    setTab("overview");
     addXP(5, "Finance logged");
   };
 
@@ -34,36 +40,38 @@ export default function FinancePage({ finances = [], setFinances = () => { }, ad
   };
 
   // Monthly data
-  const monthTxs = useMemo(() => toArr(finances).filter(t => (t.date || "").startsWith(filterMonth)), [finances, filterMonth]);
-  const totalIncome = monthTxs.filter(t => t.type === "income").reduce((s, t) => s + (t.amount || 0), 0);
-  const totalExpense = monthTxs.filter(t => t.type === "expense").reduce((s, t) => s + (t.amount || 0), 0);
+  const txList = useMemo(() => toArr(finances).filter(t => t && typeof t === "object"), [finances]);
+  const monthTxs = useMemo(() => txList.filter(t => String(t.date || "").startsWith(filterMonth)), [txList, filterMonth]);
+  const totalIncome = monthTxs.filter(t => t.type === "income").reduce((s, t) => s + num(t.amount), 0);
+  const totalExpense = monthTxs.filter(t => t.type === "expense").reduce((s, t) => s + num(t.amount), 0);
   const savings = totalIncome - totalExpense;
 
   // Category breakdown
   const categoryBreakdown = useMemo(() => {
     const cats = {};
     monthTxs.filter(t => t.type === "expense").forEach(t => {
-      cats[t.category] = (cats[t.category] || 0) + (t.amount || 0);
+      const c = t.category || "Other";
+      cats[c] = (cats[c] || 0) + num(t.amount);
     });
     return Object.entries(cats).sort((a, b) => b[1] - a[1]);
   }, [monthTxs]);
 
-  // Recent transactions
-  const recent = useMemo(() => toArr(finances).slice(0, 20), [finances]);
+  // All transactions, newest first
+  const recent = useMemo(() => [...txList].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || num(b.id) - num(a.id)), [txList]);
 
   // Month selector
   const months = useMemo(() => {
     const set = new Set();
-    toArr(finances).forEach(t => { if (t.date) set.add(t.date.slice(0, 7)); });
+    txList.forEach(t => { if (typeof t.date === "string" && /^\d{4}-\d{2}/.test(t.date)) set.add(t.date.slice(0, 7)); });
     set.add(d.slice(0, 7));
     return [...set].sort().reverse();
-  }, [finances, d]);
+  }, [txList, d]);
 
   return (
     <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
       <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto" }}>
         {[["overview", "📊 Overview"], ["transactions", "📋 All"], ["add", "➕ Add"]].map(([k, l]) => (
-          <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => { setTab(k); if (k === "add") setShowAdd(true); }} style={{ flexShrink: 0, fontSize: 12 }}>{l}</span>
+          <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => setTab(k)} style={{ flexShrink: 0, fontSize: 12 }}>{l}</span>
         ))}
       </div>
 
@@ -74,7 +82,7 @@ export default function FinancePage({ finances = [], setFinances = () => { }, ad
           <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto" }}>
             {months.slice(0, 6).map(m => (
               <span key={m} className={`chip ${filterMonth === m ? "chip-a" : "chip-i"}`} onClick={() => setFilterMonth(m)} style={{ flexShrink: 0, fontSize: 11 }}>
-                {new Date(m + "-01").toLocaleDateString("en", { month: "short", year: "2-digit" })}
+                {monthLabel(m)}
               </span>
             ))}
           </div>
@@ -83,15 +91,15 @@ export default function FinancePage({ finances = [], setFinances = () => { }, ad
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
             <div className="gc" style={{ padding: 12, textAlign: "center" }}>
               <div style={{ fontSize: 18, fontWeight: 900, color: "#22c55e", fontFamily: "Rajdhani,sans-serif" }}>₹{totalIncome.toLocaleString()}</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>Income</div>
+              <div style={{ fontSize: 11, color: "#6b7280" }}>Income</div>
             </div>
             <div className="gc" style={{ padding: 12, textAlign: "center" }}>
               <div style={{ fontSize: 18, fontWeight: 900, color: "#ef4444", fontFamily: "Rajdhani,sans-serif" }}>₹{totalExpense.toLocaleString()}</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>Expense</div>
+              <div style={{ fontSize: 11, color: "#6b7280" }}>Expense</div>
             </div>
             <div className="gc" style={{ padding: 12, textAlign: "center" }}>
               <div style={{ fontSize: 18, fontWeight: 900, color: savings >= 0 ? "#10b981" : "#ef4444", fontFamily: "Rajdhani,sans-serif" }}>₹{Math.abs(savings).toLocaleString()}</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>{savings >= 0 ? "Saved" : "Deficit"}</div>
+              <div style={{ fontSize: 11, color: "#6b7280" }}>{savings >= 0 ? "Saved" : "Deficit"}</div>
             </div>
           </div>
 
@@ -136,7 +144,7 @@ export default function FinancePage({ finances = [], setFinances = () => { }, ad
           )}
 
           {totalIncome === 0 && totalExpense === 0 && (
-            <div style={{ textAlign: "center", padding: 30, color: "#6b7280", fontSize: 13 }}>No transactions this month. Tap "Add" to start tracking.</div>
+            <div style={{ textAlign: "center", padding: 30, color: "#6b7280", fontSize: 13 }}>No transactions this month. Tap &quot;Add&quot; to start tracking.</div>
           )}
         </div>
       )}
@@ -147,19 +155,19 @@ export default function FinancePage({ finances = [], setFinances = () => { }, ad
           {recent.length === 0 ? (
             <div style={{ textAlign: "center", padding: 30, color: "#6b7280", fontSize: 13 }}>No transactions yet.</div>
           ) : (
-            recent.map(tx => (
-              <div key={tx.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
+            recent.map((tx, i) => (
+              <div key={tx.id ?? `i${i}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
                 <span style={{ fontSize: 20 }}>{CAT_ICONS[tx.category] || "📌"}</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, color: "#f3f4f6" }}>{tx.category}</div>
-                  <div style={{ fontSize: 10, color: "#6b7280" }}>{tx.note || ""} · {tx.date}</div>
+                  <div style={{ fontSize: 13, color: "#f3f4f6" }}>{tx.category || "Other"}</div>
+                  <div style={{ fontSize: 11, color: "#6b7280" }}>{[tx.note, tx.date].filter(Boolean).join(" · ")}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: tx.type === "income" ? "#22c55e" : "#ef4444", fontFamily: "Rajdhani,sans-serif" }}>
-                    {tx.type === "income" ? "+" : "-"}₹{(tx.amount || 0).toLocaleString()}
+                    {tx.type === "income" ? "+" : "-"}₹{num(tx.amount).toLocaleString()}
                   </div>
                 </div>
-                <span onClick={() => deleteTx(tx.id)} style={{ fontSize: 14, color: "#4b5563", cursor: "pointer", padding: "0 4px" }}>×</span>
+                <span onClick={() => deleteTx(tx.id)} role="button" aria-label="Delete transaction" style={{ fontSize: 14, color: "#4b5563", cursor: "pointer", padding: "0 4px" }}>×</span>
               </div>
             ))
           )}
@@ -167,7 +175,7 @@ export default function FinancePage({ finances = [], setFinances = () => { }, ad
       )}
 
       {/* ══ ADD ══ */}
-      {(tab === "add" || showAdd) && (
+      {tab === "add" && (
         <div className="gs" style={{ padding: 14 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>Add Transaction</div>
 
@@ -180,7 +188,7 @@ export default function FinancePage({ finances = [], setFinances = () => { }, ad
           {/* Amount */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
             <span style={{ fontSize: 20, color: "#f3f4f6" }}>₹</span>
-            <input className="inp" type="number" placeholder="Amount" value={txAmount} onChange={e => setTxAmount(e.target.value)} style={{ flex: 1, fontSize: 18, fontWeight: 700 }} />
+            <input className="inp" type="number" min="0" step="0.01" inputMode="decimal" placeholder="Amount" aria-label="Amount" value={txAmount} onChange={e => setTxAmount(e.target.value)} style={{ flex: 1, fontSize: 18, fontWeight: 700 }} />
           </div>
 
           {/* Category */}
@@ -196,7 +204,7 @@ export default function FinancePage({ finances = [], setFinances = () => { }, ad
           {/* Note */}
           <input className="inp" placeholder="Note (optional)" value={txNote} onChange={e => setTxNote(e.target.value)} style={{ width: "100%", marginBottom: 12 }} />
 
-          <button className="bp" onClick={addTransaction} disabled={!txAmount || !txCategory} style={{ width: "100%", padding: 14, fontSize: 14 }}>
+          <button className="bp" onClick={addTransaction} disabled={!amountValid || !txCategory} style={{ width: "100%", padding: 14, fontSize: 14 }}>
             {txType === "income" ? "💰" : "💸"} Add {txType === "income" ? "Income" : "Expense"}
           </button>
         </div>

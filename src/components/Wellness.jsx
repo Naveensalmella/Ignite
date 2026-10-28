@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from 'react';
 import { requestWakeLock, releaseWakeLock } from './wakeLock';
-import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { today } from '@/utils';
+import { today, toArr, dateKey } from '@/utils';
 
 const MOODS = [
   { emoji: "😄", label: "Great", color: "#22c55e", value: 5 },
@@ -16,10 +15,17 @@ const SLEEP_QUALITY = ["😴 Deep", "🙂 Good", "😐 Fair", "😟 Poor", "😩
 
 function Ring({ pct, color, size = 56, stroke = 5, children }) { const p = Number.isFinite(pct) ? pct : 0; const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, p / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
+// Journal entries are raw Firestore objects; legacy entries may be a bare string.
+const asEntry = (v) => (v && typeof v === "object" && !Array.isArray(v)) ? v : (typeof v === "string" ? { entry: v } : {});
+// Gratitude may come back from Firestore as an object with numeric keys, or be missing.
+const asGratitude = (v) => { const a = toArr(v); return [0, 1, 2].map(i => typeof a[i] === "string" ? a[i] : ""); };
+
 export default function Wellness({ journal = {}, setJournal = () => { }, addXP = () => { } }) {
   const d = today();
   const [tab, setTab] = useState("today");
-  const todayData = journal[d] || {};
+  const jl = useMemo(() => journal || {}, [journal]);
+  const rawToday = jl[d];
+  const todayData = asEntry(rawToday);
 
   // Sleep state
   const [sleepHours, setSleepHours] = useState(todayData.sleepHours || "");
@@ -32,7 +38,26 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
 
   // Journal
   const [entry, setEntry] = useState(todayData.entry || "");
-  const [gratitude, setGratitude] = useState(todayData.gratitude || ["", "", ""]);
+  const [gratitude, setGratitude] = useState(asGratitude(todayData.gratitude));
+
+  // Re-sync local form state when today's stored entry changes from outside
+  // (data reload / pull-to-refresh) or when the date rolls over, so a later
+  // save() doesn't overwrite stored data with stale or yesterday's values.
+  // Only fields whose stored value actually changed are re-synced, so a background
+  // write (e.g. meditationMin) doesn't wipe text the user is still typing.
+  const [synced, setSynced] = useState({ d, raw: rawToday });
+  if (synced.d !== d || synced.raw !== rawToday) {
+    const prev = synced.d === d ? asEntry(synced.raw) : null; // null → new day: reset everything
+    const changed = (k) => !prev || JSON.stringify(prev[k]) !== JSON.stringify(todayData[k]);
+    setSynced({ d, raw: rawToday });
+    if (changed("sleepHours")) setSleepHours(todayData.sleepHours || "");
+    if (changed("sleepQuality")) setSleepQuality(todayData.sleepQuality || "");
+    if (changed("bedTime")) setBedTime(todayData.bedTime || "");
+    if (changed("wakeTime")) setWakeTime(todayData.wakeTime || "");
+    if (changed("mood")) setMood(todayData.mood || "");
+    if (changed("entry")) setEntry(todayData.entry || "");
+    if (changed("gratitude")) setGratitude(asGratitude(todayData.gratitude));
+  }
 
   // Meditation
   const [medActive, setMedActive] = useState(false);
@@ -40,10 +65,15 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
   const [medTarget, setMedTarget] = useState(300);
   const [breathPhase, setBreathPhase] = useState("Inhale");
 
+  // Merge updates into the latest stored entry for the day (never a stale snapshot)
+  const patchDay = (day, updates) => setJournal(prev => {
+    const p = prev || {};
+    return { ...p, [day]: { ...asEntry(p[day]), ...updates } };
+  });
+
   // Auto-save
   const save = (updates = {}) => {
-    const data = { ...todayData, sleepHours: parseFloat(sleepHours) || 0, sleepQuality, bedTime, wakeTime, mood, entry, gratitude, ...updates };
-    setJournal(prev => ({ ...prev, [d]: data }));
+    patchDay(d, { sleepHours: parseFloat(sleepHours) || 0, sleepQuality, bedTime, wakeTime, mood, entry, gratitude, ...updates });
   };
 
   // Wake Lock for meditation
@@ -53,57 +83,69 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
     return () => releaseWakeLock();
   }, [medActive]);
 
-  // Meditation timer
+  // Meditation timer — side effects (XP, save) run in the interval callback,
+  // not inside a state updater (updaters may run twice in StrictMode).
   useEffect(() => {
     if (!medActive) return;
+    let elapsed = 0;
     const interval = setInterval(() => {
-      setMedTime(prev => {
-        if (prev + 1 >= medTarget) { setMedActive(false); addXP(15, "Meditation session"); save({ meditationMin: Math.round(medTarget / 60) }); return 0; }
-        return prev + 1;
-      });
+      elapsed += 1;
+      if (elapsed >= medTarget) {
+        clearInterval(interval);
+        setMedActive(false);
+        setMedTime(0);
+        addXP(15, "Meditation session");
+        const day = today();
+        setJournal(prev => {
+          const p = prev || {};
+          return { ...p, [day]: { ...asEntry(p[day]), meditationMin: Math.round(medTarget / 60) } };
+        });
+        return;
+      }
+      setMedTime(elapsed);
     }, 1000);
     // Breathing cycle (4-7-8)
     const breathInterval = setInterval(() => {
       setBreathPhase(prev => prev === "Inhale" ? "Hold" : prev === "Hold" ? "Exhale" : "Inhale");
     }, 4000);
     return () => { clearInterval(interval); clearInterval(breathInterval); };
-  }, [medActive, medTarget]);
+  }, [medActive, medTarget, addXP, setJournal]);
 
   // Wellness score
-  const wellnessScore = useMemo(() => {
+  const wellnessScore = (() => {
     let score = 0, max = 0;
     if (todayData.mood) { score += MOODS.find(m => m.emoji === todayData.mood)?.value || 0; max += 5; }
     if (todayData.sleepHours) { const h = parseFloat(todayData.sleepHours); score += h >= 7 ? 5 : h >= 6 ? 3 : 1; max += 5; }
-    if (todayData.entry?.length > 10) { score += 3; max += 3; }
-    if (todayData.gratitude?.filter(g => g.length > 0).length >= 2) { score += 2; max += 2; }
+    if (typeof todayData.entry === "string" && todayData.entry.length > 10) { score += 3; max += 3; }
+    if (toArr(todayData.gratitude).filter(g => typeof g === "string" && g.length > 0).length >= 2) { score += 2; max += 2; }
     if (todayData.meditationMin) { score += 3; max += 3; }
     return max > 0 ? Math.round((score / max) * 100) : 0;
-  }, [todayData]);
+  })();
 
   // 14-day mood history
-  const moodHistory = useMemo(() => {
+  const moodHistory = (() => {
     const days = [];
     for (let i = 13; i >= 0; i--) {
       const dt = new Date(); dt.setDate(dt.getDate() - i);
-      const ds = dt.toISOString().split("T")[0];
-      const jd = journal[ds] || {};
+      const ds = dateKey(dt);
+      const jd = asEntry(jl[ds]);
       const moodVal = MOODS.find(m => m.emoji === jd.mood)?.value || 0;
-      days.push({ date: ds, label: dt.toLocaleDateString("en", { weekday: "narrow" }), day: dt.getDate(), mood: jd.mood, value: moodVal, sleep: jd.sleepHours || 0, isToday: ds === d });
+      days.push({ date: ds, label: dt.toLocaleDateString("en", { weekday: "narrow" }), day: dt.getDate(), mood: jd.mood, value: moodVal, sleep: parseFloat(jd.sleepHours) || 0, isToday: ds === d });
     }
     return days;
-  }, [journal, d]);
+  })();
 
   // 7-day sleep history
-  const sleepHistory = useMemo(() => {
+  const sleepHistory = (() => {
     const days = [];
     for (let i = 6; i >= 0; i--) {
       const dt = new Date(); dt.setDate(dt.getDate() - i);
-      const ds = dt.toISOString().split("T")[0];
-      const jd = journal[ds] || {};
+      const ds = dateKey(dt);
+      const jd = asEntry(jl[ds]);
       days.push({ date: ds, label: dt.toLocaleDateString("en", { weekday: "narrow" }), hours: parseFloat(jd.sleepHours) || 0, quality: jd.sleepQuality || "", isToday: ds === d });
     }
     return days;
-  }, [journal, d]);
+  })();
 
   const fmtMedTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
@@ -138,7 +180,7 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
                 <div key={m.emoji} onClick={() => { setMood(m.emoji); save({ mood: m.emoji }); if (!todayData.mood) addXP(5, "Mood logged"); }}
                   style={{ textAlign: "center", cursor: "pointer", padding: "8px 6px", borderRadius: 12, background: mood === m.emoji ? `${m.color}15` : "transparent", border: mood === m.emoji ? `1px solid ${m.color}30` : "1px solid transparent", transition: "all .2s" }}>
                   <div style={{ fontSize: 28 }}>{m.emoji}</div>
-                  <div style={{ fontSize: 10, color: mood === m.emoji ? m.color : "#6b7280", marginTop: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 11, color: mood === m.emoji ? m.color : "#6b7280", marginTop: 4 }}>{m.label}</div>
                 </div>
               ))}
             </div>
@@ -146,9 +188,9 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
 
           {/* Quick Sleep Log */}
           <div className="gs" style={{ marginBottom: 12, padding: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>😴 Last night's sleep</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>😴 Last night&apos;s sleep</div>
             <div style={{ display: "flex", gap: 8 }}>
-              <input className="inp" type="number" step="0.5" min="0" max="14" placeholder="Hours" value={sleepHours} onChange={e => setSleepHours(e.target.value)} onBlur={() => { save(); if (!todayData.sleepHours && sleepHours) addXP(5, "Sleep logged"); }} style={{ flex: 1 }} />
+              <input className="inp" type="number" step="0.5" min="0" max="14" placeholder="Hours" aria-label="Hours slept" value={sleepHours} onChange={e => setSleepHours(e.target.value)} onBlur={() => { save(); if (!todayData.sleepHours && sleepHours) addXP(5, "Sleep logged"); }} style={{ flex: 1 }} />
               <select className="inp" value={sleepQuality} onChange={e => { setSleepQuality(e.target.value); save({ sleepQuality: e.target.value }); }} style={{ flex: 1 }}>
                 <option value="">Quality</option>
                 {SLEEP_QUALITY.map(q => <option key={q} value={q}>{q}</option>)}
@@ -164,7 +206,7 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
 
           {/* Gratitude */}
           <div className="gs" style={{ padding: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>🙏 3 Things I'm Grateful For</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>🙏 3 Things I&apos;m Grateful For</div>
             {[0, 1, 2].map(i => (
               <input key={i} className="inp" placeholder={`${i + 1}. I'm grateful for...`} value={gratitude[i]} onChange={e => { const g = [...gratitude]; g[i] = e.target.value; setGratitude(g); }} onBlur={() => save()} style={{ marginBottom: 6, width: "100%" }} />
             ))}
@@ -190,7 +232,7 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Hours Slept</div>
-                <input className="inp" type="number" step="0.5" min="0" max="14" value={sleepHours} onChange={e => setSleepHours(e.target.value)} onBlur={() => save()} style={{ width: "100%" }} />
+                <input className="inp" type="number" step="0.5" min="0" max="14" placeholder="Hours" value={sleepHours} onChange={e => setSleepHours(e.target.value)} onBlur={() => save()} style={{ width: "100%" }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Quality</div>
@@ -209,12 +251,12 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
               {sleepHistory.map((day, i) => (
                 <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <div style={{ fontSize: 11, color: day.hours >= 7 ? "#22c55e" : day.hours >= 5 ? "#f59e0b" : "#ef4444", fontWeight: 600, marginBottom: 2 }}>{day.hours > 0 ? `${day.hours}h` : ""}</div>
-                  <div style={{ width: "100%", background: day.hours >= 7 ? "#22c55e" : day.hours >= 5 ? "rgba(245,158,11,.4)" : day.hours > 0 ? "rgba(239,68,68,.3)" : "rgba(255,255,255,.03)", borderRadius: "4px 4px 0 0", height: `${Math.max(4, (day.hours / 10) * 65)}px`, transition: "height .5s" }} />
-                  <div style={{ fontSize: 10, color: day.isToday ? "#10b981" : "#6b7280", marginTop: 4, fontWeight: day.isToday ? 700 : 400 }}>{day.label}</div>
+                  <div style={{ width: "100%", background: day.hours >= 7 ? "#22c55e" : day.hours >= 5 ? "rgba(245,158,11,.4)" : day.hours > 0 ? "rgba(239,68,68,.3)" : "rgba(255,255,255,.03)", borderRadius: "4px 4px 0 0", height: `${Math.min(65, Math.max(4, (day.hours / 10) * 65))}px`, transition: "height .5s" }} />
+                  <div style={{ fontSize: 11, color: day.isToday ? "#10b981" : "#6b7280", marginTop: 4, fontWeight: day.isToday ? 700 : 400 }}>{day.label}</div>
                 </div>
               ))}
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#4b5563" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#4b5563" }}>
               <span>Target: 7-8 hours</span>
               <span>Avg: {(sleepHistory.reduce((s, d) => s + d.hours, 0) / Math.max(1, sleepHistory.filter(d => d.hours > 0).length)).toFixed(1)}h</span>
             </div>
@@ -233,7 +275,7 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
                   <>
                     <div style={{ fontSize: 36, fontWeight: 900, color: "#8b5cf6", fontFamily: "Rajdhani,sans-serif" }}>{fmtMedTime(medTime)}</div>
                     <div style={{ fontSize: 14, color: "#8b5cf6", fontWeight: 600, marginTop: 4 }}>{breathPhase}</div>
-                    <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{breathPhase === "Inhale" ? "Breathe in..." : breathPhase === "Hold" ? "Hold..." : "Breathe out..."}</div>
+                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{breathPhase === "Inhale" ? "Breathe in..." : breathPhase === "Hold" ? "Hold..." : "Breathe out..."}</div>
                   </>
                 ) : (
                   <>
@@ -292,7 +334,7 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
                 );
               })}
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#4b5563", marginTop: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#4b5563", marginTop: 6 }}>
               <span>Avg: {(moodHistory.reduce((s, d) => s + d.value, 0) / Math.max(1, moodHistory.filter(d => d.value > 0).length)).toFixed(1)}/5</span>
               <span>Logged: {moodHistory.filter(d => d.value > 0).length}/14 days</span>
             </div>
@@ -307,12 +349,12 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
               <div>
                 {moodHistory.filter(d => d.value > 0).slice(-7).map((day, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
-                    <span style={{ fontSize: 10, color: "#6b7280", width: 24 }}>{day.day}</span>
+                    <span style={{ fontSize: 11, color: "#6b7280", width: 24 }}>{day.day}</span>
                     <span style={{ fontSize: 16 }}>{day.mood}</span>
                     <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,.04)", borderRadius: 2, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${(day.sleep / 10) * 100}%`, background: day.sleep >= 7 ? "#22c55e" : "#f59e0b", borderRadius: 2 }} />
+                      <div style={{ height: "100%", width: `${Math.min(100, (day.sleep / 10) * 100)}%`, background: day.sleep >= 7 ? "#22c55e" : "#f59e0b", borderRadius: 2 }} />
                     </div>
-                    <span style={{ fontSize: 10, color: "#6b7280", width: 28 }}>{day.sleep}h</span>
+                    <span style={{ fontSize: 11, color: "#6b7280", width: 28 }}>{day.sleep}h</span>
                   </div>
                 ))}
               </div>

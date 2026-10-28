@@ -1,8 +1,7 @@
 "use client";
 import { useState, useMemo } from 'react';
-import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { XP, DAILY_PENALTY } from '@/data/index';
-import { today, toArr } from '@/utils';
+import { today, toArr, dateKey } from '@/utils';
 import HistoryPanel from './HistoryPanel';
 import { formatQuestHistory } from '@/historyFormatters';
 
@@ -31,27 +30,49 @@ const SUGGESTED = [
 
 function Ring({ pct, color, size = 80, stroke = 6, children }) { const p = Number.isFinite(pct) ? pct : 0; const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, p / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
+// habitLog[date] can be: an array of habit ids (legacy), a Firestore-mangled array
+// (object with numeric keys), or a map {habitId: bool}. Return the done ids.
+function doneIds(v) {
+  if (Array.isArray(v)) return v.filter(x => typeof x === "string" || typeof x === "number");
+  if (v && typeof v === "object") {
+    const keys = Object.keys(v);
+    if (keys.length > 0 && keys.every(k => !isNaN(k))) return Object.values(v).filter(x => typeof x === "string" || typeof x === "number");
+    return keys.filter(k => v[k] === true);
+  }
+  return [];
+}
+// Convert any day entry to the {habitId: bool} map format (keeps explicit `false`s so
+// an un-check is persisted by Firestore merge writes).
+function asDoneMap(v) {
+  if (v && typeof v === "object" && !Array.isArray(v)) {
+    const keys = Object.keys(v);
+    if (!(keys.length > 0 && keys.every(k => !isNaN(k)))) return { ...v };
+  }
+  return Object.fromEntries(doneIds(v).map(id => [id, true]));
+}
+
 export default function DailyQuestPage({ habits = [], setHabits = () => { }, habitLog = {}, setHabitLog = () => { }, addXP = () => { }, workoutLog = {} }) {
   const d = today();
-  const checked = toArr(habitLog[d]);
+  const hl = useMemo(() => habitLog || {}, [habitLog]);
+  const checked = doneIds(hl[d]);
   const todayTrained = !!(workoutLog && workoutLog[d]);
   const [newName, setNewName] = useState("");
   const [newCat, setNewCat] = useState("power");
   const [showAdd, setShowAdd] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showCal, setShowCal] = useState(false);
-  const [showStats, setShowStats] = useState(false);
 
-  // Filter out old required habits — only keep user-created ones
-  const userQuests = habits.filter(h => h.id !== "h1" || h.name === "Complete Daily Training");
+  // Only user quests — "h1" (Complete Daily Training) is rendered separately as the required quest
+  const habitList = toArr(habits).filter(h => h && h.id != null);
+  const userQuests = habitList.filter(h => h.id !== "h1");
 
   // Calculate individual habit streaks
   const getHabitStreak = (habitId) => {
     let streak = 0;
     const dt = new Date();
     for (let i = 0; i < 365; i++) {
-      const ds = dt.toISOString().split("T")[0];
-      if (toArr(habitLog[ds]).includes(habitId)) { streak++; dt.setDate(dt.getDate() - 1); }
+      const ds = dateKey(dt);
+      if (doneIds(hl[ds]).includes(habitId)) { streak++; dt.setDate(dt.getDate() - 1); }
       else if (i === 0) { dt.setDate(dt.getDate() - 1); continue; } // today might not be done yet
       else break;
     }
@@ -60,28 +81,30 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
 
   const toggle = (id) => {
     const was = checked.includes(id);
-    setHabitLog(p => { const dl = toArr(p[d]); return { ...p, [d]: was ? dl.filter(x => x !== id) : [...dl, id] } });
+    setHabitLog(p => { const prev = p || {}; return { ...prev, [d]: { ...asDoneMap(prev[d]), [id]: !was } }; });
     if (!was) addXP(XP.habit, "Quest completed");
   };
 
   const addQuest = (name, cat) => {
     if (!name.trim()) return;
-    setHabits(p => [...p, { id: `q${Date.now()}`, name: name.trim(), icon: QUEST_CATS.find(c => c.id === cat)?.icon || "⭐", pillar: cat }]);
+    setHabits(p => [...toArr(p), { id: `q${Date.now()}`, name: name.trim(), icon: QUEST_CATS.find(c => c.id === cat)?.icon || "⭐", pillar: cat }]);
     setNewName(""); setShowAdd(false);
   };
 
-  const removeQuest = (id) => { if (id !== "h1") setHabits(p => p.filter(h => h.id !== id)) };
+  const removeQuest = (id) => { if (id !== "h1") setHabits(p => toArr(p).filter(h => h && h.id !== id)) };
 
-  const completedCount = checked.length + (todayTrained ? 1 : 0);
+  // Only count checked ids that belong to a current quest (ignores deleted habits / h1)
+  const doneQuestCount = userQuests.filter(h => checked.includes(h.id)).length;
+  const completedCount = doneQuestCount + (todayTrained ? 1 : 0);
   const totalCount = userQuests.length + 1;
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-  const xpEarned = checked.length * XP.habit + (todayTrained ? XP.workout : 0);
+  const xpEarned = doneQuestCount * XP.habit + (todayTrained ? XP.workout : 0);
 
   // Calendar
-  const calDays = useMemo(() => { const now = new Date(), y = now.getFullYear(), m = now.getMonth(), fd = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate(), days = []; for (let i = 0; i < fd; i++)days.push(null); for (let i = 1; i <= dim; i++) { const ds = `${y}-${String(m + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`; const dh = toArr(habitLog[ds]); const w = workoutLog && workoutLog[ds]; days.push({ day: i, date: ds, done: w || dh.length >= 3, partial: dh.length > 0 }) } return days }, [habitLog, workoutLog]);
+  const calDays = useMemo(() => { const now = new Date(), y = now.getFullYear(), m = now.getMonth(), fd = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate(), days = []; for (let i = 0; i < fd; i++)days.push(null); for (let i = 1; i <= dim; i++) { const ds = `${y}-${String(m + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`; const dh = doneIds(hl[ds]); const w = workoutLog && workoutLog[ds]; days.push({ day: i, date: ds, done: !!w || dh.length >= 3, partial: dh.length > 0 }) } return days }, [hl, workoutLog]);
 
-  // Stats
-  const stats = useMemo(() => { const allDates = Object.keys(habitLog); return { totalDays: allDates.length, totalQuests: allDates.reduce((s, ds) => s + toArr(habitLog[ds]).length, 0), activeDays: allDates.filter(ds => toArr(habitLog[ds]).length > 0).length } }, [habitLog]);
+  // History — normalize every day to an id array for the formatter
+  const historyEntries = useMemo(() => formatQuestHistory(Object.fromEntries(Object.entries(hl).map(([k, v]) => [k, doneIds(v)])), workoutLog, habitList), [hl, workoutLog, habits]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (<div>
     {/* Hero */}
@@ -121,9 +144,9 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
       {showSuggestions && <div className="fade-in" style={{ marginTop: 10 }}><div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6 }}>Quick add suggestions:</div><div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{SUGGESTED.map((s, i) => <span key={i} className="chip chip-i" onClick={() => addQuest(s.name, s.cat)} style={{ cursor: "pointer", padding: "6px 12px" }}>{s.icon} {s.name}</span>)}</div></div>}
     </div>}
 
-    {userQuests.filter(h => h.id !== "h1").length === 0 && !showAdd && <div style={{ textAlign: "center", padding: "20px 0", color: "#6b7280", fontSize: 13 }}>No quests yet. Add your own daily goals above, or tap 💡 for ideas.</div>}
+    {userQuests.length === 0 && !showAdd && <div style={{ textAlign: "center", padding: "20px 0", color: "#6b7280", fontSize: 13 }}>No quests yet. Add your own daily goals above, or tap 💡 for ideas.</div>}
 
-    {userQuests.filter(h => h.id !== "h1").map(h => {
+    {userQuests.map(h => {
       const done = checked.includes(h.id);
       const cat = QUEST_CATS.find(c => c.id === h.pillar);
       const habitStreak = getHabitStreak(h.id);
@@ -134,8 +157,8 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
             <span style={{ fontSize: 18 }}>{h.icon}</span>
             <div><div style={{ fontSize: 14, fontWeight: 500, color: done ? "#6b7280" : "#e5e7eb", textDecoration: done ? "line-through" : "none" }}>{h.name}</div>
               <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
-                {cat && <span style={{ fontSize: 10, color: cat.color }}>{cat.label}</span>}
-                {habitStreak > 0 && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 100, background: habitStreak >= 7 ? "rgba(245,158,11,.15)" : "rgba(255,255,255,.05)", color: habitStreak >= 7 ? "#f59e0b" : "#6b7280", fontWeight: 600 }}>🔥 {habitStreak}d</span>}
+                {cat && <span style={{ fontSize: 11, color: cat.color }}>{cat.label}</span>}
+                {habitStreak > 0 && <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 100, background: habitStreak >= 7 ? "rgba(245,158,11,.15)" : "rgba(255,255,255,.05)", color: habitStreak >= 7 ? "#f59e0b" : "#6b7280", fontWeight: 600 }}>🔥 {habitStreak}d</span>}
               </div>
             </div>
           </div>
@@ -146,21 +169,21 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
 
     {/* Calendar */}
     <div className="gs" style={{ marginTop: 16, marginBottom: 16 }}><div onClick={() => setShowCal(!showCal)} style={{ display: "flex", justifyContent: "space-between", cursor: "pointer" }}><div className="sl" style={{ margin: 0 }}>{new Date().toLocaleDateString('en', { month: 'long', year: 'numeric' })}</div><span style={{ color: "#6b7280" }}>{showCal ? "▾" : "▸"}</span></div>
-      {showCal && <div className="fade-in" style={{ marginTop: 12 }}><div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4, textAlign: "center" }}>{["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => <div key={d} style={{ fontSize: 10, color: "#6b7280", padding: 4, fontWeight: 600 }}>{d}</div>)}{calDays.map((day, i) => <div key={i} style={{ padding: 6, borderRadius: 6, fontSize: 12, fontWeight: 600, background: day?.done ? "rgba(34,197,94,.15)" : day?.partial ? "rgba(245,158,11,.1)" : "transparent", color: day?.done ? "#22c55e" : day?.partial ? "#f59e0b" : day ? "#4b5563" : "transparent" }}>{day?.day || ""}</div>)}</div></div>}
+      {showCal && <div className="fade-in" style={{ marginTop: 12 }}><div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4, textAlign: "center" }}>{["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => <div key={d} style={{ fontSize: 11, color: "#6b7280", padding: 4, fontWeight: 600 }}>{d}</div>)}{calDays.map((day, i) => <div key={i} style={{ padding: 6, borderRadius: 6, fontSize: 12, fontWeight: 600, background: day?.done ? "rgba(34,197,94,.15)" : day?.partial ? "rgba(245,158,11,.1)" : "transparent", color: day?.done ? "#22c55e" : day?.partial ? "#f59e0b" : day ? "#4b5563" : "transparent" }}>{day?.day || ""}</div>)}</div></div>}
     </div>
 
     {/* Habit Streaks */}
-    {userQuests.filter(h => h.id !== "h1").length > 0 && (
+    {userQuests.length > 0 && (
       <div className="gs" style={{ marginBottom: 16, padding: 14 }}>
         <div className="sl" style={{ margin: "0 0 10px" }}>🔥 Habit Streaks</div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {userQuests.filter(h => h.id !== "h1").map(h => {
+          {userQuests.map(h => {
             const s = getHabitStreak(h.id);
             return (
               <div key={h.id} style={{ flex: "1 1 80px", padding: "8px 6px", borderRadius: 10, background: s >= 7 ? "rgba(245,158,11,.06)" : s > 0 ? "rgba(255,255,255,.02)" : "rgba(255,255,255,.01)", border: s >= 7 ? "1px solid rgba(245,158,11,.15)" : "1px solid rgba(255,255,255,.04)", textAlign: "center" }}>
                 <div style={{ fontSize: 16 }}>{h.icon}</div>
                 <div style={{ fontSize: 16, fontWeight: 900, color: s >= 7 ? "#f59e0b" : s > 0 ? "#10b981" : "#4b5563", fontFamily: "Rajdhani,sans-serif" }}>{s}d</div>
-                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 1 }}>{h.name.length > 12 ? h.name.slice(0, 12) + "…" : h.name}</div>
+                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 1 }}>{String(h.name || "").length > 12 ? String(h.name).slice(0, 12) + "…" : (h.name || "")}</div>
               </div>
             )
           })}
@@ -169,6 +192,6 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
     )}
 
     {/* Stats */}
-    <HistoryPanel entries={formatQuestHistory(habitLog, workoutLog, habits)} title="Quest History" emptyText="Complete quests to see history" />
+    <HistoryPanel entries={historyEntries} title="Quest History" emptyText="Complete quests to see history" />
   </div>);
 }

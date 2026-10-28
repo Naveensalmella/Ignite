@@ -3,27 +3,40 @@
 // Titles, Milestones, Quest Chains, Login Bonus
 // ══════════════════════════════════════════════════════
 
-import { today, toArr } from '@/utils';
+import { today, toArr, addDays, parseDateKey, habitDoneIds } from '@/utils';
 import { normalizeDayEntries } from '@/lib/workoutLog';
+
+// ── Date helpers ──
+// Day keys are LOCAL calendar dates (see today()/dateKey in utils). Doing the math with
+// new Date("YYYY-MM-DD") + toISOString() mixed UTC and local days (off-by-one near midnight / DST).
+const shiftDay = (ds, n) => addDays(n, ds);
+
+// habitLog[date] is {habitId: bool} (legacy: array of ids) — count only completed ones.
+// toArr() on the object counted unchecked (false) habits too.
+const countHabitsDone = (dayVal) => habitDoneIds(dayVal).length;
+
+function dayWorkouts(workoutLog, d) {
+    return normalizeDayEntries(workoutLog?.[d]);
+}
 
 // ── 1. DAILY XP GOAL ──
 export const DEFAULT_XP_GOAL = 100;
 
 export function getDailyXPProgress(xpLog, goal) {
     const d = today();
-    const entries = toArr(xpLog[d]);
-    const todayXP = entries.reduce((s, e) => s + (e.amount || 0), 0);
+    const entries = toArr(xpLog?.[d]);
+    const todayXP = entries.reduce((s, e) => s + (e?.amount || 0), 0);
     return { earned: todayXP, goal: goal || DEFAULT_XP_GOAL, pct: Math.min(100, Math.round((todayXP / (goal || DEFAULT_XP_GOAL)) * 100)) };
 }
 
 // ── 2. XP BREAKDOWN (by source) ──
 export function getXPBreakdown(xpLog) {
     const d = today();
-    const entries = toArr(xpLog[d]);
+    const entries = toArr(xpLog?.[d]);
     const breakdown = {};
     entries.forEach(e => {
-        const cat = e.category || "Other";
-        breakdown[cat] = (breakdown[cat] || 0) + (e.amount || 0);
+        const cat = e?.category || "Other";
+        breakdown[cat] = (breakdown[cat] || 0) + (e?.amount || 0);
     });
     return breakdown;
 }
@@ -46,11 +59,11 @@ export const XP_SOURCES = {
 export function getComboStatus(appState, workoutLog) {
     const d = today();
     const activities = [];
-    if (normalizeDayEntries(workoutLog[d]).length > 0) activities.push("Training");
-    if (toArr(appState.foodLog?.[d]).length > 0) activities.push("Nutrition");
-    if (toArr(appState.habitLog?.[d]).length > 0) activities.push("Quests");
-    if (toArr(appState.focusLog?.[d]).length > 0) activities.push("Focus");
-    if (appState.journal?.[d]?.mood || appState.journal?.[d]?.entry) activities.push("Wellness");
+    if (dayWorkouts(workoutLog, d).length > 0) activities.push("Training");
+    if (toArr(appState?.foodLog?.[d]).length > 0) activities.push("Nutrition");
+    if (countHabitsDone(appState?.habitLog?.[d]) > 0) activities.push("Quests");
+    if (toArr(appState?.focusLog?.[d]).length > 0) activities.push("Focus");
+    if (appState?.journal?.[d]?.mood || appState?.journal?.[d]?.entry) activities.push("Wellness");
 
     const count = activities.length;
     let multiplier = 1;
@@ -70,8 +83,7 @@ export function getLoginBonus(loginData) {
     const d = today();
     if (loginData?.lastClaim === d) return { claimed: true, streak: loginData.streak || 1, reward: 0 };
 
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-    const yd = yesterday.toISOString().split("T")[0];
+    const yd = shiftDay(d, -1);
     const consecutive = loginData?.lastClaim === yd ? (loginData.streak || 0) + 1 : 1;
 
     // Rewards escalate: Day 1=5, 2=10, 3=15, 4=20, 5=25, 6=35, 7=50 (then resets)
@@ -103,37 +115,46 @@ export function generateWeeklyChallenges(seed) {
         { id: "combo3", title: "Combo King", desc: "Get 3+ combo 3 times", target: 3, type: "comboDays", reward: 200, icon: "💥" },
     ];
 
-    // Pick 3 random challenges per week
-    const shuffled = [...allChallenges].sort((a, b) => {
-        const ha = ((seed || 0) * 31 + a.id.charCodeAt(0)) % 100;
-        const hb = ((seed || 0) * 31 + b.id.charCodeAt(0)) % 100;
-        return ha - hb;
-    });
-    return shuffled.slice(0, 3);
+    // Pick 3 pseudo-random challenges per week (deterministic per seed).
+    // Hash the full id with the seed — hashing only the first char made many
+    // challenges tie and the weekly picks barely changed.
+    const hash = (id) => {
+        let h = (seed || 0) | 0;
+        for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 2654435761);
+        h ^= h >>> 15;
+        return h >>> 0;
+    };
+    const shuffled = [...allChallenges].sort((a, b) => hash(a.id) - hash(b.id));
+    // Avoid two challenges of the same type in one week (e.g. "5 Workouts" + "7-Day Warrior")
+    const picked = [];
+    for (const ch of shuffled) {
+        if (picked.length >= 3) break;
+        if (!picked.some(p => p.type === ch.type)) picked.push(ch);
+    }
+    return picked;
 }
 
 export function getChallengeProgress(challenge, appState, workoutLog, weekStart) {
     const days = [];
-    for (let i = 0; i < 7; i++) {
-        const dt = new Date(weekStart); dt.setDate(dt.getDate() + i);
-        days.push(dt.toISOString().split("T")[0]);
-    }
+    const start = weekStart || getWeekStart();
+    for (let i = 0; i < 7; i++) days.push(shiftDay(start, i));
+    const st = appState || {};
 
     switch (challenge.type) {
-        case "workouts": return days.filter(d => normalizeDayEntries(workoutLog[d]).length > 0).length;
-        case "foodDays": return days.filter(d => toArr(appState.foodLog?.[d]).length > 0).length;
-        case "calBurned": return days.reduce((s, d) => s + normalizeDayEntries(workoutLog[d]).reduce((ss, e) => ss + (e.calBurned || 0), 0), 0);
-        case "quests": return days.reduce((s, d) => s + toArr(appState.habitLog?.[d]).length, 0);
-        case "focusSessions": return days.reduce((s, d) => s + toArr(appState.focusLog?.[d]).length, 0);
-        case "journalDays": return days.filter(d => appState.journal?.[d]?.entry?.length > 10).length;
-        case "waterDays": return days.filter(d => (appState.foodLog?.[`water_${d}`] || 0) >= 8).length;
-        case "weeklyXP": return days.reduce((s, d) => s + toArr(appState.xpLog?.[d]).reduce((ss, e) => ss + (e.amount || 0), 0), 0);
+        case "workouts": return days.filter(d => dayWorkouts(workoutLog, d).length > 0).length;
+        case "foodDays": return days.filter(d => toArr(st.foodLog?.[d]).length > 0).length;
+        case "calBurned": return days.reduce((s, d) => s + dayWorkouts(workoutLog, d).reduce((ss, e) => ss + (e?.calBurned || 0), 0), 0);
+        case "quests": return days.reduce((s, d) => s + countHabitsDone(st.habitLog?.[d]), 0);
+        case "focusSessions": return days.reduce((s, d) => s + toArr(st.focusLog?.[d]).length, 0);
+        case "journalDays": return days.filter(d => st.journal?.[d]?.entry?.length > 10).length;
+        case "waterDays": return days.filter(d => (Number(st.foodLog?.[`water_${d}`]) || 0) >= 8).length;
+        case "weeklyXP": return days.reduce((s, d) => s + toArr(st.xpLog?.[d]).reduce((ss, e) => ss + (e?.amount || 0), 0), 0);
         case "comboDays": return days.filter(d => {
             let c = 0;
-            if (normalizeDayEntries(workoutLog[d]).length > 0) c++;
-            if (toArr(appState.foodLog?.[d]).length > 0) c++;
-            if (toArr(appState.habitLog?.[d]).length > 0) c++;
-            if (toArr(appState.focusLog?.[d]).length > 0) c++;
+            if (dayWorkouts(workoutLog, d).length > 0) c++;
+            if (toArr(st.foodLog?.[d]).length > 0) c++;
+            if (countHabitsDone(st.habitLog?.[d]) > 0) c++;
+            if (toArr(st.focusLog?.[d]).length > 0) c++;
             return c >= 3;
         }).length;
         default: return 0;
@@ -238,7 +259,7 @@ export const QUEST_CHAINS = [
         id: "warrior_week", name: "Warrior's Week", icon: "⚔️", totalDays: 7,
         desc: "Train every day for 7 days straight",
         dailyTask: "Complete a training session",
-        checkDay: (d, workoutLog) => normalizeDayEntries(workoutLog[d]).length > 0,
+        checkDay: (d, workoutLog) => dayWorkouts(workoutLog, d).length > 0,
         rewards: { partial: 10, completion: 500 },
     },
     {
@@ -246,8 +267,8 @@ export const QUEST_CHAINS = [
         desc: "Log all 3 meals for 5 consecutive days",
         dailyTask: "Log breakfast, lunch, and dinner",
         checkDay: (d, _, appState) => {
-            const foods = appState.foodLog?.[d] || [];
-            const meals = new Set(foods.map(f => f.meal));
+            const foods = toArr(appState?.foodLog?.[d]);
+            const meals = new Set(foods.map(f => f?.meal));
             return meals.has("Breakfast") && meals.has("Lunch") && meals.has("Dinner");
         },
         rewards: { partial: 15, completion: 300 },
@@ -256,7 +277,7 @@ export const QUEST_CHAINS = [
         id: "focus_marathon", name: "Focus Marathon", icon: "⏱", totalDays: 5,
         desc: "Complete 2+ focus sessions daily for 5 days",
         dailyTask: "Complete 2 focus sessions",
-        checkDay: (d, _, appState) => toArr(appState.focusLog?.[d]).length >= 2,
+        checkDay: (d, _, appState) => toArr(appState?.focusLog?.[d]).length >= 2,
         rewards: { partial: 10, completion: 250 },
     },
     {
@@ -265,11 +286,11 @@ export const QUEST_CHAINS = [
         dailyTask: "Get a 4+ combo",
         checkDay: (d, workoutLog, appState) => {
             let c = 0;
-            if (normalizeDayEntries(workoutLog[d]).length > 0) c++;
-            if (toArr(appState.foodLog?.[d]).length > 0) c++;
-            if (toArr(appState.habitLog?.[d]).length > 0) c++;
-            if (toArr(appState.focusLog?.[d]).length > 0) c++;
-            if (appState.journal?.[d]?.mood) c++;
+            if (dayWorkouts(workoutLog, d).length > 0) c++;
+            if (toArr(appState?.foodLog?.[d]).length > 0) c++;
+            if (countHabitsDone(appState?.habitLog?.[d]) > 0) c++;
+            if (toArr(appState?.focusLog?.[d]).length > 0) c++;
+            if (appState?.journal?.[d]?.mood) c++;
             return c >= 4;
         },
         rewards: { partial: 20, completion: 400 },
@@ -278,16 +299,15 @@ export const QUEST_CHAINS = [
 
 export function getQuestChainProgress(chain, workoutLog, appState, startDate) {
     if (!startDate) return { daysCompleted: 0, active: false, failed: false };
+    const td = today();
     const days = [];
-    for (let i = 0; i < chain.totalDays; i++) {
-        const dt = new Date(startDate); dt.setDate(dt.getDate() + i);
-        days.push(dt.toISOString().split("T")[0]);
-    }
+    for (let i = 0; i < chain.totalDays; i++) days.push(shiftDay(startDate, i));
     let completed = 0;
     let failed = false;
     for (const d of days) {
-        if (new Date(d) > new Date()) break; // Future day
-        if (chain.checkDay(d, workoutLog, appState)) completed++;
+        if (d > td) break; // Future day
+        if (chain.checkDay(d, workoutLog || {}, appState || {})) completed++;
+        else if (d === td) break; // Today isn't over yet — not a failure
         else { failed = true; break; }
     }
     return { daysCompleted: completed, totalDays: chain.totalDays, active: !failed && completed < chain.totalDays, failed, complete: completed >= chain.totalDays };
@@ -296,10 +316,11 @@ export function getQuestChainProgress(chain, workoutLog, appState, startDate) {
 // ── 10. XP HISTORY ──
 export function getXPHistory(xpLog, days = 14) {
     const history = [];
+    const td = today();
     for (let i = days - 1; i >= 0; i--) {
-        const dt = new Date(); dt.setDate(dt.getDate() - i);
-        const ds = dt.toISOString().split("T")[0];
-        const dayXP = toArr(xpLog[ds]).reduce((s, e) => s + (e.amount || 0), 0);
+        const ds = shiftDay(td, -i);
+        const dt = parseDateKey(ds);
+        const dayXP = toArr(xpLog?.[ds]).reduce((s, e) => s + (e?.amount || 0), 0);
         history.push({ date: ds, label: dt.toLocaleDateString("en", { weekday: "narrow" }), day: dt.getDate(), xp: dayXP });
     }
     return history;
@@ -369,7 +390,7 @@ export const SKILL_TREE = {
     },
 };
 
-export function getSkillTreeProgress(branch, stats) {
+export function getSkillTreeProgress(branch, stats = {}) {
     const values = { workouts: stats.totalWorkouts || 0, foodDays: stats.foodDays || 0, focusSessions: stats.focusSessions || 0, streak: stats.streak || 0 };
     return branch.nodes.map(node => ({
         ...node,
@@ -381,11 +402,10 @@ export function getSkillTreeProgress(branch, stats) {
 
 // ── Week start helper ──
 export function getWeekStart() {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now); monday.setDate(diff);
-    return monday.toISOString().split("T")[0];
+    // Monday of the current week, as a local day key (same key space as today())
+    const td = today();
+    const day = parseDateKey(td).getDay();
+    return shiftDay(td, day === 0 ? -6 : 1 - day);
 }
 
 // ── Week seed (changes weekly) ──

@@ -1,9 +1,50 @@
 "use client";
-import { useRef } from 'react';
+import { useRef, useState, useMemo } from 'react';
+import { getLevel, getRank, toArr } from '@/utils';
+import { getDayEntries } from '@/lib/workoutHelpers';
 
-// Generates a beautiful achievement card image and shares it
-export default function ShareCard({ type = "workout", data = {}, profile = {}, totalXP = 0, streak = 0, onClose }) {
+// ctx.roundRect is missing in older Safari/Firefox — fall back to a manual path
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") { ctx.roundRect(x, y, w, h, r); return; }
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Generates a beautiful achievement card image and shares it.
+// Used both as a modal (with onClose) and as the standalone "share" page (App passes
+// totalXP/streak/workoutLog/profile only) — in page mode it renders inline and lets the
+// user pick which card to share.
+export default function ShareCard({ type = "workout", data: rawData = null, profile: rawProfile = {}, totalXP = 0, streak = 0, workoutLog = {}, onClose }) {
   const canvasRef = useRef(null);
+  const isModal = typeof onClose === "function";
+  const profile = rawProfile || {};
+  const hasData = rawData && typeof rawData === "object" && Object.keys(rawData).length > 0;
+  const [selType, setSelType] = useState(hasData ? type : "streak");
+  const [busy, setBusy] = useState(false);
+  const cardType = isModal || hasData ? type : selType;
+
+  const lv = getLevel(totalXP);
+  const rank = getRank(lv);
+
+  // Page mode: build card data from the user's own stats / latest workout
+  const latestWorkout = useMemo(() => {
+    const dates = Object.keys(workoutLog || {}).filter(k => getDayEntries(workoutLog, k).length > 0).sort();
+    if (!dates.length) return null;
+    const entries = getDayEntries(workoutLog, dates[dates.length - 1]);
+    return entries[entries.length - 1] || null;
+  }, [workoutLog]);
+
+  const data = hasData ? rawData : cardType === "workout" ? {
+    splitName: latestWorkout?.splitName,
+    duration: latestWorkout?.duration,
+    calBurned: latestWorkout?.calBurned,
+    exercises: latestWorkout?.exercises || latestWorkout?.gym?.exercises,
+  } : { level: lv, rank: rank.name };
 
   const templates = {
     workout: {
@@ -12,7 +53,7 @@ export default function ShareCard({ type = "workout", data = {}, profile = {}, t
       stats: [
         { label: "Duration", value: `${Math.round((data.duration || 0) / 60)} min` },
         { label: "Calories", value: `${data.calBurned || 0} cal` },
-        { label: "Exercises", value: `${data.exercises?.length || 0}` },
+        { label: "Exercises", value: `${toArr(data.exercises).length}` },
       ],
       color: "#10b981",
     },
@@ -21,8 +62,8 @@ export default function ShareCard({ type = "workout", data = {}, profile = {}, t
       subtitle: "Consistency is the key",
       stats: [
         { label: "Streak", value: `${streak} days` },
-        { label: "Total XP", value: `${totalXP.toLocaleString()}` },
-        { label: "Level", value: `${data.level || 1}` },
+        { label: "Total XP", value: `${Number(totalXP || 0).toLocaleString()}` },
+        { label: "Level", value: `${data.level || lv}` },
       ],
       color: "#f59e0b",
     },
@@ -31,7 +72,7 @@ export default function ShareCard({ type = "workout", data = {}, profile = {}, t
       subtitle: data.rank || "Rising Star",
       stats: [
         { label: "Level", value: `${data.level || 1}` },
-        { label: "Total XP", value: `${totalXP.toLocaleString()}` },
+        { label: "Total XP", value: `${Number(totalXP || 0).toLocaleString()}` },
         { label: "Rank", value: data.rank || "Cinder" },
       ],
       color: "#8b5cf6",
@@ -40,19 +81,20 @@ export default function ShareCard({ type = "workout", data = {}, profile = {}, t
       title: `${data.title || "Milestone"} 🏆`,
       subtitle: data.msg || "Achievement unlocked!",
       stats: [
-        { label: "XP Earned", value: `${totalXP.toLocaleString()}` },
+        { label: "XP Earned", value: `${Number(totalXP || 0).toLocaleString()}` },
         { label: "Streak", value: `${streak}d` },
       ],
       color: "#ef4444",
     },
   };
 
-  const template = templates[type] || templates.workout;
+  const template = templates[cardType] || templates.workout;
 
   const generateImage = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
     canvas.width = 600;
     canvas.height = 400;
 
@@ -75,7 +117,7 @@ export default function ShareCard({ type = "workout", data = {}, profile = {}, t
     // Border
     ctx.strokeStyle = template.color + "40";
     ctx.lineWidth = 2;
-    ctx.roundRect(10, 10, 580, 380, 20);
+    roundRectPath(ctx, 10, 10, 580, 380, 20);
     ctx.stroke();
 
     // IGNITE logo
@@ -107,8 +149,7 @@ export default function ShareCard({ type = "workout", data = {}, profile = {}, t
 
       // Stat box
       ctx.fillStyle = "rgba(255,255,255,0.03)";
-      ctx.beginPath();
-      ctx.roundRect(x, 200, statWidth - 15, 80, 12);
+      roundRectPath(ctx, x, 200, statWidth - 15, 80, 12);
       ctx.fill();
       ctx.strokeStyle = "rgba(255,255,255,0.06)";
       ctx.lineWidth = 1;
@@ -136,45 +177,77 @@ export default function ShareCard({ type = "workout", data = {}, profile = {}, t
     return canvas.toDataURL("image/png");
   };
 
+  const downloadUrl = (imageUrl) => {
+    const a = document.createElement("a");
+    a.href = imageUrl;
+    a.download = "ignite-achievement.png";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const shareCard = async () => {
-    const imageUrl = await generateImage();
-    if (!imageUrl) return;
+    if (busy) return;
+    setBusy(true);
+    try {
+      const imageUrl = await generateImage();
+      if (!imageUrl) return;
 
-    // Convert to blob for sharing
-    const blob = await (await fetch(imageUrl)).blob();
-    const file = new File([blob], "ignite-achievement.png", { type: "image/png" });
+      const shareText = `${template.title}\n${template.subtitle}\n${template.stats.map(s => `${s.label}: ${s.value}`).join(" · ")}\n\n🔥 Join IGNITE: ignite-reality.vercel.app`;
 
-    const shareText = `${template.title}\n${template.subtitle}\n${template.stats.map(s => `${s.label}: ${s.value}`).join(" · ")}\n\n🔥 Join IGNITE: ignite-reality.vercel.app`;
-
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      let file = null;
       try {
-        await navigator.share({ title: "IGNITE Achievement", text: shareText, files: [file] });
+        // Convert to blob for sharing
+        const blob = await (await fetch(imageUrl)).blob();
+        file = new File([blob], "ignite-achievement.png", { type: "image/png" });
       } catch { }
-    } else if (navigator.share) {
-      try {
-        await navigator.share({ title: "IGNITE Achievement", text: shareText });
-      } catch { }
-    } else {
-      // Fallback: download image
-      const a = document.createElement("a");
-      a.href = imageUrl;
-      a.download = "ignite-achievement.png";
-      a.click();
+
+      if (file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ title: "IGNITE Achievement", text: shareText, files: [file] });
+        } catch { }
+      } else if (navigator.share) {
+        try {
+          await navigator.share({ title: "IGNITE Achievement", text: shareText });
+        } catch { }
+      } else {
+        // Fallback: download image
+        downloadUrl(imageUrl);
+      }
+    } catch (e) {
+      console.error("Share card error:", e);
+    } finally {
+      setBusy(false);
     }
   };
 
   const downloadCard = async () => {
-    const imageUrl = await generateImage();
-    if (!imageUrl) return;
-    const a = document.createElement("a");
-    a.href = imageUrl;
-    a.download = "ignite-achievement.png";
-    a.click();
+    try {
+      const imageUrl = await generateImage();
+      if (imageUrl) downloadUrl(imageUrl);
+    } catch (e) {
+      console.error("Save card error:", e);
+    }
   };
 
+  const wrapperStyle = isModal
+    ? { position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.8)", backdropFilter: "blur(8px)", padding: 16 }
+    : { display: "flex", justifyContent: "center" };
+
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.8)", backdropFilter: "blur(8px)", padding: 16 }} onClick={onClose}>
+    <div style={wrapperStyle} onClick={isModal ? onClose : undefined}>
       <div onClick={e => e.stopPropagation()} style={{ maxWidth: 400, width: "100%" }}>
+        {/* Card picker (page mode) */}
+        {!isModal && !hasData && (
+          <div style={{ display: "flex", gap: 6, marginBottom: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            {[["streak", "🔥 Streak"], ["levelup", "⚡ Level"], ["workout", "💪 Workout"]].map(([k, l]) => (
+              <span key={k} className={`chip ${selType === k ? "chip-a" : "chip-i"}`} onClick={() => setSelType(k)} style={{ fontSize: 12 }}>{l}</span>
+            ))}
+          </div>
+        )}
+        {!isModal && !hasData && cardType === "workout" && !latestWorkout && (
+          <div style={{ fontSize: 12, color: "#6b7280", textAlign: "center", marginBottom: 10 }}>No workouts logged yet — finish a session to share it.</div>
+        )}
         {/* Preview */}
         <div style={{ background: "#07090d", borderRadius: 16, border: `1px solid ${template.color}30`, padding: 20, marginBottom: 12 }}>
           <div style={{ fontSize: 11, color: template.color, fontWeight: 600, marginBottom: 4 }}>🔥 IGNITE</div>
@@ -184,7 +257,7 @@ export default function ShareCard({ type = "workout", data = {}, profile = {}, t
             {template.stats.map(s => (
               <div key={s.label} style={{ flex: 1, padding: 12, borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.05)", textAlign: "center" }}>
                 <div style={{ fontSize: 20, fontWeight: 800, color: template.color, fontFamily: "Rajdhani, sans-serif" }}>{s.value}</div>
-                <div style={{ fontSize: 10, color: "#6b7280" }}>{s.label}</div>
+                <div style={{ fontSize: 11, color: "#6b7280" }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -192,9 +265,9 @@ export default function ShareCard({ type = "workout", data = {}, profile = {}, t
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="bp" onClick={shareCard} style={{ flex: 1, padding: 14, fontSize: 14 }}>📤 Share</button>
+          <button className="bp" onClick={shareCard} disabled={busy} style={{ flex: 1, padding: 14, fontSize: 14 }}>📤 Share</button>
           <button className="bg" onClick={downloadCard} style={{ flex: 1, padding: 14, fontSize: 14 }}>💾 Save Image</button>
-          <button className="bg" onClick={onClose} style={{ padding: "14px 16px" }}>✕</button>
+          {isModal && <button className="bg" onClick={onClose} style={{ padding: "14px 16px" }}>✕</button>}
         </div>
 
         {/* Hidden canvas */}

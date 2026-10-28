@@ -16,7 +16,7 @@ async function fetchAll() {
             });
         } catch (err) { console.log('Stopped at', offset, '- saving what we have'); break; }
     }
-    fs.writeFileSync('src/data/exerciseGifs.json', JSON.stringify(all));
+    fs.writeFileSync(require('path').join(__dirname, '../src/data/exerciseGifs.json'), JSON.stringify(all));
     console.log('Done!', all.length, 'exercises saved');
 }
 

@@ -1,5 +1,4 @@
 "use client";
-import { useMemo } from 'react';
 import { getLevel, getLevelProg, getRank, xpToNext } from '@/utils';
 
 export default function HeaderXPBar({ totalXP = 0, streak = 0 }) {

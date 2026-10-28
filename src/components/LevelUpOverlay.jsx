@@ -1,7 +1,12 @@
 "use client";
-import { useEffect } from 'react';
-export default function LevelUpOverlay({ level, rank, onClose }) {
-  useEffect(() => { const t = setTimeout(onClose, 4500); return () => clearTimeout(t); }, [onClose]);
+import { useEffect, useRef } from 'react';
+export default function LevelUpOverlay({ level, rank: rawRank, onClose }) {
+  const rank = rawRank || { name: "", color: "#10b981", emoji: "" };
+  // App passes a new inline onClose on every render; keep the latest in a ref so the
+  // auto-close timer isn't restarted (and postponed indefinitely) on each re-render.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => { const t = setTimeout(() => onCloseRef.current?.(), 4500); return () => clearTimeout(t); }, []);
   return (
     <div className="lvl-overlay" onClick={onClose}>
       <div className="lvl-card">
@@ -10,7 +15,7 @@ export default function LevelUpOverlay({ level, rank, onClose }) {
         <div style={{ marginTop: 16 }}>
           <span className="rank-badge" style={{ background: `${rank.color}18`, color: rank.color, border: `1px solid ${rank.color}30`, fontSize: 18, padding: "8px 28px", letterSpacing: 3 }}>{rank.emoji} {rank.name}</span>
         </div>
-        {rank.title && <div style={{ fontSize: 14, color: `${rank.color}90`, marginTop: 12, fontStyle: "italic", fontFamily: "Rajdhani,sans-serif", letterSpacing: 2 }}>"{rank.title}"</div>}
+        {rank.title && <div style={{ fontSize: 14, color: `${rank.color}90`, marginTop: 12, fontStyle: "italic", fontFamily: "Rajdhani,sans-serif", letterSpacing: 2 }}>&ldquo;{rank.title}&rdquo;</div>}
         <div style={{ fontSize: 12, color: "#4b5563", marginTop: 16 }}>Your power grows beyond limits</div>
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 240, height: 240, borderRadius: "50%", border: `2px solid ${rank.color}20`, animation: "pulseRing 2s ease-out infinite", pointerEvents: "none" }} />
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 300, height: 300, borderRadius: "50%", border: `1px solid ${rank.color}10`, animation: "pulseRing 2s 0.5s ease-out infinite", pointerEvents: "none" }} />

@@ -1,58 +1,55 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { hasDayWorkout, getDaySplit, countWorkoutDays } from '@/lib/workoutHelpers';
-import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
 import { getLevel, getRank, today, toArr } from '../utils';
 
-// Streaming AI call — returns tokens one by one
-async function callAIStream(messages, systemPrompt, onToken) {
-  // Try secure streaming server route first
+// Streaming AI call — calls onToken with the full text so far; resolves with the final text.
+async function callAIStream(messages, mode, userContext, onToken) {
+  let r;
   try {
-    const r = await fetch("/api/chat", {
+    r = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, mode: "coach", userContext: systemPrompt }),
+      body: JSON.stringify({ messages, mode, userContext }),
     });
-
-    if (r.headers.get("content-type")?.includes("text/event-stream")) {
-      // Streaming response
-      const reader = r.body?.getReader();
-      if (!reader) throw new Error("No reader");
-      const decoder = new TextDecoder();
-      let fullText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n").filter(l => l.startsWith("data: "));
-
-        for (const line of lines) {
-          const data = line.replace("data: ", "").trim();
-          if (data === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.token) {
-              fullText += parsed.token;
-              if (onToken) onToken(fullText);
-            }
-            if (parsed.error) throw new Error(parsed.error);
-          } catch { }
-        }
-      }
-      return fullText || "No response";
-    } else {
-      // Non-streaming fallback
-      const data = await r.json();
-      if (data.error) throw new Error(data.error);
-      return data.text || "No response";
-    }
-  } catch (serverErr) {
-    console.warn("Server stream failed:", serverErr.message);
+  } catch {
+    throw new Error("You seem to be offline. Check your connection and try again.");
   }
 
-  // Server route failed — no client-side fallback (API keys stay server-side)
-  throw new Error("NO_KEY");
+  if (!r.ok || !r.headers.get("content-type")?.includes("text/event-stream")) {
+    let msg = `The AI service returned an error (${r.status}).`;
+    try { const data = await r.json(); if (data.error) msg = data.error; } catch { /* not JSON */ }
+    throw new Error(msg);
+  }
+
+  const reader = r.body?.getReader();
+  if (!reader) throw new Error("Streaming isn't supported in this browser.");
+  const decoder = new TextDecoder();
+  let fullText = "";
+  let buffer = "";
+  let streamError = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || ""; // keep a partial line for the next chunk
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const data = line.slice(6).trim();
+      if (!data || data === "[DONE]") continue;
+      let parsed;
+      try { parsed = JSON.parse(data); } catch { continue; }
+      if (parsed.error) streamError = parsed.error;
+      if (parsed.token) {
+        fullText += parsed.token;
+        onToken?.(fullText);
+      }
+    }
+  }
+  if (!fullText && streamError) throw new Error(streamError);
+  return fullText || "I couldn't come up with a reply — please try asking again.";
 }
 
 // ── Voice Output (AI speaks back) ──
@@ -84,21 +81,30 @@ const MODES = [
 
 const PAGE_NAMES = { training: "⚔️ Training", nutrition: "🍎 Nutrition", dailyquest: "🎯 Daily Quests", focus: "⏱ Focus", wellness: "💛 Wellness", routine: "📅 My Day", growth: "🌱 Growth", profile: "👤 Profile", social: "👥 Social" };
 
-export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodLog = () => { }, setWorkoutLog = () => { }, setPage = () => { }, profile = {}, totalXP = 0, streak = 0, workoutLog = {} }) {
+const MAX_CHATS = 30;
+const newChatObj = (mode = "coach") => ({ id: Date.now(), title: "New Chat", messages: [], mode });
+
+export default function FlameOracle({ appState = {}, setFoodLog = () => { }, setChatHistory = () => { }, setPage = () => { }, profile = {}, totalXP = 0, streak = 0, workoutLog = {} }) {
   const d = today();
 
   // ── Load chats: Firestore (via Zustand) is source of truth, localStorage is fast cache ──
   const initChats = () => {
-    // Prefer Firestore data (passed via appState from Zustand store)
-    try { const s = appState?.oracleChats; if (Array.isArray(s) && s.length > 0 && s[0]?.messages) return s; } catch { }
-    // Fall back to localStorage cache (survives page switches before Firestore loads)
-    try { const local = JSON.parse(localStorage.getItem("ignite-oracle-chats")); if (Array.isArray(local) && local.length > 0 && local[0]?.messages) return local; } catch { }
-    return [{ id: Date.now(), title: "New Chat", messages: [], mode: "coach" }];
+    // Account data (synced to Firestore via the store) is the source of truth
+    const fromStore = toArr(appState?.oracleChats).filter(c => c && Array.isArray(c.messages));
+    if (fromStore.length > 0) return fromStore;
+    // One-time pick-up of chats that older versions only kept in this browser
+    try { const local = JSON.parse(localStorage.getItem("ignite-oracle-chats")); if (Array.isArray(local) && local.length > 0 && local[0]?.messages) return local; } catch { /* ignore */ }
+    return [newChatObj()];
   };
 
-  const [chats, setChats] = useState(initChats);
+  const [chats, setChatsRaw] = useState(initChats);
+  const setChats = (updater) => setChatsRaw(prev => (typeof updater === "function" ? updater(prev) : updater).slice(0, MAX_CHATS));
+  // Mirror chats to the store, which saves them to the user's account.
+  useEffect(() => { setChatHistory(chats); }, [chats, setChatHistory]);
   const [activeChatId, setActiveChatId] = useState(() => {
-    try { return parseInt(localStorage.getItem("ignite-oracle-active")) || null; } catch { return null; }
+    let saved = null;
+    try { saved = parseInt(localStorage.getItem("ignite-oracle-active"), 10) || null; } catch { /* ignore */ }
+    return saved;
   });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -111,20 +117,15 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
   const [voiceOn, setVoiceOn] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
-  const typingRef = useRef(null);
-
-  useEffect(() => { if (!activeChatId && chats.length > 0) setActiveChatId(chats[0].id); }, []);
-
-  // ── PERSIST chats to localStorage on every change ──
-  useEffect(() => {
-    try { localStorage.setItem("ignite-oracle-chats", JSON.stringify(chats)); } catch { }
-  }, [chats]);
 
   useEffect(() => {
-    if (activeChatId) try { localStorage.setItem("ignite-oracle-active", activeChatId.toString()); } catch { }
+    if (activeChatId) try { localStorage.setItem("ignite-oracle-active", activeChatId.toString()); } catch { /* ignore */ }
   }, [activeChatId]);
 
-  const activeChat = chats.find(c => c.id === activeChatId) || chats[0] || { id: 0, title: "New Chat", messages: [], mode: "coach" };
+  // The chat being shown (falls back to the newest one if the saved id is gone)
+  const activeChat = chats.find(c => c.id === activeChatId) || chats[0] || newChatObj();
+  const activeId = activeChat.id;
+  const speechSupported = typeof window !== "undefined" && ("webkitSpeechRecognition" in window || "SpeechRecognition" in window);
   const messages = activeChat?.messages || [];
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages.length, displayText]);
@@ -147,10 +148,13 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
 
   const curMode = MODES.find(m => m.id === mode) || MODES[0];
 
-  const newChat = () => { const c = { id: Date.now(), title: "New Chat", messages: [], mode }; setChats(p => [c, ...p]); setActiveChatId(c.id); setShowSidebar(false); };
+  const newChat = () => { const c = newChatObj(mode); setChats(p => [c, ...p]); setActiveChatId(c.id); setShowSidebar(false); };
   const switchChat = (id) => { setActiveChatId(id); setShowSidebar(false); };
-  const deleteChat = (id) => { const rem = chats.filter(c => c.id !== id); if (rem.length === 0) { newChat(); return; } setChats(rem); if (activeChatId === id) setActiveChatId(rem[0].id); };
-  const clearAllChats = () => { const c = { id: Date.now(), title: "New Chat", messages: [], mode }; setChats([c]); setActiveChatId(c.id); setShowSidebar(false); };
+  const deleteChat = (id) => { const rem = chats.filter(c => c.id !== id); if (rem.length === 0) { clearAllChats(); return; } setChats(rem); if (activeId === id) setActiveChatId(rem[0].id); };
+  const clearAllChats = () => {
+    if (chats.some(c => c.messages?.length) && !window.confirm("Delete all chats?")) return;
+    const c = newChatObj(mode); setChats([c]); setActiveChatId(c.id); setShowSidebar(false);
+  };
 
   // ── Process commands — NEVER auto-navigate, show buttons instead ──
   const processActions = (text) => {
@@ -158,25 +162,13 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
     const foodMatches = [...text.matchAll(/\[ADD_FOOD:(.+?)\|(\d+)\|(\d+)\|(\d+)\|(\d+)\]/g)];
     for (const match of foodMatches) {
       const [, name, cal, protein, carbs, fat] = match;
-      setFoodLog(prev => ({ ...prev, [d]: [...(prev[d] || []), { name, emoji: "🍽️", cal: parseInt(cal), protein: parseInt(protein), carbs: parseInt(carbs), fat: parseInt(fat), fiber: 0, meal: "Snack", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), category: "AI Logged" }] }));
+      setFoodLog(prev => ({ ...prev, [d]: [...toArr(prev[d]), { name, emoji: "🍽️", cal: parseInt(cal), protein: parseInt(protein), carbs: parseInt(carbs), fat: parseInt(fat), fiber: 0, meal: "Snack", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), category: "AI Logged" }] }));
       actions.push(`✅ Logged: ${name} (${cal} cal)`);
     }
     // Extract navigation but DON'T auto-navigate — return page name for button rendering
     const navMatches = [...text.matchAll(/\[NAVIGATE:(.+?)\]/g)];
     const navPages = navMatches.map(m => m[1]);
     return { actions, navPages };
-  };
-
-  // ── Typing animation ──
-  const typeText = (text, callback) => {
-    if (typingRef.current) clearInterval(typingRef.current);
-    setIsTyping(true); setDisplayText("");
-    let i = 0;
-    const words = text.split(" ");
-    typingRef.current = setInterval(() => {
-      if (i < words.length) { setDisplayText(prev => prev + (i > 0 ? " " : "") + words[i]); i++; bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }
-      else { clearInterval(typingRef.current); setIsTyping(false); if (callback) callback(); }
-    }, 40);
   };
 
   // ── Voice input ──
@@ -195,17 +187,22 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
     if (!input.trim() || loading || isTyping) return;
     const userMsg = input.trim(); setInput(""); setLoading(true);
 
+    const chatId = activeId;
     const updatedMessages = [...messages, { role: "user", text: userMsg, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }];
-    setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: updatedMessages, title: c.messages.length === 0 ? userMsg.slice(0, 30) : c.title } : c));
+    setChats(prev => {
+      const exists = prev.some(c => c.id === chatId);
+      const base = exists ? prev : [{ ...activeChat, id: chatId }, ...prev];
+      return base.map(c => c.id === chatId ? { ...c, messages: updatedMessages, title: c.messages.length === 0 ? userMsg.slice(0, 30) : c.title } : c);
+    });
 
     try {
-      const systemPrompt = `You are Flame Oracle (${curMode.name} mode), AI assistant for IGNITE self-improvement app.\n\n${curMode.personality}\n\n${userContext}\n\nCONVERSATION:\n${updatedMessages.slice(-8).map(m => `${m.role}: ${m.text}`).join("\n")}\n\nCOMMANDS (use ONLY when appropriate):\n- Log food: [ADD_FOOD:name|cal|protein|carbs|fat] — use when user says they ATE something\n- Navigate: [NAVIGATE:page] — ONLY when user EXPLICITLY says "open", "go to", "take me to", or "navigate to" a page. NEVER navigate just because you mention a topic. Valid: training,nutrition,dailyquest,focus,wellness,routine,growth,profile,social\n\nIMPORTANT: Do NOT use [NAVIGATE:...] unless the user directly asks to open a page. Discussing a topic is NOT a navigation request.\n\nBe concise (2-4 paragraphs max). Use emojis naturally. Call user by name.`;
+      const context = `${curMode.personality}\n\n${userContext}\n\nCOMMANDS (use ONLY when appropriate):\n- Log food: [ADD_FOOD:name|cal|protein|carbs|fat] — use when the user says they ATE something\n- Navigate: [NAVIGATE:page] — ONLY when the user EXPLICITLY asks to open/go to a page. Valid: training,nutrition,dailyquest,focus,wellness,routine,growth,profile,social\n\nCall the user by name.`;
 
       // Stream response in real-time
       setIsTyping(true);
       setDisplayText("");
 
-      const aiText = await callAIStream(updatedMessages.slice(-8), systemPrompt, (partialText) => {
+      const aiText = await callAIStream(updatedMessages.slice(-10).map(m => ({ role: m.role, text: m.text })), curMode.id, context, (partialText) => {
         // Update display as tokens arrive
         const clean = partialText.replace(/\[ADD_FOOD:.*?\]/g, "").replace(/\[NAVIGATE:.*?\]/g, "").trim();
         setDisplayText(clean);
@@ -219,15 +216,14 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
 
       const msgData = { role: "assistant", text: cleanText, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), mode: curMode.id, navPages: navPages.length > 0 ? navPages : undefined };
       const finalMessages = [...updatedMessages, msgData];
-      setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: finalMessages } : c));
+      setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: finalMessages } : c));
       if (voiceOn) speakText(cleanText);
 
     } catch (e) {
-      let errMsg;
-      if (e.message === "NO_KEY") errMsg = "⚠️ Server connection failed.\n\nMake sure the GROQ_API_KEY is set in your .env.local file and the server is running.";
-      else if (e.message.includes("429") || e.message.includes("rate")) errMsg = "⏳ Rate limited. Wait 60 seconds.";
-      else errMsg = "❌ " + e.message;
-      setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...updatedMessages, { role: "assistant", text: errMsg, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }] } : c));
+      setIsTyping(false);
+      const raw = e?.message || "Something went wrong.";
+      const errMsg = /429|rate/i.test(raw) ? "⏳ The AI is busy right now. Please wait a minute and try again." : "⚠️ " + raw;
+      setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...updatedMessages, { role: "assistant", text: errMsg, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }] } : c));
     }
     setLoading(false); inputRef.current?.focus();
   };
@@ -268,7 +264,7 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 135px)", position: "relative", maxWidth: "100%", overflowX: "hidden" }}>
+    <div className="oracle-shell" style={{ display: "flex", flexDirection: "column", position: "relative", maxWidth: "100%", overflowX: "hidden" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 0 12px", borderBottom: "1px solid rgba(255,255,255,.04)", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -304,9 +300,9 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
             <span onClick={clearAllChats} style={{ fontSize: 10, color: "#ef4444", cursor: "pointer" }}>Clear All</span>
           </div>
           {chats.map(c => (
-            <div key={c.id} onClick={() => switchChat(c.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: 8, marginBottom: 4, cursor: "pointer", background: c.id === activeChatId ? "rgba(16,185,129,.06)" : "rgba(255,255,255,.02)", border: c.id === activeChatId ? "1px solid rgba(16,185,129,.15)" : "1px solid transparent" }}>
+            <div key={c.id} onClick={() => switchChat(c.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: 8, marginBottom: 4, cursor: "pointer", background: c.id === activeId ? "rgba(16,185,129,.06)" : "rgba(255,255,255,.02)", border: c.id === activeId ? "1px solid rgba(16,185,129,.15)" : "1px solid transparent" }}>
               <div>
-                <div style={{ fontSize: 13, color: c.id === activeChatId ? "#10b981" : "#d1d5db", fontWeight: c.id === activeChatId ? 600 : 400 }}>{c.title || "New Chat"}</div>
+                <div style={{ fontSize: 13, color: c.id === activeId ? "#10b981" : "#d1d5db", fontWeight: c.id === activeId ? 600 : 400 }}>{c.title || "New Chat"}</div>
                 <div style={{ fontSize: 10, color: "#4b5563" }}>{c.messages?.length || 0} messages</div>
               </div>
               <span onClick={(e) => { e.stopPropagation(); deleteChat(c.id); }} style={{ fontSize: 14, color: "#4b5563", padding: "0 4px" }}>×</span>
@@ -367,7 +363,7 @@ export default function FlameOracle({ appState = {}, addXP = () => { }, setFoodL
           <button onClick={() => { setVoiceOn(!voiceOn); if (voiceOn) stopSpeaking(); }} style={{ background: voiceOn ? "rgba(16,185,129,.15)" : "rgba(255,255,255,.03)", border: voiceOn ? "1px solid rgba(16,185,129,.3)" : "1px solid rgba(255,255,255,.06)", borderRadius: 12, padding: "10px 12px", cursor: "pointer", fontSize: 16, color: voiceOn ? "#10b981" : "#6b7280", flexShrink: 0 }}>
             {voiceOn ? "🔊" : "🔇"}
           </button>
-          {("webkitSpeechRecognition" in window || "SpeechRecognition" in window) && (
+          {speechSupported && (
             <button onClick={startVoice} style={{ background: isListening ? "rgba(239,68,68,.15)" : "rgba(255,255,255,.03)", border: isListening ? "1px solid rgba(239,68,68,.3)" : "1px solid rgba(255,255,255,.06)", borderRadius: 12, padding: "10px 12px", cursor: "pointer", fontSize: 16, color: isListening ? "#ef4444" : "#6b7280", flexShrink: 0 }}>
               {isListening ? "🔴" : "🎤"}
             </button>

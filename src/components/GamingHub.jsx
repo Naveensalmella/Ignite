@@ -1,15 +1,14 @@
 "use client";
 import { useState, useMemo } from 'react';
-import { AnimatedCard, StaggerContainer, StaggerItem } from './PageTransition';
-import { getLevel, getRank, today } from '@/utils';
+import { getLevel, today, toArr } from '@/utils';
 import {
     getDailyXPProgress, getXPBreakdown, XP_SOURCES, getComboStatus,
     getLoginBonus, claimLoginBonus, generateWeeklyChallenges, getChallengeProgress,
-    getLevelReward, getUnlockedTitles, getCurrentTier, BADGE_TIERS,
-    QUEST_CHAINS, getQuestChainProgress, getXPHistory, checkMilestone, MILESTONES,
+    getUnlockedTitles, getCurrentTier,
+    QUEST_CHAINS, getQuestChainProgress, getXPHistory,
     SKILL_TREE, getSkillTreeProgress, getWeekStart, getWeekSeed,
 } from '@/data/gamingSystem';
-import { hasDayWorkout, getDayCal, getDayDuration, getDaySplit, getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
+import { countWorkoutDays } from '@/lib/workoutHelpers';
 
 
 // Level-up rewards (inline to avoid import issues)
@@ -29,31 +28,48 @@ const LEVEL_REWARDS = {
 
 function Ring({ pct, color, size = 56, stroke = 5, children }) { const p = Number.isFinite(pct) ? pct : 0; const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, p / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
-export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, workoutLog = {}, addXP = () => { }, profile = {}, loginData = {}, setLoginData = () => { }, xpLog = {}, activeTitle = null, setActiveTitle = () => { }, questChainData = {}, setQuestChainData = () => { } }) {
+export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, workoutLog = {}, addXP = () => { }, loginData = {}, setLoginData = () => { }, xpLog = {}, activeTitle = null, setActiveTitle = () => { }, questChainData = {}, setQuestChainData = () => { } }) {
     const [tab, setTab] = useState("overview"); // overview | challenges | chains | titles | tree
     const d = today();
     const lv = getLevel(totalXP);
+    const st = appState || {};
 
     // ── Daily XP ──
     const xpProgress = getDailyXPProgress(xpLog || {}, 100);
     const xpBreakdown = getXPBreakdown(xpLog || {});
-    const combo = getComboStatus(appState, workoutLog);
+    const combo = getComboStatus(st, workoutLog);
 
     // ── Login Bonus ──
+    // Derived from loginData (not copied into local state) so it stays correct when
+    // loginData loads/changes after mount and can't be claimed twice.
     const loginBonus = getLoginBonus(loginData || {});
-    const [bonusClaimed, setBonusClaimed] = useState(loginBonus.claimed);
+    const bonusClaimed = loginBonus.claimed;
 
     const claimBonus = () => {
-        if (bonusClaimed) return;
-        addXP(loginBonus.reward, "Login");
+        if (getLoginBonus(loginData || {}).claimed) return;
         setLoginData(claimLoginBonus(loginData || {}));
-        setBonusClaimed(true);
+        addXP(loginBonus.reward, "Login");
     };
 
     // ── Weekly Challenges ──
     const weekSeed = getWeekSeed();
     const weekStart = getWeekStart();
     const challenges = useMemo(() => generateWeeklyChallenges(weekSeed), [weekSeed]);
+    // Claimed weekly rewards are stored in questChainData._weekly = { weekStart, claimed: [ids] }
+    const weeklyClaimed = questChainData?._weekly?.weekStart === weekStart ? toArr(questChainData._weekly.claimed) : [];
+    const claimChallenge = (ch) => {
+        if (weeklyClaimed.includes(ch.id)) return;
+        setQuestChainData(p => {
+            const prev = p?._weekly?.weekStart === weekStart ? toArr(p._weekly.claimed) : [];
+            return { ...(p || {}), _weekly: { weekStart, claimed: [...prev, ch.id] } };
+        });
+        addXP(ch.reward, `Weekly Challenge ${ch.icon}`);
+    };
+    const claimChain = (chain) => {
+        if (questChainData?.[chain.id]?.claimed) return;
+        setQuestChainData(p => ({ ...(p || {}), [chain.id]: { ...(p?.[chain.id] || {}), claimed: true } }));
+        addXP(chain.rewards.completion, `Quest Chain complete ${chain.icon}`);
+    };
 
     // ── XP History ──
     const xpHistory = useMemo(() => getXPHistory(xpLog || {}, 14), [xpLog]);
@@ -64,8 +80,8 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
 
     // ── Achievement Tiers ──
     const totalWorkouts = countWorkoutDays(workoutLog);
-    const foodDays = Object.keys(appState.foodLog || {}).filter(k => !k.startsWith("water_") && Array.isArray(appState.foodLog[k]) && appState.foodLog[k].length > 0).length;
-    const focusSessions = Object.values(appState.focusLog || {}).flat().length;
+    const foodDays = Object.keys(st.foodLog || {}).filter(k => !k.startsWith("water_") && toArr(st.foodLog[k]).length > 0).length;
+    const focusSessions = Object.values(st.focusLog || {}).reduce((s, v) => s + toArr(v).length, 0);
 
     const tierData = useMemo(() => ({
         workout_count: getCurrentTier("workout_count", totalWorkouts),
@@ -108,7 +124,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                 {Object.keys(xpBreakdown).length > 0 && (
                                     <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
                                         {Object.entries(xpBreakdown).map(([cat, amount]) => (
-                                            <span key={cat} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 100, background: `${(XP_SOURCES[cat] || XP_SOURCES.Other).color}10`, color: (XP_SOURCES[cat] || XP_SOURCES.Other).color }}>
+                                            <span key={cat} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: `${(XP_SOURCES[cat] || XP_SOURCES.Other).color}10`, color: (XP_SOURCES[cat] || XP_SOURCES.Other).color }}>
                                                 {(XP_SOURCES[cat] || XP_SOURCES.Other).icon} +{amount}
                                             </span>
                                         ))}
@@ -155,7 +171,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                 </div>
                             ))}
                         </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#4b5563", marginTop: 4 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#4b5563", marginTop: 4 }}>
                             <span>Total: {xpHistory.reduce((s, h) => s + h.xp, 0)} XP</span>
                             <span>Avg: {Math.round(xpHistory.reduce((s, h) => s + h.xp, 0) / Math.max(1, xpHistory.filter(h => h.xp > 0).length))}/day</span>
                         </div>
@@ -172,7 +188,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                     <span style={{ fontSize: 18 }}>{data.current?.icon || "🔒"}</span>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: 12, fontWeight: 600, color: data.current ? "#f3f4f6" : "#4b5563" }}>{labels[key]}: {data.current?.name || "Locked"}</div>
-                                        {data.next && <div style={{ fontSize: 10, color: "#6b7280" }}>Next: {data.next.name} ({data.value}/{data.next.threshold})</div>}
+                                        {data.next && <div style={{ fontSize: 11, color: "#6b7280" }}>Next: {data.next.name} ({data.value}/{data.next.threshold})</div>}
                                     </div>
                                     {data.next && (
                                         <div style={{ width: 50, height: 4, background: "rgba(255,255,255,.06)", borderRadius: 2, overflow: "hidden" }}>
@@ -194,9 +210,10 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                         <div style={{ fontSize: 12, color: "#6b7280" }}>Resets every Monday · Complete for bonus XP</div>
                     </div>
                     {challenges.map(ch => {
-                        const progress = getChallengeProgress(ch, appState, workoutLog, weekStart);
+                        const progress = getChallengeProgress(ch, st, workoutLog, weekStart);
                         const pct = Math.min(100, Math.round((progress / ch.target) * 100));
                         const done = progress >= ch.target;
+                        const claimed = weeklyClaimed.includes(ch.id);
                         return (
                             <div key={ch.id} className="gs" style={{ marginBottom: 10, padding: 14, border: done ? "1px solid rgba(34,197,94,.2)" : "1px solid rgba(255,255,255,.04)", background: done ? "rgba(34,197,94,.04)" : undefined }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -206,12 +223,16 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                     </div>
                                     <div style={{ textAlign: "right" }}>
                                         <div style={{ fontSize: 14, fontWeight: 700, color: done ? "#22c55e" : "#f59e0b" }}>{done ? "✅" : `${progress}/${ch.target}`}</div>
-                                        <div style={{ fontSize: 10, color: "#6b7280" }}>+{ch.reward} XP</div>
+                                        <div style={{ fontSize: 11, color: "#6b7280" }}>+{ch.reward} XP</div>
                                     </div>
                                 </div>
                                 <div style={{ height: 6, background: "rgba(255,255,255,.04)", borderRadius: 3, marginTop: 8, overflow: "hidden" }}>
                                     <div style={{ height: "100%", width: `${pct}%`, background: done ? "#22c55e" : "linear-gradient(90deg,#10b981,#06b6d4)", borderRadius: 3, transition: "width .5s" }} />
                                 </div>
+                                {done && !claimed && (
+                                    <button className="bp" onClick={() => claimChallenge(ch)} style={{ width: "100%", marginTop: 10, padding: 10, fontSize: 13 }}>🎁 Claim +{ch.reward} XP</button>
+                                )}
+                                {done && claimed && <div style={{ textAlign: "center", marginTop: 8, fontSize: 12, color: "#22c55e", fontWeight: 600 }}>Reward claimed</div>}
                             </div>
                         );
                     })}
@@ -227,7 +248,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                     </div>
                     {QUEST_CHAINS.map(chain => {
                         const chainState = questChainData?.[chain.id];
-                        const progress = chainState?.startDate ? getQuestChainProgress(chain, workoutLog, appState, chainState.startDate) : null;
+                        const progress = chainState?.startDate ? getQuestChainProgress(chain, workoutLog, st, chainState.startDate) : null;
                         const isActive = progress?.active;
                         const isComplete = progress?.complete;
                         const isFailed = progress?.failed;
@@ -241,7 +262,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                     </div>
                                     <div style={{ textAlign: "right" }}>
                                         {progress && <div style={{ fontSize: 13, fontWeight: 700, color: isComplete ? "#22c55e" : isFailed ? "#ef4444" : "#10b981" }}>{progress.daysCompleted}/{chain.totalDays}</div>}
-                                        <div style={{ fontSize: 10, color: "#f59e0b" }}>+{chain.rewards.completion} XP</div>
+                                        <div style={{ fontSize: 11, color: "#f59e0b" }}>+{chain.rewards.completion} XP</div>
                                     </div>
                                 </div>
                                 {progress && (
@@ -257,7 +278,15 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                 {isFailed && (
                                     <button className="bg" onClick={() => setQuestChainData(p => ({ ...p, [chain.id]: { startDate: d } }))} style={{ width: "100%", marginTop: 8, padding: 8, fontSize: 12 }}>🔄 Restart</button>
                                 )}
-                                {isComplete && <div style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: "#22c55e", fontWeight: 700 }}>🏆 Quest Complete!</div>}
+                                {isComplete && !chainState?.claimed && (
+                                    <button className="bp" onClick={() => claimChain(chain)} style={{ width: "100%", marginTop: 10, padding: 10, fontSize: 13 }}>🎁 Claim +{chain.rewards.completion} XP</button>
+                                )}
+                                {isComplete && chainState?.claimed && (
+                                    <>
+                                        <div style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: "#22c55e", fontWeight: 700 }}>🏆 Quest Complete!</div>
+                                        <button className="bg" onClick={() => setQuestChainData(p => ({ ...(p || {}), [chain.id]: { startDate: d } }))} style={{ width: "100%", marginTop: 8, padding: 8, fontSize: 12 }}>🔄 Start Again</button>
+                                    </>
+                                )}
                             </div>
                         );
                     })}
@@ -270,7 +299,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                     <div style={{ textAlign: "center", marginBottom: 16 }}>
                         <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>👑 Titles</div>
                         <div style={{ fontSize: 12, color: "#6b7280" }}>Earn and equip display titles</div>
-                        {activeTitle && <div style={{ fontSize: 14, color: "#f59e0b", marginTop: 6 }}>Active: "{activeTitle}"</div>}
+                        {activeTitle && <div style={{ fontSize: 14, color: "#f59e0b", marginTop: 6 }}>Active: &ldquo;{activeTitle}&rdquo;</div>}
                     </div>
                     {unlockedTitles.length === 0 ? (
                         <div style={{ textAlign: "center", padding: 30, color: "#6b7280", fontSize: 13 }}>Reach Level 15 to unlock your first title!</div>
@@ -279,7 +308,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                             <div key={t.level} className="gs" onClick={() => setActiveTitle(t.title)} style={{ marginBottom: 8, padding: 14, cursor: "pointer", border: activeTitle === t.title ? "1px solid rgba(245,158,11,.2)" : "1px solid rgba(255,255,255,.04)", background: activeTitle === t.title ? "rgba(245,158,11,.04)" : undefined }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                     <div>
-                                        <div style={{ fontSize: 15, fontWeight: 700, color: activeTitle === t.title ? "#f59e0b" : "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>"{t.title}"</div>
+                                        <div style={{ fontSize: 15, fontWeight: 700, color: activeTitle === t.title ? "#f59e0b" : "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>&ldquo;{t.title}&rdquo;</div>
                                         <div style={{ fontSize: 11, color: "#6b7280" }}>{t.reward} · Unlocked at Lv.{t.level}</div>
                                     </div>
                                     {activeTitle === t.title ? <span style={{ fontSize: 12, color: "#f59e0b" }}>✓ Active</span> : <span style={{ fontSize: 11, color: "#4b5563" }}>Tap to equip</span>}
@@ -291,7 +320,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                     <div className="sl" style={{ marginTop: 16 }}>Locked Titles</div>
                     {Object.entries(LEVEL_REWARDS).filter(([lvl]) => parseInt(lvl) > lv).slice(0, 5).map(([lvl, data]) => (
                         <div key={lvl} style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.03)", opacity: 0.4 }}>
-                            <span style={{ fontSize: 13, color: "#4b5563" }}>🔒 "{data.title}" — Level {lvl}</span>
+                            <span style={{ fontSize: 13, color: "#4b5563" }}>🔒 &ldquo;{data.title}&rdquo; — Level {lvl}</span>
                         </div>
                     ))}
                 </div>
@@ -355,7 +384,7 @@ export function MilestoneOverlay({ milestone, onClose }) {
                 <div style={{ fontSize: 28, fontWeight: 900, fontFamily: "Rajdhani,sans-serif", background: "linear-gradient(135deg,#f59e0b,#ef4444)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>MILESTONE!</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginTop: 8 }}>{milestone.title}</div>
                 <div style={{ fontSize: 14, color: "#6b7280", marginTop: 6 }}>{milestone.msg}</div>
-                <div style={{ fontSize: 24, fontWeight: 900, color: "#f59e0b", marginTop: 12 }}>{milestone.xp.toLocaleString()} XP</div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: "#f59e0b", marginTop: 12 }}>{Number(milestone.xp || 0).toLocaleString()} XP</div>
                 <button className="bp" onClick={onClose} style={{ marginTop: 20, padding: "12px 32px" }}>Continue</button>
             </div>
         </div>

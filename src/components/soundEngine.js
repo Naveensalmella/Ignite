@@ -1,45 +1,61 @@
 "use client";
 // ═══════════════════════════════════
-// IGNITE Sound Engine — Howler.js
-// Professional sound effects + voice
+// IGNITE Sound Engine — Web Audio API
+// Synthesized sound effects + voice
 // ═══════════════════════════════════
 
-// Note: Run `npm install howler` first
-// Sounds use Web Audio API as fallback if Howler fails
+// ── Shared AudioContext (also used by src/sounds.js) ──
+// Created lazily: constructing it at import time (before any user gesture) makes
+// browsers create it "suspended" (autoplay policy) and logs warnings; in browsers
+// without Web Audio it threw and broke every module importing this file.
+let audioCtx = null;
+let masterVolume = 1;
+let soundEnabled = true;
 
-let Howl = null;
-
-// Lazy load Howler (prevents SSR crash in Next.js)
-const getHowl = async () => {
-    if (Howl) return Howl;
+export function getAudioCtx() {
+    if (typeof window === 'undefined') return null;
     try {
-        const howler = await import('howler');
-        Howl = howler.Howl;
-        return Howl;
+        if (!audioCtx) {
+            const Ctor = window.AudioContext || window.webkitAudioContext;
+            if (!Ctor) return null;
+            audioCtx = new Ctor();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => { });
+        return audioCtx;
     } catch {
         return null;
     }
-};
+}
 
-// ── Sound cache ──
-const cache = {};
-
-// ── Create sound using Web Audio API (built-in, no library needed) ──
-const audioCtx = typeof window !== 'undefined' ? new (window.AudioContext || window.webkitAudioContext)() : null;
+// Unlock audio on the first user interaction so later (non-gesture) sounds can play
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    const unlockEvents = ['pointerdown', 'keydown', 'touchend'];
+    const unlock = () => {
+        const ctx = getAudioCtx();
+        if (!ctx || ctx.state === 'running') unlockEvents.forEach(e => window.removeEventListener(e, unlock, true));
+    };
+    unlockEvents.forEach(e => window.addEventListener(e, unlock, true));
+}
 
 function playTone(freq, duration = 0.15, type = 'sine', volume = 0.3) {
-    if (!audioCtx) return;
+    if (!soundEnabled) return;
+    const ctx = getAudioCtx();
+    // Not unlocked yet — skip rather than queueing tones that would all fire at once on resume
+    if (!ctx || ctx.state !== 'running') return;
     try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+        const vol = Math.max(0.0001, volume * masterVolume);
+        const t = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
         osc.type = type;
-        osc.frequency.value = freq;
-        gain.gain.value = volume;
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(audioCtx.currentTime);
-        osc.stop(audioCtx.currentTime + duration);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + duration);
+        osc.onended = () => { try { osc.disconnect(); gain.disconnect(); } catch { } };
     } catch { }
 }
 
@@ -141,34 +157,44 @@ export const sounds = {
 };
 
 // ── Voice Countdown (3, 2, 1, GO!) ──
+// Returns a cancel function — call it on unmount so onGo/speech don't fire afterwards.
 export function voiceCountdown(onGo) {
+    const timers = [];
+    const cancel = () => {
+        timers.forEach(clearTimeout);
+        try { if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel(); } catch { }
+    };
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-        if (onGo) setTimeout(onGo, 3000);
-        return;
+        if (onGo) timers.push(setTimeout(onGo, 3000));
+        return cancel;
     }
 
     const speak = (text, delay) => {
-        setTimeout(() => {
-            const u = new SpeechSynthesisUtterance(text);
-            u.rate = 0.9;
-            u.pitch = 1.1;
-            u.volume = 0.8;
-            window.speechSynthesis.speak(u);
-        }, delay);
+        timers.push(setTimeout(() => {
+            try {
+                const u = new SpeechSynthesisUtterance(text);
+                u.rate = 0.9;
+                u.pitch = 1.1;
+                u.volume = 0.8;
+                window.speechSynthesis.speak(u);
+            } catch { }
+        }, delay));
     };
 
     speak("3", 0);
     speak("2", 1000);
     speak("1", 2000);
     speak("GO!", 3000);
-    if (onGo) setTimeout(onGo, 3200);
+    if (onGo) timers.push(setTimeout(onGo, 3200));
+    return cancel;
 }
 
 // ── Haptic Feedback ──
 export function vibrate(pattern = [50]) {
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(pattern);
-    }
+    // navigator.vibrate throws/warns in some browsers when called before user activation
+    try {
+        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') navigator.vibrate(pattern);
+    } catch { }
 }
 
 // Short vibration
@@ -179,17 +205,15 @@ export function hapticSuccess() { vibrate([50, 30, 50]); }
 export function hapticWarning() { vibrate([100, 50, 100]); }
 
 // ── Master volume control ──
-let masterVolume = 1;
-let soundEnabled = true;
 
 export function setSoundEnabled(enabled) { soundEnabled = enabled; }
 export function getSoundEnabled() { return soundEnabled; }
-export function setMasterVolume(vol) { masterVolume = vol; }
+export function setMasterVolume(vol) { masterVolume = Math.min(1, Math.max(0, Number(vol) || 0)); }
 
 // ── Play sound with master volume check ──
 export function play(soundName) {
     if (!soundEnabled) return;
-    if (sounds[soundName]) sounds[soundName]();
+    try { if (sounds[soundName]) sounds[soundName](); } catch { }
 }
 
 export default sounds;

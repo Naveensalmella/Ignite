@@ -1,32 +1,33 @@
 "use client";
 import { useState, useEffect } from 'react';
 
-export default function ThemeToggle() {
-    const [theme, setTheme] = useState("dark");
+function readSavedTheme() {
+    try {
+        return typeof window !== "undefined" && localStorage.getItem("ignite-theme") === "light" ? "light" : "dark";
+    } catch { return "dark"; }
+}
 
-    useEffect(() => {
-        const saved = localStorage.getItem("ignite-theme");
-        if (saved === "light") {
-            setTheme("light");
-            document.documentElement.classList.remove("dark");
-            document.documentElement.setAttribute("data-theme", "light");
-        } else {
-            document.documentElement.classList.add("dark");
-            document.documentElement.removeAttribute("data-theme");
-        }
-    }, []);
+function applyTheme(theme) {
+    if (theme === "light") {
+        document.documentElement.classList.remove("dark");
+        document.documentElement.setAttribute("data-theme", "light");
+    } else {
+        document.documentElement.classList.add("dark");
+        document.documentElement.removeAttribute("data-theme");
+    }
+}
+
+export default function ThemeToggle() {
+    // Read the saved theme up-front instead of setState-in-effect (which flashed the wrong label)
+    const [theme, setTheme] = useState(readSavedTheme);
+
+    // Keep <html> in sync with the current theme
+    useEffect(() => { applyTheme(theme); }, [theme]);
 
     const toggle = () => {
         const next = theme === "dark" ? "light" : "dark";
         setTheme(next);
-        localStorage.setItem("ignite-theme", next);
-        if (next === "light") {
-            document.documentElement.classList.remove("dark");
-            document.documentElement.setAttribute("data-theme", "light");
-        } else {
-            document.documentElement.classList.add("dark");
-            document.documentElement.removeAttribute("data-theme");
-        }
+        try { localStorage.setItem("ignite-theme", next); } catch { }
     };
 
     return (

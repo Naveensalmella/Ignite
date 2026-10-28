@@ -1,10 +1,29 @@
 "use client";
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { today } from '@/utils';
+import { useState, useEffect, useMemo } from 'react';
+import { today, dateKey, parseDateKey, toArr } from '@/utils';
 import { EXERCISES } from '../data/exercises';
 import { GYM_PROGRAMS, COMBAT_PROGRAMS, getTodayWorkout } from '../data/trainingPrograms';
+import { hasDayWorkout } from '@/lib/workoutHelpers';
 import { localSync } from '@/utils/localSync';
+import { getMusclesForExercise } from './MuscleMap';
+import { requestWakeLock, releaseWakeLock } from './wakeLock';
 import ActiveWorkout from './ActiveWorkout';
+
+// Program exercises use reps like "10", "8-12", "30s", "1 min", "3 min".
+// Turn timed ones into { duration } so the workout player runs a countdown.
+function toPlayerExercise(ex) {
+    if (typeof ex.duration === "number" && !ex.reps) return ex; // already timed (seconds)
+    const reps = String(ex.reps ?? ex.duration ?? "");
+    const timed = /(\d+)\s*(s|sec|secs|seconds|min|mins|minutes)\b/i.exec(reps);
+    if (timed) {
+        const n = Number(timed[1]);
+        const secs = /^m/i.test(timed[2]) ? n * 60 : n;
+        return { ...ex, reps: undefined, duration: secs };
+    }
+    return { ...ex, reps: parseInt(reps, 10) || 12 };
+}
+
+const ALL_PROGRAMS = { ...GYM_PROGRAMS, ...COMBAT_PROGRAMS };
 
 // ── Challenge Data ──
 function buildChallengeDay(bodyParts, difficulty, count) {
@@ -62,19 +81,22 @@ function WeeklyGoal({ workoutLog, goal = 4 }) {
     const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());
     const days = [...Array(7)].map((_, i) => {
         const dt = new Date(startOfWeek); dt.setDate(startOfWeek.getDate() + i);
-        return { date: dt.toISOString().split("T")[0], day: dt.getDate(), isToday: dt.toDateString() === now.toDateString() };
+        return { date: dateKey(dt), day: dt.getDate(), isToday: dt.toDateString() === now.toDateString() };
     });
-    const completedDays = days.filter(d => { const e = workoutLog[d.date]; return e && (Array.isArray(e) ? e.length > 0 : true); }).length;
+    const completedDays = days.filter(d => hasDayWorkout(workoutLog, d.date)).length;
 
     return (
         <div className="bg-[#1a1a2e] rounded-2xl px-5 py-4 mb-4">
             <div className="flex justify-between items-center mb-[14px]">
                 <span className="text-base font-bold text-gray-100">Weekly Goal</span>
-                <span><span className="font-black text-emerald-500 text-xl">{completedDays}</span><span className="text-gray-500">/{goal}</span></span>
+                <span>
+                    <span className="font-black text-emerald-500 text-xl">{completedDays}</span><span className="text-gray-500">/{goal}</span>
+                    {completedDays >= goal && <span className="ml-2 text-xs font-semibold text-emerald-500">Goal hit! 🎉</span>}
+                </span>
             </div>
             <div className="flex justify-around">
                 {days.map(d => {
-                    const done = (() => { const e = workoutLog[d.date]; return e && (Array.isArray(e) ? e.length > 0 : true); })();
+                    const done = hasDayWorkout(workoutLog, d.date);
                     return (<div key={d.date} className="text-center"><div className={`w-9 h-9 rounded-full flex items-center justify-center text-[13px] ${done ? "bg-blue-500 text-white font-bold" : d.isToday ? "bg-transparent border-2 border-blue-500 text-blue-500 font-bold" : "bg-transparent border border-gray-700 text-gray-500 font-normal"}`}>{done ? "✓" : d.day}</div></div>);
                 })}
             </div>
@@ -85,21 +107,21 @@ function WeeklyGoal({ workoutLog, goal = 4 }) {
 // ══════════════════════════════════════
 // CHALLENGE CAROUSEL (with persistence)
 // ══════════════════════════════════════
-function ChallengeCarousel({ challengeProgress, setChallengeProgress, onStartChallenge }) {
-    const scrollRef = useRef(null);
+function ChallengeCarousel({ challengeProgress, onStartChallenge }) {
     return (
         <div className="mb-5">
-            <div className="text-lg font-extrabold text-gray-100 mb-3">Challenge</div>
-            <div ref={scrollRef} className="hide-scrollbar flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2">
+            <div className="text-lg font-extrabold text-gray-100 mb-3">Challenges</div>
+            <div className="hide-scrollbar flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2">
                 {CHALLENGES.map(ch => {
                     const progress = challengeProgress[ch.id] || { currentDay: 1, completedDays: 0 };
+                    const finished = progress.completedDays >= ch.days;
                     return (
                         <div key={ch.id} className="shrink-0 w-[85%] min-h-[220px] rounded-2xl p-5 relative overflow-hidden snap-start flex flex-col justify-between" style={{ background: ch.color }}>
                             <div className="absolute top-4 right-4 text-5xl opacity-30">{ch.icon}</div>
                             <div>
                                 <div className="text-xs font-bold text-white/80 tracking-[1px]">{ch.days} DAYS</div>
                                 <div className="text-[22px] font-black text-white leading-[1.1] mt-1">{ch.title}</div>
-                                <div className="text-4xl font-black text-white mt-1">DAY {progress.currentDay}</div>
+                                <div className="text-4xl font-black text-white mt-1">{finished ? "DONE ✓" : `DAY ${progress.currentDay}`}</div>
                                 <div className="text-xs text-white/70 mt-1 max-w-[70%]">{ch.desc}</div>
                             </div>
                             <div>
@@ -107,10 +129,10 @@ function ChallengeCarousel({ challengeProgress, setChallengeProgress, onStartCha
                                     <span className="text-[11px] text-white/70">{progress.completedDays}/{ch.days}</span>
                                 </div>
                                 <div className="h-1 bg-white/20 rounded-sm">
-                                    <div className="h-full rounded-sm bg-white transition-[width] duration-300" style={{ width: `${(progress.completedDays / ch.days) * 100}%` }} />
+                                    <div className="h-full rounded-sm bg-white transition-[width] duration-300" style={{ width: `${Math.min(100, (progress.completedDays / ch.days) * 100)}%` }} />
                                 </div>
-                                <button onClick={() => onStartChallenge(ch)} className="w-full mt-3 py-3 px-0 rounded-3xl bg-white/95 text-[#111] font-extrabold text-sm border-none cursor-pointer">
-                                    START DAY {progress.currentDay} →
+                                <button type="button" onClick={() => onStartChallenge(ch)} className="w-full mt-3 py-3 px-0 rounded-3xl bg-white/95 text-[#111] font-extrabold text-sm border-none cursor-pointer">
+                                    {finished ? "RESTART CHALLENGE ↺" : `START DAY ${progress.currentDay} →`}
                                 </button>
                             </div>
                         </div>
@@ -141,7 +163,7 @@ function ProgramsSection({ onSelectProgram, activeProgram }) {
                     return (
                         <div key={p.id} onClick={() => onSelectProgram(p)}
                             className="shrink-0 w-[180px] rounded-[14px] p-[14px] cursor-pointer" style={{ background: isActive ? `${color}15` : "#1a1a2e", border: isActive ? `1px solid ${color}40` : "1px solid transparent" }}>
-                            <div className="text-2xl mb-2">{p.type === "combat" ? "\u{1F94A}" : "\u{1F3CB}️"}</div>
+                            <div className="text-2xl mb-2">{p.icon || (p.type === "combat" ? "\u{1F94A}" : "\u{1F3CB}️")}</div>
                             <div className="text-sm font-bold text-gray-100">{p.name}</div>
                             <div className="text-[11px] text-gray-500 mt-1">{p.desc?.substring(0, 60)}...</div>
                             <div className="mt-2 flex gap-[6px] items-center">
@@ -160,42 +182,85 @@ function ProgramsSection({ onSelectProgram, activeProgram }) {
 // ══════════════════════════════════════
 // PROGRAM DETAIL (shows today's workout from a program)
 // ══════════════════════════════════════
-function ProgramDetail({ program, onClose, onStartWorkout }) {
+function ProgramDetail({ program, programState = {}, onActivate, onClose, onStartWorkout }) {
     if (!program) return null;
-    const todayData = getTodayWorkout(program, 1, new Date().getDay());
-    const exercises = todayData?.day?.exercises || [];
+    const isActive = programState.activeProgram === program.id;
+    const completed = isActive ? toArr(programState.completedDays) : [];
+    const startDate = isActive && programState.startDate ? programState.startDate : today();
+    const currentWeek = Math.max(0, Math.floor((parseDateKey(today()) - parseDateKey(startDate)) / (7 * 864e5)));
+    const isCombat = !!program.curriculum;
+    const todayData = getTodayWorkout(program, isCombat ? Math.floor(completed.length / (program.daysPerWeek || 3)) : currentWeek, completed.length);
+    const todayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date().getDay()];
+    const isScheduledDay = !program.schedule || program.schedule.includes(todayName);
+    const doneToday = completed.includes(today());
+
+    const exercises = isCombat
+        ? [...toArr(todayData?.drills).map(dr => ({ name: dr.name, reps: dr.duration || "3 min", sets: 1, rest: 30, desc: dr.desc })), ...toArr(todayData?.conditioning)]
+        : toArr(todayData?.day?.exercises).map(ex => todayData?.isDeload ? { ...ex, sets: Math.max(2, (ex.sets || 3) - 1) } : ex);
+    const sessionTitle = isCombat ? `Week ${todayData?.week || 1}: ${todayData?.title || ""}` : todayData?.day?.name;
+
+    const start = () => onStartWorkout({
+        id: program.id,
+        programId: program.id,
+        trainingType: isCombat ? "combat" : "gym",
+        name: `${program.name} — ${sessionTitle || "Session"}`,
+        exercises: exercises.map(toPlayerExercise),
+        duration: `${Math.max(10, exercises.length * 4)} mins`,
+        exerciseCount: exercises.length,
+    });
 
     return (
-        <div className="fixed inset-0 bg-[#0a0a0a] z-50 overflow-y-auto">
-            <div className="p-4">
-                <button onClick={onClose} className="bg-none border-none text-gray-400 text-lg cursor-pointer">{"←"} Back</button>
+        <div className="overlay-screen">
+            <div className="p-4 max-w-[720px] mx-auto">
+                <button type="button" onClick={onClose} className="bg-none border-none text-gray-400 text-lg cursor-pointer">{"←"} Back</button>
                 <div className="mt-3">
-                    <div className="text-[22px] font-black text-gray-100">{program.name}</div>
+                    <div className="text-[22px] font-black text-gray-100">{program.icon ? `${program.icon} ` : ""}{program.name}</div>
                     <div className="text-[13px] text-gray-500 mt-1">{program.desc}</div>
-                    {todayData?.phase && <div className="text-xs text-blue-500 mt-2">Phase: {todayData.phase} {"·"} {todayData.focus}</div>}
-                    {todayData?.day && <div className="text-base font-bold text-gray-100 mt-3">Today: {todayData.day.name}</div>}
+                    <div className="flex flex-wrap gap-2 mt-3 text-[11px]">
+                        {program.duration && <span className="chip chip-i">{program.duration}</span>}
+                        {program.daysPerWeek && <span className="chip chip-i">{program.daysPerWeek} days / week</span>}
+                        {program.schedule && <span className="chip chip-i">{program.schedule.join(" · ")}</span>}
+                    </div>
+                    {isActive ? (
+                        <div className="mt-3 text-[13px] text-emerald-500 font-semibold">✓ Active program · Week {currentWeek + 1} · {completed.length} session{completed.length === 1 ? "" : "s"} done</div>
+                    ) : (
+                        <button type="button" onClick={() => onActivate(program.id)} className="bp mt-3 px-5 py-2 text-sm">Make this my program</button>
+                    )}
+                    {todayData?.phase && <div className="text-xs text-blue-500 mt-3">Phase: {todayData.phase} {"·"} {todayData.focus}{todayData.isDeload ? " · Deload week (lighter)" : ""}</div>}
+                    {isCombat && todayData?.focus && <div className="text-xs text-blue-500 mt-3">{todayData.focus}</div>}
+                    {sessionTitle && <div className="text-base font-bold text-gray-100 mt-3">Next session: {sessionTitle}</div>}
+                    {!isScheduledDay && <div className="text-xs text-amber-500 mt-1">Today ({todayName}) is a scheduled rest day — you can still train if you feel good.</div>}
+                    {doneToday && <div className="text-xs text-emerald-500 mt-1">You already trained this program today. Nice work!</div>}
                 </div>
+
+                {isCombat && toArr(todayData?.skills).length > 0 && (
+                    <div className="gs mt-4 p-3">
+                        <div className="sl">Skills this week</div>
+                        {toArr(todayData.skills).map((sk, i) => <div key={i} className="text-xs text-gray-300 py-1">• {sk}</div>)}
+                    </div>
+                )}
 
                 {exercises.length > 0 ? (
                     <div className="mt-4">
                         {exercises.map((ex, i) => (
                             <div key={i} className={`flex items-center gap-3 py-[14px] ${i < exercises.length - 1 ? "border-b border-b-[#1a1a2e]" : ""}`}>
-                                <div className="w-12 h-12 rounded-[10px] bg-[#1a1a2e] flex items-center justify-center text-[10px] font-bold text-emerald-500 text-center">{"\u{1F3CB}️"}</div>
+                                <div className="w-12 h-12 rounded-[10px] bg-[#1a1a2e] flex items-center justify-center text-xl shrink-0">{isCombat ? "\u{1F94A}" : "\u{1F3CB}️"}</div>
                                 <div className="flex-1">
                                     <div className="text-sm font-bold text-gray-100">{ex.name}</div>
-                                    <div className="text-xs text-gray-500">{ex.sets} sets {"×"} {ex.reps} {"·"} Rest {ex.rest}s</div>
-                                    {ex.progression && <div className="text-[10px] text-emerald-500">{ex.progression}</div>}
+                                    <div className="text-xs text-gray-500">{ex.sets || 1} {ex.sets === 1 ? "set" : "sets"} {"×"} {ex.reps}{ex.rest ? ` · Rest ${ex.rest}s` : ""}</div>
+                                    {ex.desc && <div className="text-[11px] text-gray-500">{ex.desc}</div>}
+                                    {ex.progression && <div className="text-[11px] text-emerald-500">{ex.progression}</div>}
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="p-10 text-center text-gray-500">Rest day {"—"} no workout scheduled</div>
+                    <div className="p-10 text-center text-gray-500">No exercises found for this session.</div>
                 )}
 
                 {exercises.length > 0 && (
-                    <div className="px-4 pt-4 pb-[100px] sticky bottom-0" style={{ background: "linear-gradient(transparent, #0a0a0a 30%)" }}>
-                        <button onClick={() => onStartWorkout({ id: program.id, name: `${program.name} — ${todayData.day.name}`, exercises: exercises.map(e => ({ ...e, reps: parseInt(e.reps) || 12 })), duration: `${exercises.length * 3} mins`, exerciseCount: exercises.length })}
+                    <div className="sticky-cta">
+                        <button type="button" onClick={start}
                             className="w-full p-4 rounded-[14px] bg-gradient-to-br from-blue-500 to-blue-600 text-white font-extrabold text-base border-none cursor-pointer">
                             START WORKOUT →
                         </button>
@@ -249,10 +314,11 @@ function AIWorkoutGenerator({ onStartWorkout }) {
     const [prompt, setPrompt] = useState("");
     const [loading, setLoading] = useState(false);
     const [expanded, setExpanded] = useState(false);
+    const [error, setError] = useState("");
 
     async function generate() {
         if (!prompt.trim() || loading) return;
-        setLoading(true);
+        setLoading(true); setError("");
         try {
             const r = await fetch("/api/generate-workout", {
                 method: "POST",
@@ -260,22 +326,27 @@ function AIWorkoutGenerator({ onStartWorkout }) {
                 body: JSON.stringify({ prompt }),
             });
             const data = await r.json();
-            if (data.workout) {
-                const workout = data.workout;
-                workout.id = "ai_" + Date.now();
-                workout.duration = `${(workout.exercises?.length || 6) * 3} mins`;
-                workout.exerciseCount = workout.exercises?.length || 0;
-                onStartWorkout(workout);
+            if (data.workout && toArr(data.workout.exercises).length > 0) {
+                const exercises = toArr(data.workout.exercises).map(toPlayerExercise);
+                onStartWorkout({
+                    ...data.workout,
+                    id: "ai_" + Date.now(),
+                    exercises,
+                    duration: `${exercises.length * 3} mins`,
+                    exerciseCount: exercises.length,
+                });
             } else {
-                console.error("AI gen failed:", data.error);
+                setError(data.error || "Couldn't generate a workout. Try describing it differently.");
             }
-        } catch (e) { console.error("AI gen error:", e); }
+        } catch {
+            setError("Couldn't reach the AI. Check your connection and try again.");
+        }
         setLoading(false);
     }
 
     return (
         <div className="mb-5">
-            <div onClick={() => setExpanded(!expanded)} className="flex justify-between items-center cursor-pointer">
+            <div role="button" tabIndex={0} onClick={() => setExpanded(!expanded)} onKeyDown={e => (e.key === "Enter" || e.key === " ") && setExpanded(!expanded)} className="flex justify-between items-center cursor-pointer">
                 <div className="text-lg font-extrabold text-gray-100">{"\u{1F916}"} AI Workout Generator</div>
                 <span className="text-gray-500 text-sm">{expanded ? "▲" : "▼"}</span>
             </div>
@@ -288,6 +359,7 @@ function AIWorkoutGenerator({ onStartWorkout }) {
                         className={`w-full p-3 rounded-[10px] text-white font-bold text-sm border-none ${loading ? "bg-[#1a1a2e] cursor-default" : "bg-gradient-to-br from-violet-500 to-violet-700 cursor-pointer"}`}>
                         {loading ? "Generating..." : "Generate Workout →"}
                     </button>
+                    {error && <div className="mt-2 text-xs text-red-500">{error}</div>}
                     <div className="hide-scrollbar flex gap-[6px] mt-2 overflow-x-auto">
                         {["Quick full body 10 min", "Chest and arms no equipment", "Leg day intermediate", "Fat burning HIIT"].map(q => (
                             <button key={q} onClick={() => { setPrompt(q); }} className="shrink-0 py-[6px] px-3 rounded-lg bg-[#1a1a2e] border border-[#2a2a3e] text-gray-400 text-[11px] cursor-pointer">{q}</button>
@@ -303,7 +375,7 @@ function AIWorkoutGenerator({ onStartWorkout }) {
 // BODY FOCUS SECTION
 // ══════════════════════════════════════
 function BodyFocusSection({ onSelectWorkout }) {
-    const [activePart, setActivePart] = useState("abs");
+    const [activePart, setActivePart] = useState("core");
     const workouts = getWorkoutsForBodyPart(activePart);
     return (
         <div className="mb-5">
@@ -347,17 +419,18 @@ function WorkoutDetail({ workout, onClose, onStart }) {
     function handleDragEnd() { setDragIdx(null); }
 
     return (
-        <div className="fixed inset-0 bg-[#0a0a0a] z-50 overflow-y-auto">
-            <div className="px-4 pt-4">
+        <div className="overlay-screen">
+            <div className="px-4 pt-4 max-w-[720px] mx-auto">
                 <button onClick={onClose} className="bg-none border-none text-gray-400 text-lg cursor-pointer">{"←"} Back</button>
                 <div className="mt-3">
                     <div className="text-[22px] font-black text-gray-100">{workout.name}</div>
                     <div className="text-[13px] text-gray-500 mt-1">{workout.duration} {"·"} {workout.exerciseCount} Exercises</div>
                 </div>
             </div>
-            <div className="p-4">
+            <div className="p-4 max-w-[720px] mx-auto">
                 <div className="flex justify-between mb-3">
                     <span className="text-base font-bold text-gray-100">Exercises</span>
+                    <span className="text-[11px] text-gray-500">Drag to reorder</span>
                 </div>
                 {exercises.map((ex, i) => (
                     <div key={i} draggable onDragStart={() => handleDragStart(i)} onDragOver={(e) => handleDragOver(e, i)} onDragEnd={handleDragEnd}
@@ -373,8 +446,8 @@ function WorkoutDetail({ workout, onClose, onStart }) {
                     </div>
                 ))}
             </div>
-            <div className="px-4 pt-4 pb-[100px] sticky bottom-0" style={{ background: "linear-gradient(transparent, #0a0a0a 30%)" }}>
-                <button onClick={() => onStart({ ...workout, exercises })} className="w-full p-4 rounded-[14px] bg-gradient-to-br from-blue-500 to-blue-600 text-white font-extrabold text-base border-none cursor-pointer">START WORKOUT →</button>
+            <div className="sticky-cta max-w-[720px] mx-auto">
+                <button type="button" onClick={() => onStart({ ...workout, exercises })} className="w-full p-4 rounded-[14px] bg-gradient-to-br from-blue-500 to-blue-600 text-white font-extrabold text-base border-none cursor-pointer">START WORKOUT →</button>
             </div>
         </div>
     );
@@ -394,7 +467,7 @@ function SearchScreen({ onClose, onSelectWorkout }) {
     const filtered = q ? allWorkouts.filter(w => (w.name || "").toLowerCase().includes(q) || (w.desc || "").toLowerCase().includes(q) || (w.level || "").toLowerCase().includes(q) || (w.goal || "").toLowerCase().includes(q)) : [];
 
     return (
-        <div className="fixed inset-0 bg-[#0a0a0a] z-[45] overflow-y-auto p-4">
+        <div className="overlay-screen p-4">
             <div className="flex gap-3 items-center mb-4">
                 <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search workouts, plans..." autoFocus
                     className="flex-1 py-3 px-4 rounded-xl text-sm bg-[#1a1a2e] border border-[#2a2a3e] text-gray-100" />
@@ -439,25 +512,35 @@ function SearchScreen({ onClose, onSelectWorkout }) {
 // ══════════════════════════════════════
 // MAIN TRAINING HOME
 // ══════════════════════════════════════
-export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, profile = {} }) {
+export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, programState = {}, setProgramState = () => { } }) {
     const [showSearch, setShowSearch] = useState(false);
     const [selectedWorkout, setSelectedWorkout] = useState(null);
     const [selectedProgram, setSelectedProgram] = useState(null);
     const [activeWorkout, setActiveWorkout] = useState(null);
+    const ps = programState || {};
+
+    // Keep the screen awake while a workout is running
+    useEffect(() => {
+        if (!activeWorkout) return;
+        requestWakeLock();
+        return () => { releaseWakeLock(); };
+    }, [activeWorkout]);
 
     // Challenge progress — synced to localStorage + Firestore profile
     const cpSync = useMemo(() => localSync("ignite-challenge-progress", {}), []);
     const [challengeProgress, setChallengeProgressRaw] = useState(cpSync.get);
-    const setChallengeProgress = (v) => {
-        setChallengeProgressRaw(prev => {
-            const next = typeof v === "function" ? v(prev) : v;
-            cpSync.set(next);
-            return next;
-        });
+    const setChallengeProgress = (updater) => {
+        const next = typeof updater === "function" ? updater(challengeProgress) : updater;
+        setChallengeProgressRaw(next);
+        cpSync.set(next);
     };
 
     function handleStartChallenge(challenge) {
-        const progress = challengeProgress[challenge.id] || { currentDay: 1, completedDays: 0 };
+        let progress = challengeProgress[challenge.id] || { currentDay: 1, completedDays: 0 };
+        if (progress.completedDays >= challenge.days) {
+            progress = { currentDay: 1, completedDays: 0 };
+            setChallengeProgress(prev => ({ ...prev, [challenge.id]: progress }));
+        }
         const exercises = challenge.getDayExercises(progress.currentDay);
         setActiveWorkout({
             id: `${challenge.id}_day${progress.currentDay}`,
@@ -469,19 +552,41 @@ export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, pr
         });
     }
 
+    function activateProgram(id) {
+        setProgramState(prev => ({ ...(prev || {}), activeProgram: id, startDate: today(), completedDays: [] }));
+    }
+
     function handleWorkoutComplete(result) {
         const d = today();
-        const xp = Math.max(20, result.exercisesDone * 5 + Math.floor(result.duration / 60) * 3);
+        const now = Date.now();
+        const exercises = toArr(result.workout.exercises);
+        const weights = result.weights || {};
+        const loggedExercises = exercises.map((ex, i) => {
+            const setsCount = ex.duration ? 1 : (ex.sets || 3);
+            return {
+                name: ex.name,
+                sets: Array.from({ length: setsCount }, (_, si) => ({
+                    reps: ex.duration ? 0 : (parseInt(ex.reps, 10) || 0),
+                    weight: Number(weights[i]?.[si]) || 0,
+                    done: (result.completedIdx || []).includes(i),
+                })),
+            };
+        });
+        const doneIdx = new Set(result.completedIdx || exercises.map((_, i) => i));
+        const totalSets = loggedExercises.reduce((s, ex, i) => s + (doneIdx.has(i) ? ex.sets.length : 0), 0);
+        const xp = Math.max(20, totalSets * 5 + Math.floor(result.duration / 60) * 3);
         const entry = {
-            id: `${d}_gym_${Date.now()}`, date: d, trainingType: "gym",
+            id: `${d}_${result.workout.trainingType || "gym"}_${now}`, date: d,
+            trainingType: result.workout.trainingType || "gym",
             splitName: result.workout.name, duration: result.duration,
             calBurned: result.caloriesBurned, xpEarned: xp,
-            startedAt: Date.now() - (result.duration * 1000), completedAt: Date.now(),
+            startedAt: now - (result.duration * 1000), completedAt: now,
             gym: {
-                exercises: result.workout.exercises.map(ex => ({ name: ex.name, sets: [] })),
-                totalSets: result.workout.exercises.reduce((s, ex) => s + (ex.sets || 3), 0),
-                totalReps: result.workout.exercises.reduce((s, ex) => s + (parseInt(ex.reps) || 12), 0),
-                maxWeight: 0, musclesWorked: [...new Set(result.workout.exercises.map(ex => ex.bodyPart).filter(Boolean))]
+                exercises: loggedExercises,
+                totalSets,
+                totalReps: loggedExercises.reduce((s, ex, i) => s + (doneIdx.has(i) ? ex.sets.reduce((a, st) => a + st.reps, 0) : 0), 0),
+                maxWeight: result.maxWeight || 0,
+                musclesWorked: [...new Set(exercises.filter((_, i) => doneIdx.has(i)).flatMap(ex => getMusclesForExercise(ex.name)))],
             },
         };
         if (setWorkoutLog) {
@@ -492,12 +597,14 @@ export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, pr
         }
         if (addXP) addXP(xp, "Workout Complete");
 
-        // Update challenge progress if this was a challenge workout
         if (result.workout.challengeId) {
             setChallengeProgress(prev => {
                 const old = prev[result.workout.challengeId] || { currentDay: 1, completedDays: 0 };
                 return { ...prev, [result.workout.challengeId]: { currentDay: old.currentDay + 1, completedDays: old.completedDays + 1 } };
             });
+        }
+        if (result.workout.programId && result.workout.programId === ps.activeProgram) {
+            setProgramState(prev => ({ ...(prev || {}), completedDays: [...toArr(prev?.completedDays), d] }));
         }
         setActiveWorkout(null);
     }
@@ -506,36 +613,43 @@ export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, pr
         return <ActiveWorkout workout={activeWorkout} onComplete={handleWorkoutComplete} onQuit={() => setActiveWorkout(null)} />;
     }
 
+    const activeProgram = ps.activeProgram ? ALL_PROGRAMS[ps.activeProgram] : null;
+    const todayDone = hasDayWorkout(workoutLog, today());
+
     return (
         <div className="fade-in">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-                <div className="text-[22px] font-black text-gray-100 font-heading tracking-[1px]">IGNITE TRAINING</div>
-                <span className="text-xl">{"\u{1F525}"}</span>
-            </div>
-
             {/* Search bar */}
-            <div onClick={() => setShowSearch(true)} className="bg-[#1a1a2e] rounded-xl py-3 px-4 mb-4 flex items-center gap-[10px] cursor-pointer border border-[#2a2a3e]">
+            <button type="button" onClick={() => setShowSearch(true)} className="w-full bg-[#1a1a2e] rounded-xl py-3 px-4 mb-4 flex items-center justify-start gap-[10px] cursor-pointer border border-[#2a2a3e] text-left">
                 <span className="text-gray-500">{"\u{1F50D}"}</span>
                 <span className="text-gray-500 text-sm">Search workouts, plans...</span>
-            </div>
+            </button>
+
+            {/* Active program shortcut */}
+            {activeProgram && (
+                <button type="button" onClick={() => setSelectedProgram(activeProgram)} className="gc w-full mb-4 flex items-center justify-between gap-3 text-left" style={{ borderColor: "rgba(16,185,129,.25)" }}>
+                    <div>
+                        <div className="text-[11px] font-semibold tracking-[1px] text-emerald-500">YOUR PROGRAM</div>
+                        <div className="text-[15px] font-bold text-gray-100">{activeProgram.name}</div>
+                        <div className="text-xs text-gray-500">{todayDone ? "Trained today ✓" : "Tap to see today's session"}</div>
+                    </div>
+                    <span className="text-emerald-500 text-xl">→</span>
+                </button>
+            )}
 
             <WeeklyGoal workoutLog={workoutLog} goal={4} />
-            <ChallengeCarousel challengeProgress={challengeProgress} setChallengeProgress={setChallengeProgress} onStartChallenge={handleStartChallenge} />
-            <ProgramsSection onSelectProgram={setSelectedProgram} activeProgram={null} />
+            <ChallengeCarousel challengeProgress={challengeProgress} onStartChallenge={handleStartChallenge} />
+            <ProgramsSection onSelectProgram={setSelectedProgram} activeProgram={ps.activeProgram || null} />
             <AIWorkoutGenerator onStartWorkout={(w) => setSelectedWorkout(w)} />
             <BodyFocusSection onSelectWorkout={setSelectedWorkout} />
             <WorkoutHistory workoutLog={workoutLog} />
 
             {/* Overlays */}
-            {showSearch && <SearchScreen onClose={() => setShowSearch(false)} onSelectWorkout={(w) => { setShowSearch(false); setSelectedWorkout(w); }} />}
+            {showSearch && <SearchScreen onClose={() => setShowSearch(false)} onSelectWorkout={(w) => {
+                setShowSearch(false);
+                if (ALL_PROGRAMS[w.id]) setSelectedProgram(ALL_PROGRAMS[w.id]); else setSelectedWorkout(w);
+            }} />}
             {selectedWorkout && <WorkoutDetail workout={selectedWorkout} onClose={() => setSelectedWorkout(null)} onStart={(w) => { setSelectedWorkout(null); setActiveWorkout(w); }} />}
-            {selectedProgram && <ProgramDetail program={selectedProgram} onClose={() => setSelectedProgram(null)} onStartWorkout={(w) => { setSelectedProgram(null); setActiveWorkout(w); }} />}
-
-            {/* Bottom spacer for navbar */}
-            <div className="h-[100px]" />
-
-            <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; } .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
+            {selectedProgram && <ProgramDetail program={selectedProgram} programState={ps} onActivate={activateProgram} onClose={() => setSelectedProgram(null)} onStartWorkout={(w) => { setSelectedProgram(null); setActiveWorkout(w); }} />}
         </div>
     );
 }
