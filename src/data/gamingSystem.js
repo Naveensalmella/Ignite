@@ -55,7 +55,8 @@ export const XP_SOURCES = {
 };
 
 // ── 3. COMBO SYSTEM ──
-// Complete multiple activity types in one day for bonus XP
+// Different activity types done today. Display only — combos count toward the weekly
+// "Combo King" challenge and the All-Rounder chain; they don't multiply XP.
 export function getComboStatus(appState, workoutLog) {
     const d = today();
     const activities = [];
@@ -66,16 +67,12 @@ export function getComboStatus(appState, workoutLog) {
     if (appState?.journal?.[d]?.mood || appState?.journal?.[d]?.entry) activities.push("Wellness");
 
     const count = activities.length;
-    let multiplier = 1;
-    let bonusXP = 0;
-    let label = "";
+    const label = count >= 5 ? "🌟 Ultimate combo · 5 activities"
+        : count >= 4 ? "🔥 Mega combo · 4 activities"
+            : count >= 3 ? "💥 Combo · 3 activities"
+                : count >= 2 ? "⚡ Double up · 2 activities" : "";
 
-    if (count >= 5) { multiplier = 2.0; bonusXP = 50; label = "🌟 ULTIMATE COMBO ×2.0"; }
-    else if (count >= 4) { multiplier = 1.75; bonusXP = 30; label = "🔥 MEGA COMBO ×1.75"; }
-    else if (count >= 3) { multiplier = 1.5; bonusXP = 15; label = "💥 COMBO ×1.5"; }
-    else if (count >= 2) { multiplier = 1.25; bonusXP = 5; label = "⚡ Double Up ×1.25"; }
-
-    return { activities, count, multiplier, bonusXP, label };
+    return { activities, count, label };
 }
 
 // ── 4. DAILY LOGIN BONUS ──
@@ -107,7 +104,7 @@ export function generateWeeklyChallenges(seed) {
         { id: "w7", title: "7-Day Warrior", desc: "Train every day this week", target: 7, type: "workouts", reward: 350, icon: "🔥" },
         { id: "f7", title: "Nutrition Streak", desc: "Log food every day", target: 7, type: "foodDays", reward: 150, icon: "🍎" },
         { id: "c10k", title: "10K Calories", desc: "Burn 10,000 calories total", target: 10000, type: "calBurned", reward: 250, icon: "💪" },
-        { id: "q20", title: "Quest Master", desc: "Complete 20 daily quests", target: 20, type: "quests", reward: 200, icon: "🎯" },
+        { id: "q20", title: "Habit Master", desc: "Tick off 20 habits this week", target: 20, type: "quests", reward: 200, icon: "🎯" },
         { id: "fo5", title: "Deep Focus", desc: "Complete 5 focus sessions", target: 5, type: "focusSessions", reward: 150, icon: "⏱" },
         { id: "j5", title: "Journal Journey", desc: "Write journal 5 days", target: 5, type: "journalDays", reward: 150, icon: "📝" },
         { id: "w3a", title: "Water Champion", desc: "Hit water goal 5 days", target: 5, type: "waterDays", reward: 100, icon: "💧" },

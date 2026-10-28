@@ -82,8 +82,11 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
 
   const toggle = (id) => {
     const was = checked.includes(id);
+    // XP once per habit per day: an un-tick keeps the habit's key (as `false`) in today's
+    // persisted log, so ticking it again doesn't pay a second time.
+    const paid = id in asDoneMap(hl[d]);
     setHabitLog(p => { const prev = p || {}; return { ...prev, [d]: { ...asDoneMap(prev[d]), [id]: !was } }; });
-    if (!was) addXP(XP.habit, "Quest completed");
+    if (!was && !paid) addXP(XP.habit, "Quest completed");
   };
 
   const addQuest = (name, cat) => {

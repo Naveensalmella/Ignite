@@ -62,13 +62,12 @@ export function normalizeDayLog(log) {
   return out;
 }
 
-// XP curve: gets progressively harder but never caps
+// XP curve: one smooth formula — gets progressively harder but never caps.
+// (It used to switch to steeper formulas at Lv 51/101/201, a +71% jump in one level; levels
+// up to 50 cost exactly what they did, higher levels cost less, so nobody loses a level.)
 export function xpForLevel(n) {
   if (n <= 1) return 0;
-  if (n <= 50) return Math.floor(22 * Math.pow(n, 1.65));
-  if (n <= 100) return Math.floor(30 * Math.pow(n, 1.7));
-  if (n <= 200) return Math.floor(40 * Math.pow(n, 1.75));
-  return Math.floor(50 * Math.pow(n, 1.8)); // keeps scaling forever
+  return Math.floor(22 * Math.pow(n, 1.65));
 }
 
 export function totalXpFor(lv) {

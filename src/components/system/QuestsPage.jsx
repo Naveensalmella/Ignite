@@ -28,7 +28,7 @@ export default function QuestsPage({ initialTab = "daily" }) {
                     <JobChangeCard />
                     <details className="card text-[13px] muted">
                         <summary className="row-title cursor-pointer inline-flex items-center gap-2"><Info size={16} className="dim" /> How quests work</summary>
-                        <p className="mt-2 leading-relaxed">Clear the Daily Quest before midnight for XP, Gold and an ability point. Miss it and the next day starts with a short Penalty Zone workout — until you finish it, XP is halved. Reaching a new rank&apos;s level unlocks its Rank Assessment.</p>
+                        <p className="mt-2 leading-relaxed">Clear the Daily Quest before midnight for XP, Gold and an ability point. Miss it and the next day starts with a short Penalty Zone workout — until you finish it, XP is halved (for up to 3 days; then it expires and the System takes Gold). Reaching a new rank&apos;s level unlocks its Rank Assessment.</p>
                     </details>
                 </>
             )}

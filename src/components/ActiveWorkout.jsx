@@ -136,7 +136,8 @@ function Summary({ workout, log, seconds, sessions, onSave, onDiscard }) {
                     ))}
                 </div>
             </div>
-            <button type="button" className="bp w-full !py-4 text-[16px]" onClick={() => onSave({ rpe, prs })}>Save workout</button>
+            {sets === 0 && <div className="pl-tip w-full mb-3" role="alert">No sets were completed, so there&apos;s nothing to save.</div>}
+            <button type="button" className="bp w-full !py-4 text-[16px]" disabled={sets === 0} onClick={() => { if (sets > 0) onSave({ rpe, prs }); }}>Save workout</button>
             <button type="button" className="w-full py-3 mt-1 text-[13px]" style={{ color: "#9ca3af" }} onClick={onDiscard}>Discard</button>
         </div>
     );
@@ -155,6 +156,7 @@ export default function ActiveWorkout({ workout, sessions = [], onComplete, onQu
     const [view, setView] = useState("demo");
     const [howTo, setHowTo] = useState(false);
     const [swapOpen, setSwapOpen] = useState(false);
+    const [emptyMsg, setEmptyMsg] = useState(false);  // tried to finish with no set done
 
     const ex = log[idx];
     const info = ex ? getExerciseInfo(ex) : null;
@@ -191,6 +193,7 @@ export default function ActiveWorkout({ workout, sessions = [], onComplete, onQu
     function completeSet(s) {
         const willBeLast = ex.sets.filter((st, j) => st.done || j === s).length === ex.sets.length;
         updateSet(s, { done: true });
+        setEmptyMsg(false);
         const restSec = ex.rest || 0;
         if (restSec > 0 && !(willBeLast && idx === log.length - 1)) {
             const nextEx = willBeLast ? log[idx + 1] : null;
@@ -220,7 +223,11 @@ export default function ActiveWorkout({ workout, sessions = [], onComplete, onQu
     };
     const pauseTimedSet = () => setTimer(tm => tm && { ...tm, running: false, left: Math.max(1, Math.ceil((tm.endAt - Date.now()) / 1000)) });
 
-    const finish = () => { setRest(null); setTimer(null); setEndAt(Date.now()); setStage("cooldown"); };
+    const finish = () => {
+        // An empty session isn't a workout: no XP, streak, stats or quest credit.
+        if (!log.some(e => e.sets.some(s => s.done))) { setEmptyMsg(true); return; }
+        setRest(null); setTimer(null); setEndAt(Date.now()); setStage("cooldown");
+    };
     const quit = () => {
         const started = log.some(e => e.sets.some(s => s.done));
         if (!started || window.confirm("Quit this workout? Sets you logged in this session won't be saved.")) onQuit?.();
@@ -271,6 +278,7 @@ export default function ActiveWorkout({ workout, sessions = [], onComplete, onQu
                 <button type="button" className="pl-finish" onClick={finish}>Finish</button>
             </div>
             <div className="player-progress"><div style={{ width: `${(totalDone / Math.max(1, totalSets)) * 100}%` }} /></div>
+            {emptyMsg && <div className="pl-tip mx-4 mt-2" role="alert">Complete at least one set to finish this workout — or tap ✕ to quit without saving.</div>}
 
             <div className="player-body">
                 <div className="player-demo">

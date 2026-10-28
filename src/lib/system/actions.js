@@ -2,12 +2,13 @@
 import useAppStore from "@/stores/useAppStore";
 import { getLevel, today, addDays, toArr } from "@/utils";
 import { play } from "@/components/soundEngine";
-import { levelRank, availableTrial, rankById, TRIALS, trialRewards } from "./ranks";
+import { hasDayWorkout } from "@/lib/workoutHelpers";
+import { levelRank, availableTrial, rankById, TRIALS, TRIAL_MIN_MS, trialRewards } from "./ranks";
 import { STAT_KEYS, AP_PER_LEVEL, emptyStats, statSheet } from "./stats";
-import { questItems, questDay, questStatus, questRewards, OVERACHIEVE_BONUS, templateTarget } from "./quests";
+import { questItems, questDay, questStatus, scaledQuestRewards, questEditable, questScale, MIN_QUEST_EFFORT, OVERACHIEVE_BONUS, templateTarget } from "./quests";
 import { itemById, rollRandomBox, STARTER_REWARDS, REWARD_PREFIX, POTION_MS } from "./items";
-import { rollGateDrop, GATE_CLEAR_RATIO } from "./gates";
-import { SKILLS, TITLES, CLASSES, ARISE_DAYS, SHADOW_NAMES, JOB_LEVEL, describeEffect, effectSum, goldMultiplier, titleCounters, armyState, habitRuns, monarchEligible } from "./progression";
+import { rollGateDrop, gateClearRatio, GATE_CLEAR_RATIO } from "./gates";
+import { SKILLS, TITLES, CLASSES, ARISE_DAYS, SHADOW_NAMES, JOB_LEVEL, describeEffect, effectSum, goldMultiplier, titleCounters, armyState, habitRuns, monarchEligible, jobQuestProgress } from "./progression";
 
 const st = () => useAppStore.getState();
 const sys = () => st().system || {};
@@ -74,16 +75,20 @@ export function setQuestProgress(itemId, value) {
     if (!s.awakened || s.penalty?.active) return;
     const d = today();
     const day = questDay(s, d);
-    const items = questItems(s, level()).map(i => (day.claimed && day.targets?.[i.id] ? { ...i, target: day.targets[i.id] } : i));
+    // A cleared day is judged only against the items and targets it was cleared with.
+    const items = day.claimed && day.targets
+        ? Object.entries(day.targets).map(([id, target]) => ({ id, target: Number(target) || 1 }))
+        : questItems(s, level());
     const v = Math.max(0, Math.round((Number(value) || 0) * 10) / 10);
     const next = { ...day, progress: { ...(day.progress || {}), [itemId]: v } };
     const status = questStatus(items, next);
     const claim = status.done && !day.claimed;
-    const bonus = status.over && (day.claimed || claim) && !day.over;
-    if (claim) { next.claimed = true; next.targets = Object.fromEntries(items.map(i => [i.id, i.target])); }
+    // The hidden reward needs a quest at least close to the template's difficulty.
+    const bonus = status.over && (day.claimed || claim) && !day.over && (day.claimed ? day.scale ?? 1 : questScale(items, level())) >= MIN_QUEST_EFFORT;
+    if (claim) { next.claimed = true; next.targets = Object.fromEntries(items.map(i => [i.id, i.target])); next.scale = Math.round(questScale(items, level()) * 100) / 100; }
     if (bonus) next.over = true;
     patch(x => ({ questLog: { ...(x.questLog || {}), [d]: next } }));
-    if (claim) claimQuest();
+    if (claim) claimQuest(items);
     if (bonus) {
         patch(x => ({ gold: (Number(x.gold) || 0) + OVERACHIEVE_BONUS.gold, abilityPoints: (Number(x.abilityPoints) || 0) + OVERACHIEVE_BONUS.ap }));
         setTimeout(() => notify({
@@ -93,10 +98,11 @@ export function setQuestProgress(itemId, value) {
     }
 }
 
-function claimQuest() {
+function claimQuest(items) {
     const s = sys();
-    const r = questRewards(s.rank);
-    const box = Math.random() < r.boxChance + effectSum(s, st().activeTitle, "boxChance");
+    // Easier-than-template quests (e.g. the template outgrew a custom list) pay proportionally less.
+    const r = scaledQuestRewards(s.rank, items, level());
+    const box = Math.random() < r.boxChance + (r.scale >= MIN_QUEST_EFFORT ? effectSum(s, st().activeTitle, "boxChance") : 0);
     patch(x => ({
         gold: (Number(x.gold) || 0) + r.gold,
         abilityPoints: (Number(x.abilityPoints) || 0) + r.ap,
@@ -105,13 +111,22 @@ function claimQuest() {
     st().addXP(r.xp, "Daily Quest");
     notify({
         kind: "quest", title: "DAILY QUEST COMPLETE",
-        lines: ["Preparations to become powerful — cleared.", `+${r.xp} XP · +${r.gold} Gold · +${r.ap} Ability Point`, ...(box ? ["🎁 Random Box obtained"] : [])],
+        lines: [
+            "Preparations to become powerful — cleared.",
+            `+${r.xp} XP · +${r.gold} Gold${r.ap ? ` · +${r.ap} Ability Point` : ""}`,
+            ...(r.scale < 1 ? [`Rewards reduced to ${Math.round(r.scale * 100)}%: your quest is easier than the System's.`] : []),
+            ...(box ? ["🎁 Random Box obtained"] : []),
+        ],
         cta: s.abilityPoints || r.ap ? { label: "Allocate points", page: "status" } : undefined,
     });
 }
 
-/** Save an edited quest list (null = back to the System template). */
+/** Save an edited quest list (null = back to the System template).
+ *  Returns { ok, reason }: the list is locked once today's quest has progress, and must stay
+ *  at least MIN_QUEST_EFFORT as hard as the template for your level. */
 export function saveQuestItems(items) {
+    const s = sys();
+    if (!questEditable(questDay(s, today()))) return { ok: false, reason: "Today's quest has already started. You can edit it tomorrow before logging anything." };
     const clean = items === null ? null : toArr(items)
         .filter(i => i && String(i.name || "").trim())
         .slice(0, 8)
@@ -119,7 +134,12 @@ export function saveQuestItems(items) {
             const auto = !!i.auto && templateTarget(i.id, level()) != null;
             return { id: i.id, name: String(i.name).trim().slice(0, 40), unit: String(i.unit || "reps").slice(0, 10), pattern: i.pattern || null, auto, ...(auto ? {} : { target: Math.max(0.5, Number(i.target) || 1) }) };
         });
+    if (clean && clean.length) {
+        const k = questScale(questItems({ quest: { items: clean } }, level()), level());
+        if (k < MIN_QUEST_EFFORT) return { ok: false, reason: `Too easy: your quest is ${Math.round(k * 100)}% of the System's (min ${Math.round(MIN_QUEST_EFFORT * 100)}%). Raise a target or add an exercise.` };
+    }
     patch(() => ({ quest: clean && clean.length ? { items: clean } : null }));
+    return { ok: true };
 }
 
 // ── Penalty Zone ──
@@ -151,6 +171,11 @@ export function submitTrial() {
     if (!t) return;
     const def = TRIALS[t.rank];
     const allDone = def.tasks.every((_, i) => t.done?.[i]);
+    // Nobody finishes a real assessment in a few taps.
+    if (allDone && Date.now() - (Number(t.startedAt) || 0) < TRIAL_MIN_MS) {
+        notify({ kind: "warning", title: "TOO FAST", lines: ["The assessment can't be submitted yet.", `Submit opens ${Math.round(TRIAL_MIN_MS / 60e3)} minutes after you begin.`] });
+        return;
+    }
     if (!allDone || Date.now() > t.deadline + 60e3) return failTrial(Date.now() > t.deadline ? "Time ran out." : "Not every task was completed.");
     const rank = rankById(t.rank);
     const r = trialRewards(t.rank);
@@ -248,32 +273,33 @@ export function consumeItem(id) {
 }
 
 // ── Gates & Dungeons ──
-export const gateCleared = (system, gate) => toArr(system?.gateLog?.[today()]).includes(gate.id);
+// A clear is recorded under the Gate's own day (a Gate entered before midnight is still that day's Gate).
+export const gateCleared = (system, gate) => toArr(system?.gateLog?.[gate.date || today()]).includes(gate.id);
 
 /** Called when a Gate workout ends. `log` is the player's per-exercise set log. */
 export function clearGate(gate, log) {
     const s = sys();
-    const sets = toArr(log).flatMap(e => toArr(e.sets));
-    const ratio = sets.length ? sets.filter(x => x.done).length / sets.length : 0;
+    // Measured against the Gate's original exercises and sets, not the (editable) log.
+    const ratio = gateClearRatio(gate, toArr(log));
     if (ratio < GATE_CLEAR_RATIO) {
-        notify({ kind: "warning", title: "GATE FAILED", lines: [`You escaped ${gate.name} before the boss fell.`, `Finish at least ${Math.round(GATE_CLEAR_RATIO * 100)}% of the sets to clear a Gate.`] });
+        notify({ kind: "warning", title: "GATE FAILED", lines: [`You escaped ${gate.name} before the boss fell.`, `Finish at least ${Math.round(GATE_CLEAR_RATIO * 100)}% of the Gate's sets (its own exercises, full reps) to clear it. Your workout still counts.`] });
         return;
     }
     if (gateCleared(s, gate)) {
-        notify({ kind: "info", title: "GATE ALREADY CLEARED", lines: ["This Gate's rewards were already claimed today. Your workout still counts."] });
+        notify({ kind: "info", title: "GATE ALREADY CLEARED", lines: ["This Gate's rewards were already claimed. Your workout still counts."] });
         return;
     }
     if (gate.red && !(Number(s.inventory?.key) > 0)) {
         notify({ kind: "warning", title: "NO GATE KEY", lines: ["A Red Gate needs a Gate Key to claim its rewards."] });
         return;
     }
-    const d = today();
+    const d = gate.date || today();
     const gold = Math.round(gate.rewards.gold * goldMultiplier(s, st().activeTitle, { gate: true }));
     const drop = rollGateDrop(gate.tier);
     patch(x => {
         let inv = gate.red ? addInv(x.inventory, "key", -1) : x.inventory;
         if (drop) inv = addInv(inv, drop);
-        const gateLog = Object.fromEntries(Object.entries(x.gateLog || {}).filter(([k]) => k >= addDays(-7, d)));
+        const gateLog = Object.fromEntries(Object.entries(x.gateLog || {}).filter(([k]) => k >= addDays(-7)));
         gateLog[d] = [...toArr(gateLog[d]), gate.id];
         const gs = x.gateStats || {};
         return {
@@ -296,7 +322,9 @@ export function checkUnlocks() {
     if (!s?.awakened) return;
     const sheet = statSheet(state, s);
     const total = Object.fromEntries(sheet.map(x => [x.key, x.total]));
-    const skills = SKILLS.filter(sk => Object.entries(sk.req).every(([k, v]) => total[k] >= v)).map(sk => sk.id);
+    // Once unlocked, a skill is kept (like titles) even if rebuilt stats later dip below its requirement.
+    const had = toArr(s.skills);
+    const skills = [...had, ...SKILLS.filter(sk => !had.includes(sk.id) && Object.entries(sk.req).every(([k, v]) => total[k] >= v)).map(sk => sk.id)];
     const counters = titleCounters(s, state.streak);
     const owned = toArr(s.titles);
     const titles = [...owned, ...TITLES.filter(t => !owned.includes(t.id) && t.test(counters)).map(t => t.id)];
@@ -344,6 +372,7 @@ export function chooseClass(id) {
     const s = sys();
     const cls = CLASSES.find(c => c.id === id);
     if (!cls || s.job?.id || !s.job?.questStart) return;
+    if (!jobQuestProgress(s, (k) => hasDayWorkout(st().workoutLog, k))?.complete) return;
     if (cls.hidden && !monarchEligible(statSheet(st(), s), s)) return;
     patch(x => ({ job: { ...x.job, id, since: today() }, abilityPoints: (Number(x.abilityPoints) || 0) + 10 }));
     notify({ kind: "rank", title: "JOB CHANGE COMPLETE", lines: [`Your job is now: ${cls.icon} ${cls.name}`, describeEffect(cls.effect), "+10 Ability Points"] });

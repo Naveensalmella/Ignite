@@ -8,7 +8,7 @@ import { Play, Eye, Sparkles, Plus, Flame, Clock, Dumbbell, ChevronRight, Trophy
 import { IconBadge, Bar } from "./ui/kit";
 import { today, toArr } from "@/utils";
 import { EXERCISES } from "@/data/exercises";
-import { localSync } from "@/utils/localSync";
+import useAppStore from "@/stores/useAppStore";
 import { requestWakeLock, releaseWakeLock } from "./wakeLock";
 import ActiveWorkout from "./ActiveWorkout";
 import ExerciseDemo from "./training/ExerciseDemo";
@@ -126,7 +126,8 @@ function AIGenerator({ onReady }) {
 // ══════════════════════════════════════════════════════════════
 export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, profile = {}, programState = {}, setProgramState = () => { } }) {
     const ps = useMemo(() => programState || {}, [programState]);
-    const [tab, setTab] = useState(() => { try { return localStorage.getItem("ignite-training-tab") || "gates"; } catch { return "gates"; } });
+    // Old "challenges" links land on the Workouts tab, where the 30-day challenges live.
+    const [tab, setTab] = useState(() => { if (useAppStore.getState().page === "challenges") return "workouts"; try { return localStorage.getItem("ignite-training-tab") || "gates"; } catch { return "gates"; } });
     const [preview, setPreview] = useState(null);       // { workout, editing }
     const [active, setActive] = useState(null);
     const [program, setProgram] = useState(null);
@@ -148,9 +149,24 @@ export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, pr
     const goal = Number(ps.weeklyGoal) || 4;
     const gym = profile.trainingType === "gym" || profile.trainingType === "mixed";
 
-    const cpSync = useMemo(() => localSync("ignite-challenge-progress", {}), []);
-    const [challengeProgress, setChallengeProgressRaw] = useState(cpSync.get);
-    const setChallengeProgress = (fn) => { const next = typeof fn === "function" ? fn(challengeProgress) : fn; setChallengeProgressRaw(next); cpSync.set(next); };
+    // 30-day challenge progress lives in synced user data (challengeData.progress).
+    const challengeData = useAppStore(s => s.challengeData);
+    const setChallengeData = useAppStore(s => s.setChallengeData);
+    const challengeProgress = useMemo(() => challengeData?.progress || {}, [challengeData]);
+    const setChallengeProgress = (fn) => setChallengeData(c => {
+        const prev = c?.progress || {};
+        return { ...(c || {}), progress: typeof fn === "function" ? fn(prev) : fn };
+    });
+    useEffect(() => {
+        // One-time move of progress that used to live in this device's localStorage.
+        const st = useAppStore.getState();
+        if (!st.dataReady || st.challengeData?.progress) return;
+        let legacy = null;
+        try { legacy = JSON.parse(localStorage.getItem("ignite-challenge-progress")); } catch { /* ignore */ }
+        legacy = legacy || st.profile?.challengeProgress;
+        if (legacy && typeof legacy === "object" && Object.keys(legacy).length) st.setChallengeData(c => ({ ...(c || {}), progress: legacy }));
+        try { localStorage.removeItem("ignite-challenge-progress"); } catch { /* ignore */ }
+    }, []);
 
     // Today's suggestion: next program session, else a recovery-aware pick.
     const activeProgram = ps.activeProgram ? ALL_PROGRAMS[ps.activeProgram] : null;
@@ -182,8 +198,11 @@ export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, pr
             sets: ex.sets.map(s => (ex.duration ? { duration: s.duration || ex.duration, done: s.done } : { reps: s.reps, weight: s.weight, done: s.done })),
         }));
         const doneSets = logged.reduce((n, e) => n + e.sets.filter(s => s.done).length, 0);
+        // Nothing finished → nothing saved (no XP, streak, stats, quests or challenge days).
+        if (!doneSets) { setActive(null); return; }
         const volume = logged.reduce((v, e) => v + e.sets.reduce((a, s) => a + (s.done ? (s.weight || 0) * (s.reps || 0) : 0), 0), 0);
-        const xp = Math.max(20, doneSets * 5 + Math.floor(result.duration / 60) * 3);
+        // XP from finished sets plus time, with time capped by the work done (no farming by idling).
+        const xp = doneSets * 5 + Math.min(Math.floor(result.duration / 60), doneSets * 4) * 3;
         const muscles = [...new Set(result.log.filter(e => e.sets.some(s => s.done)).flatMap(e => getExerciseInfo(e).primary))];
         const entry = {
             id: `${d}_${result.workout.trainingType || "gym"}_${t}`, date: d,

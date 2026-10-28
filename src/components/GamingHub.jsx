@@ -1,35 +1,20 @@
 "use client";
 import { useState, useMemo } from 'react';
-import { getLevel, today, toArr } from '@/utils';
+import { today, toArr, addDays } from '@/utils';
 import {
     getDailyXPProgress, getXPBreakdown, getComboStatus,
     getLoginBonus, claimLoginBonus, generateWeeklyChallenges, getChallengeProgress,
-    getUnlockedTitles, getCurrentTier,
+    getCurrentTier,
     QUEST_CHAINS, getQuestChainProgress, getXPHistory,
-    SKILL_TREE, getSkillTreeProgress, getWeekStart, getWeekSeed,
+    getWeekStart, getWeekSeed,
 } from '@/data/gamingSystem';
 import { countWorkoutDays } from '@/lib/workoutHelpers';
-import { Card, Ring, Bar, IconBadge, Pill, ListRow, Tabs, EmptyState } from '@/components/ui/kit';
+import { Card, Ring, Bar, IconBadge, Pill, ListRow, Tabs } from '@/components/ui/kit';
 import {
-    Dumbbell, Apple, Flame, Target, Timer, NotebookPen, Droplet, Zap, Sparkles, Swords, Star, Link2, Brain,
-    Medal, Gem, Lock, CalendarCheck, Gift, RotateCcw, Play, Trophy, Crown, Check as CheckIcon, Award,
+    Dumbbell, Apple, Flame, Target, Timer, NotebookPen, Droplet, Zap, Sparkles, Swords, Star, Link2,
+    Medal, Gem, Lock, CalendarCheck, Gift, RotateCcw, Play, Trophy, Check as CheckIcon, Award,
 } from 'lucide-react';
 
-
-// Level-up rewards (inline to avoid import issues)
-const LEVEL_REWARDS = {
-    3: { title: "Starter Flame", reward: "Fire emoji unlocked", type: "cosmetic" },
-    5: { title: "Rising Spark", reward: "Dark theme unlocked", type: "feature" },
-    10: { title: "Iron Will", reward: "Accent colors unlocked", type: "feature" },
-    15: { title: "Dedicated", reward: "Title: Dedicated", type: "title" },
-    20: { title: "Warrior Born", reward: "Title: Warrior Born", type: "title" },
-    25: { title: "Discipline King", reward: "Title: Discipline King", type: "title" },
-    30: { title: "Unstoppable", reward: "Title: Unstoppable", type: "title" },
-    40: { title: "Legend", reward: "Title: Legend + Gold badge", type: "title" },
-    50: { title: "Mythic", reward: "Title: Mythic + Crown badge", type: "title" },
-    75: { title: "Transcendent", reward: "Title: Transcendent", type: "title" },
-    100: { title: "The Absolute", reward: "Title: The Absolute + Diamond frame", type: "title" },
-};
 
 // Display-only icon/tone maps (the data keeps its own emoji fields).
 const CHALLENGE_ICON = {
@@ -37,18 +22,17 @@ const CHALLENGE_ICON = {
     focusSessions: [Timer, "violet"], journalDays: [NotebookPen, "rose"], waterDays: [Droplet, "sky"], weeklyXP: [Zap, "sky"], comboDays: [Sparkles, "rose"],
 };
 const CHAIN_ICON = { warrior_week: [Swords, "orange"], nutrition_master: [Apple, "lime"], focus_marathon: [Timer, "violet"], all_rounder: [Star, "amber"] };
-const BRANCH_ICON = { strength: [Dumbbell, "orange"], nutrition: [Apple, "lime"], mind: [Brain, "violet"], discipline: [Flame, "rose"] };
 const SOURCE_TONE = { Training: "orange", Nutrition: "lime", Quest: "teal", Focus: "violet", Wellness: "rose", Streak: "orange", Challenge: "amber", Login: "blue", Combo: "rose" };
 const TIER_ICON = { workout_count: Dumbbell, streak: Flame, xp_total: Zap, food_days: Apple, focus_sessions: Timer };
 const TIER_TONE = { bronze: "orange", silver: "blue", gold: "amber", diamond: "violet" };
 const TIER_LABELS = { workout_count: "Workouts", streak: "Streak", xp_total: "Total XP", food_days: "Nutrition days", focus_sessions: "Focus sessions" };
-const HUB_TABS = [["overview", "Overview"], ["challenges", "Weekly"], ["chains", "Chains"], ["titles", "Titles"], ["tree", "Skills"]];
+// Titles and Skills are the System's (Items → Titles, Home → Skills); no second, conflicting set here.
+const HUB_TABS = [["overview", "Overview"], ["challenges", "Weekly"], ["chains", "Chains"]];
 const stripEmoji = (t) => String(t || "").replace(/^[^\p{L}\p{N}]+/u, "");
 
-export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, workoutLog = {}, addXP = () => { }, loginData = {}, setLoginData = () => { }, xpLog = {}, activeTitle = null, setActiveTitle = () => { }, questChainData = {}, setQuestChainData = () => { } }) {
-    const [tab, setTab] = useState("overview"); // overview | challenges | chains | titles | tree
+export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, workoutLog = {}, addXP = () => { }, loginData = {}, setLoginData = () => { }, xpLog = {}, questChainData = {}, setQuestChainData = () => { } }) {
+    const [tab, setTab] = useState("overview"); // overview | challenges | chains
     const d = today();
-    const lv = getLevel(totalXP);
     const st = appState || {};
 
     // ── Daily XP ──
@@ -92,9 +76,6 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
     const xpHistory = useMemo(() => getXPHistory(xpLog || {}, 14), [xpLog]);
     const maxDayXP = Math.max(1, ...xpHistory.map(h => h.xp));
 
-    // ── Titles ──
-    const unlockedTitles = getUnlockedTitles(lv);
-
     // ── Achievement Tiers ──
     const totalWorkouts = countWorkoutDays(workoutLog);
     const foodDays = Object.keys(st.foodLog || {}).filter(k => !k.startsWith("water_") && toArr(st.foodLog[k]).length > 0).length;
@@ -107,9 +88,6 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
         food_days: getCurrentTier("food_days", foodDays),
         focus_sessions: getCurrentTier("focus_sessions", focusSessions),
     }), [totalWorkouts, streak, totalXP, foodDays, focusSessions]);
-
-    // ── Skill Tree ──
-    const stats = { totalWorkouts, foodDays, focusSessions, streak };
 
     const totalHistXP = xpHistory.reduce((sum, h) => sum + h.xp, 0);
     const avgHistXP = Math.round(totalHistXP / Math.max(1, xpHistory.filter(h => h.xp > 0).length));
@@ -154,7 +132,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                 <IconBadge icon={Sparkles} tone="rose" size={36} />
                                 <div className="flex-1 min-w-0">
                                     <div className="row-title">{stripEmoji(combo.label)}</div>
-                                    <div className="row-sub">{combo.activities.join(" + ")} · +{combo.bonusXP} bonus XP</div>
+                                    <div className="row-sub">{combo.activities.join(" + ")}</div>
                                 </div>
                             </div>
                         </Card>
@@ -269,6 +247,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                             ))}
                                         </div>
                                     )}
+                                    {chainState?.startDate > d && <div className="text-[12px] font-semibold mt-1.5" style={{ color: "var(--accent)" }}>Starts tomorrow</div>}
                                     {!chainState?.startDate && (
                                         <button type="button" className="bp w-full mt-2.5 !py-2.5 !text-[13px]" onClick={() => setQuestChainData(p => ({ ...p, [chain.id]: { startDate: d } }))}><Play size={15} />Start quest</button>
                                     )}
@@ -281,7 +260,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                     {isComplete && chainState?.claimed && (
                                         <div className="flex items-center gap-2 mt-2.5">
                                             <Pill tone="teal" icon={Trophy}>Quest complete</Pill>
-                                            <button type="button" className="bg flex-1 !py-2 !text-[13px]" onClick={() => setQuestChainData(p => ({ ...(p || {}), [chain.id]: { startDate: d } }))}><RotateCcw size={14} />Start again</button>
+                                            <button type="button" className="bg flex-1 !py-2 !text-[13px]" onClick={() => setQuestChainData(p => ({ ...(p || {}), [chain.id]: { startDate: addDays(1, d) } }))}><RotateCcw size={14} />Start again</button>
                                         </div>
                                     )}
                                 </ListRow>
@@ -291,75 +270,6 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                 </Card>
             )}
 
-            {/* ══ TITLES ══ */}
-            {tab === "titles" && (
-                <>
-                    <Card title="Titles" sub="Earn and equip display titles">
-                        {activeTitle && <div className="mb-2"><Pill tone="amber" icon={Crown}>Active: &ldquo;{activeTitle}&rdquo;</Pill></div>}
-                        {unlockedTitles.length === 0 ? (
-                            <EmptyState icon={Crown} title="No titles yet">Reach Level 15 to unlock your first title!</EmptyState>
-                        ) : (
-                            <div>
-                                {unlockedTitles.map(t => {
-                                    const isActive = activeTitle === t.title;
-                                    return (
-                                        <ListRow key={t.level} icon={Crown} tone={isActive ? "amber" : "sky"} onClick={() => setActiveTitle(t.title)}
-                                            title={<>&ldquo;{t.title}&rdquo;</>} sub={`${t.reward} · Unlocked at Lv.${t.level}`}
-                                            right={isActive ? <Pill tone="amber" icon={CheckIcon}>Active</Pill> : <span className="text-[12px] font-semibold shrink-0" style={{ color: "var(--accent)" }}>Equip</span>} />
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </Card>
-                    <Card title="Locked titles">
-                        <div>
-                            {Object.entries(LEVEL_REWARDS).filter(([lvl]) => parseInt(lvl) > lv).slice(0, 5).map(([lvl, data]) => (
-                                <ListRow key={lvl} icon={Lock} tone="sky" className="opacity-60" title={<>&ldquo;{data.title}&rdquo;</>} sub={`Level ${lvl}`} />
-                            ))}
-                        </div>
-                    </Card>
-                </>
-            )}
-
-            {/* ══ SKILL TREE ══ */}
-            {tab === "tree" && (
-                <>
-                    {Object.entries(SKILL_TREE).map(([key, branch]) => {
-                        const nodes = getSkillTreeProgress(branch, stats);
-                        const unlocked = nodes.filter(n => n.unlocked).length;
-                        const [Icon, tone] = BRANCH_ICON[key] || [Sparkles, "sky"];
-                        const toneVar = `var(--tone-${tone})`;
-                        return (
-                            <Card key={key}>
-                                <div className="flex items-center gap-3 mb-3">
-                                    <IconBadge icon={Icon} tone={tone} size={38} />
-                                    <div className="flex-1 min-w-0">
-                                        <div className="card-title">{branch.name}</div>
-                                        <div className="text-[12px] num" style={{ color: "var(--text-dim)" }}>{unlocked}/{nodes.length} unlocked</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center">
-                                    {nodes.map((node, i) => (
-                                        <div key={node.id} className={`flex items-center ${i < nodes.length - 1 ? "flex-1" : ""}`}>
-                                            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                                                style={node.unlocked ? { background: toneVar, color: "var(--accent-ink)" } : { background: "var(--ghost-bg)", color: "var(--text-dim)" }}
-                                                title={node.name}>
-                                                {node.unlocked ? <CheckIcon size={15} strokeWidth={3} /> : node.progress > 0 ? <span className="text-[10px] font-bold num" style={{ color: toneVar }}>{node.progress}%</span> : <Lock size={12} />}
-                                            </div>
-                                            {i < nodes.length - 1 && <div className="flex-1 h-0.5 mx-0.5 rounded-full" style={{ background: node.unlocked ? toneVar : "var(--track)" }} />}
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="grid gap-1 mt-2" style={{ gridTemplateColumns: `repeat(${nodes.length}, minmax(0, 1fr))` }}>
-                                    {nodes.map(node => (
-                                        <div key={node.id} className="text-[10.5px] text-center leading-tight" style={{ color: node.unlocked ? "var(--text-secondary)" : "var(--text-dim)" }}>{node.name}</div>
-                                    ))}
-                                </div>
-                            </Card>
-                        );
-                    })}
-                </>
-            )}
         </div>
     );
 }
