@@ -50,6 +50,7 @@ export function earnedStats({ workoutLog, foodLog, focusLog, journal, habitLog, 
     }
 
     for (const [k, v] of Object.entries(foodLog || {})) {
+        if (k.startsWith("_")) continue; // app settings like _savedPlans, not days
         if (k.startsWith("water_")) { if ((Number(v) || 0) >= 8) e.vit += 0.15; }
         else if (toArr(v).length > 0) e.vit += 0.25;
     }

@@ -78,7 +78,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
 
     // ── Achievement Tiers ──
     const totalWorkouts = countWorkoutDays(workoutLog);
-    const foodDays = Object.keys(st.foodLog || {}).filter(k => !k.startsWith("water_") && toArr(st.foodLog[k]).length > 0).length;
+    const foodDays = Object.keys(st.foodLog || {}).filter(k => !k.startsWith("water_") && !k.startsWith("_") && toArr(st.foodLog[k]).length > 0).length;
     const focusSessions = Object.values(st.focusLog || {}).reduce((s, v) => s + toArr(v).length, 0);
 
     const tierData = useMemo(() => ({
