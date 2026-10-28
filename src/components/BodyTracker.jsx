@@ -1,15 +1,18 @@
 "use client";
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { today, toArr, parseDateKey } from '@/utils';
+import { Scale, Ruler, BicepsFlexed, Flame, Camera, X, Check, RotateCcw, LineChart, ClipboardList, Images } from 'lucide-react';
+import { Card, IconBadge, EmptyState } from '@/components/ui/kit';
 
 const MEASUREMENTS = [
-  { key: "weight", label: "Weight", unit: "kg", icon: "⚖️", color: "#38bdf8" },
-  { key: "chest", label: "Chest", unit: "in", icon: "📏", color: "#06b6d4" },
-  { key: "waist", label: "Waist", unit: "in", icon: "📏", color: "#f59e0b" },
-  { key: "arms", label: "Arms", unit: "in", icon: "💪", color: "#8b5cf6" },
-  { key: "thighs", label: "Thighs", unit: "in", icon: "🦵", color: "#ef4444" },
-  { key: "bodyFat", label: "Body Fat", unit: "%", icon: "🔥", color: "#f97316" },
+  { key: "weight", label: "Weight", unit: "kg", icon: Scale, color: "var(--tone-sky)" },
+  { key: "chest", label: "Chest", unit: "in", icon: Ruler, color: "var(--tone-teal)" },
+  { key: "waist", label: "Waist", unit: "in", icon: Ruler, color: "var(--tone-amber)" },
+  { key: "arms", label: "Arms", unit: "in", icon: BicepsFlexed, color: "var(--tone-violet)" },
+  { key: "thighs", label: "Thighs", unit: "in", icon: Ruler, color: "var(--tone-rose)" },
+  { key: "bodyFat", label: "Body Fat", unit: "%", icon: Flame, color: "var(--tone-orange)" },
 ];
+
 
 // Firestore data is untrusted: lists may be objects with numeric keys, values may be strings
 const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
@@ -118,142 +121,156 @@ export default function BodyTracker({ bodyData, setBodyData = () => { } }) {
   // Photo capture modal
   if (showPhotoCapture) {
     return (
-      <div style={{ padding: "10px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 20, fontWeight: 700 }}>📸 Progress Photo</h3>
-          <button className="bg" onClick={closeCapture} aria-label="Close" style={{ padding: "6px 14px" }}>✕</button>
-        </div>
-        {!capturedPhoto ? (
-          <div>
-            <div style={{ width: "100%", maxWidth: 300, aspectRatio: "3/4", borderRadius: 16, overflow: "hidden", border: "2px solid rgba(56,189,248,.2)", margin: "0 auto 16px", background: "#111" }}>
-              <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }} />
+      <div className="flex flex-col gap-3">
+        <Card>
+          <div className="card-head">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <IconBadge icon={Camera} tone="sky" size={36} />
+              <div className="card-title">Progress photo</div>
             </div>
-            <canvas ref={canvasRef} style={{ display: "none" }} />
-            {cameraError && <div style={{ textAlign: "center", color: "#ef4444", fontSize: 12, marginBottom: 12 }}>{cameraError}</div>}
-            <button className="bp" onClick={capture} disabled={!!cameraError} style={{ width: "100%", padding: 14, fontSize: 16 }}>📸 Capture</button>
+            <button type="button" className="icon-btn" onClick={closeCapture} aria-label="Close"><X size={18} /></button>
           </div>
-        ) : (
-          <div>
-            <div style={{ width: "100%", maxWidth: 300, borderRadius: 16, overflow: "hidden", margin: "0 auto 16px" }}>
-              <img src={capturedPhoto} alt="progress" style={{ width: "100%", display: "block" }} />
+          {!capturedPhoto ? (
+            <div>
+              <div className="w-full mx-auto mb-4 overflow-hidden" style={{ maxWidth: 300, aspectRatio: "3/4", borderRadius: 20, background: "var(--ghost-bg)" }}>
+                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" style={{ transform: "scaleX(-1)" }} />
+              </div>
+              <canvas ref={canvasRef} style={{ display: "none" }} />
+              {cameraError && <div role="alert" className="text-center text-[12.5px] mb-3" style={{ color: "var(--danger)" }}>{cameraError}</div>}
+              <button type="button" className="bp w-full" onClick={capture} disabled={!!cameraError} style={{ padding: "13px 18px", fontSize: 15 }}><Camera size={17} /> Capture</button>
             </div>
-            <input className="inp" placeholder="Note (e.g., Week 4, feeling stronger)" aria-label="Photo note" value={photoNote} onChange={e => setPhotoNote(e.target.value)} style={{ marginBottom: 12 }} />
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="bp" onClick={savePhoto} style={{ flex: 1, padding: 14 }}>✓ Save Photo</button>
-              <button className="bg" onClick={() => { setCapturedPhoto(null); startCamera(); }} style={{ padding: "14px 18px" }}>🔄</button>
+          ) : (
+            <div>
+              <div className="w-full mx-auto mb-4 overflow-hidden" style={{ maxWidth: 300, borderRadius: 20 }}>
+                <img src={capturedPhoto} alt="progress" className="block w-full" />
+              </div>
+              <input className="inp mb-3" placeholder="Note (e.g., Week 4, feeling stronger)" aria-label="Photo note" value={photoNote} onChange={e => setPhotoNote(e.target.value)} />
+              <div className="flex gap-2">
+                <button type="button" className="bp flex-1" onClick={savePhoto} style={{ padding: "13px 18px" }}><Check size={17} /> Save photo</button>
+                <button type="button" className="bg" onClick={() => { setCapturedPhoto(null); startCamera(); }} aria-label="Retake photo" style={{ padding: "13px 16px" }}><RotateCcw size={17} /></button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </Card>
       </div>
     );
   }
 
-  return (
-    <div>
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>📊 Body Tracker</h2>
-        <p style={{ color: "#6b7280", fontSize: 13, marginTop: 4 }}>Track measurements & see your transformation</p>
-      </div>
+  const chartM = MEASUREMENTS.find(m => m.key === chartKey);
 
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 16 }}>
-        {[["log", "📏 Log"], ["chart", "📈 Progress"], ["photos", "📸 Photos"]].map(([k, l]) => (
-          <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => setTab(k)} style={{ padding: "8px 16px" }}>{l}</span>
-        ))}
-      </div>
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Header */}
+      <Card>
+        <div className="flex items-center gap-3">
+          <IconBadge icon={Ruler} tone="teal" size={40} />
+          <div className="flex-1 min-w-0">
+            <div className="card-title">Body measurements</div>
+            <div className="card-sub">Track measurements and see your transformation</div>
+          </div>
+        </div>
+        {/* Sections */}
+        <div className="flex gap-2 mt-3" role="tablist" aria-label="Measurement views">
+          {[["log", "Log", ClipboardList], ["chart", "Progress", LineChart], ["photos", "Photos", Images]].map(([k, l, Icon]) => (
+            <button key={k} type="button" role="tab" aria-selected={tab === k} className={`chip flex-1 justify-center ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => setTab(k)} style={{ minHeight: 36 }}>
+              <Icon size={15} /> {l}
+            </button>
+          ))}
+        </div>
+      </Card>
 
       {/* ═══ LOG TAB ═══ */}
       {tab === "log" && (
-        <div>
+        <>
           {/* Current Stats */}
-          <div className="gs" style={{ marginBottom: 16 }}>
-            <div className="sl">Current Measurements</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+          <Card title="Current measurements">
+            <div className="grid grid-cols-3 gap-2">
               {MEASUREMENTS.map(m => {
                 const cur = latest[m.key];
                 const change = getChange(m.key);
+                const Icon = m.icon;
+                const good = m.key === "weight" ? change <= 0 : change > 0;
                 return (
-                  <div key={m.key} style={{ textAlign: "center", padding: 12, background: "rgba(255,255,255,.02)", borderRadius: 12, border: "1px solid rgba(255,255,255,.04)" }}>
-                    <div style={{ fontSize: 16 }}>{m.icon}</div>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: m.color, fontFamily: "Rajdhani,sans-serif" }}>{cur ? cur.value : "—"}</div>
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>{m.label} ({m.unit})</div>
-                    {change !== null && <div style={{ fontSize: 11, color: change > 0 ? (m.key === "weight" ? "#ef4444" : "#22c55e") : (m.key === "weight" ? "#22c55e" : "#ef4444"), marginTop: 2 }}>{change > 0 ? "+" : ""}{change.toFixed(1)}</div>}
+                  <div key={m.key} className="rounded-2xl px-2.5 py-3" style={{ background: "var(--ghost-bg)" }}>
+                    <Icon size={16} style={{ color: m.color }} aria-hidden="true" />
+                    <div className="text-[19px] font-extrabold num mt-1 leading-tight" style={{ color: "var(--text-primary)" }}>{cur ? cur.value : "—"}</div>
+                    <div className="text-[11.5px]" style={{ color: "var(--text-secondary)" }}>{m.label} ({m.unit})</div>
+                    {change !== null && <div className="text-[11.5px] font-semibold num mt-0.5" style={{ color: good ? "var(--ok)" : "var(--danger)" }}>{change > 0 ? "+" : ""}{change.toFixed(1)}</div>}
                   </div>
                 );
               })}
             </div>
-          </div>
+          </Card>
 
           {/* Log New */}
-          <div className="gs" style={{ marginBottom: 16 }}>
-            <div className="sl">Log Today&apos;s Measurements</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+          <Card title="Log today's measurements">
+            <div className="grid grid-cols-2 gap-2.5">
               {MEASUREMENTS.map(m => (
                 <div key={m.key}>
-                  <label htmlFor={`bt-${m.key}`} style={{ fontSize: 11, color: "#6b7280", display: "block", marginBottom: 4 }}>{m.icon} {m.label} ({m.unit})</label>
-                  <input id={`bt-${m.key}`} className="inp" type="number" step="0.1" min="0" inputMode="decimal" placeholder={latest[m.key] ? String(latest[m.key].value) : "0"} value={values[m.key] ?? ""} onChange={e => setValues(p => ({ ...p, [m.key]: e.target.value }))} style={{ textAlign: "center" }} />
+                  <label htmlFor={`bt-${m.key}`} className="block text-[12px] font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>{m.label} ({m.unit})</label>
+                  <input id={`bt-${m.key}`} className="inp num" type="number" step="0.1" min="0" inputMode="decimal" placeholder={latest[m.key] ? String(latest[m.key].value) : "0"} value={values[m.key] ?? ""} onChange={e => setValues(p => ({ ...p, [m.key]: e.target.value }))} style={{ textAlign: "center" }} />
                 </div>
               ))}
             </div>
-            <button className="bp" onClick={logEntry} disabled={Object.keys(filledValues).length === 0} style={{ width: "100%", marginTop: 14, padding: 12 }}>Save Measurements</button>
-          </div>
+            <button type="button" className="bp w-full mt-4" onClick={logEntry} disabled={Object.keys(filledValues).length === 0}>Save measurements</button>
+          </Card>
 
           {/* History */}
-          <div className="gs">
-            <div className="sl">History · {entries.length} entries</div>
-            {entries.length === 0 && <div style={{ textAlign: "center", color: "#6b7280", padding: "16px 0", fontSize: 13 }}>No entries yet. Log your first measurement above.</div>}
+          <Card title="History" sub={`${entries.length} ${entries.length === 1 ? "entry" : "entries"}`}>
+            {entries.length === 0 && <div className="text-center text-[13px] py-4" style={{ color: "var(--text-dim)" }}>No entries yet. Log your first measurement above.</div>}
             {entries.slice().reverse().slice(0, 15).map((e, i) => (
-              <div key={i} style={{ padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>{fmtDate(e.date, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                  <span style={{ fontSize: 11, color: "#6b7280" }}>{e.time}</span>
+              <div key={i} className="py-2.5" style={{ borderTop: i > 0 ? "1px solid var(--line)" : "none" }}>
+                <div className="flex justify-between mb-1.5">
+                  <span className="text-[13.5px] font-semibold" style={{ color: "var(--text-primary)" }}>{fmtDate(e.date, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                  <span className="text-[12px]" style={{ color: "var(--text-dim)" }}>{e.time}</span>
                 </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div className="flex gap-1.5 flex-wrap">
                   {Object.entries(asObj(e.measurements)).filter(([, v]) => num(v) > 0).map(([k, v]) => {
                     const m = MEASUREMENTS.find(x => x.key === k);
-                    return m ? <span key={k} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, background: `${m.color}10`, color: m.color }}>{m.icon} {num(v)}{m.unit}</span> : null;
+                    return m ? <span key={k} className="pill num" style={{ "--tone": m.color }}>{m.label} {num(v)}{m.unit}</span> : null;
                   })}
                 </div>
               </div>
             ))}
-          </div>
-        </div>
+          </Card>
+        </>
       )}
 
       {/* ═══ CHART TAB ═══ */}
       {tab === "chart" && (
-        <div>
-          <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-            {MEASUREMENTS.map(m => (
-              <span key={m.key} className={`chip ${chartKey === m.key ? "chip-a" : "chip-i"}`} onClick={() => setChartKey(m.key)}>{m.icon} {m.label}</span>
-            ))}
+        <>
+          <div className="chip-row">
+            {MEASUREMENTS.map(m => {
+              const Icon = m.icon;
+              return (
+                <button key={m.key} type="button" aria-pressed={chartKey === m.key} className={`chip ${chartKey === m.key ? "chip-a" : "chip-i"}`} onClick={() => setChartKey(m.key)} style={{ minHeight: 36 }}>
+                  <Icon size={14} /> {m.label}
+                </button>
+              );
+            })}
           </div>
 
           {chartData.length < 2 ? (
-            <div className="gs" style={{ textAlign: "center", padding: "40px 0" }}>
-              <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.3 }}>📈</div>
-              <div style={{ color: "#6b7280", fontSize: 14 }}>Need at least 2 entries to show a chart. Keep logging!</div>
-            </div>
+            <Card>
+              <EmptyState icon={LineChart} title="Not enough data yet">Log at least 2 entries to see a chart. Keep logging!</EmptyState>
+            </Card>
           ) : (
-            <div className="gs" style={{ padding: 20 }}>
-              <div className="sl" style={{ color: MEASUREMENTS.find(m => m.key === chartKey)?.color }}>
-                {MEASUREMENTS.find(m => m.key === chartKey)?.label} Over Time
-              </div>
-              {/* Simple text-based chart */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12 }}>
+            <Card title={`${chartM?.label} over time`} sub={chartM?.unit}>
+              {/* Simple bar chart */}
+              <div className="flex flex-col gap-1.5">
                 {chartData.map((d, i) => {
                   const vals = chartData.map(x => x.val);
                   const min = Math.min(...vals);
                   const max = Math.max(...vals);
                   const range = max - min || 1;
                   const pct = ((d.val - min) / range) * 100;
-                  const col = MEASUREMENTS.find(m => m.key === chartKey)?.color || "#38bdf8";
+                  const col = chartM?.color || "var(--accent)";
                   return (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 11, color: "#6b7280", width: 45, textAlign: "right", flexShrink: 0 }}>{fmtDate(d.date, { day: 'numeric', month: 'short' })}</span>
-                      <div style={{ flex: 1, height: 20, background: "rgba(255,255,255,.03)", borderRadius: 4, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${Math.max(10, pct)}%`, background: col, borderRadius: 4, transition: "width .5s", display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 6 }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "#060a0c" }}>{d.val}</span>
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-[11.5px] shrink-0 text-right" style={{ color: "var(--text-dim)", width: 46 }}>{fmtDate(d.date, { day: 'numeric', month: 'short' })}</span>
+                      <div className="flex-1 overflow-hidden" style={{ height: 22, background: "var(--track)", borderRadius: 999 }}>
+                        <div className="h-full flex items-center justify-end" style={{ width: `${Math.max(10, pct)}%`, background: col, borderRadius: 999, transition: "width .5s", paddingRight: 8 }}>
+                          <span className="text-[11px] font-bold num" style={{ color: "var(--accent-ink)" }}>{d.val}</span>
                         </div>
                       </div>
                     </div>
@@ -261,35 +278,49 @@ export default function BodyTracker({ bodyData, setBodyData = () => { } }) {
                 })}
               </div>
               {/* Summary */}
-              <div style={{ display: "flex", justifyContent: "space-around", marginTop: 16, textAlign: "center" }}>
-                <div><div style={{ fontSize: 18, fontWeight: 700, color: "#f3f4f6" }}>{chartData[0].val}</div><div style={{ fontSize: 11, color: "#6b7280" }}>First</div></div>
-                <div><div style={{ fontSize: 18, fontWeight: 700, color: MEASUREMENTS.find(m => m.key === chartKey)?.color }}>{chartData[chartData.length - 1].val}</div><div style={{ fontSize: 11, color: "#6b7280" }}>Latest</div></div>
-                <div><div style={{ fontSize: 18, fontWeight: 700, color: (chartData[chartData.length - 1].val - chartData[0].val) > 0 ? "#ef4444" : "#22c55e" }}>{(chartData[chartData.length - 1].val - chartData[0].val) > 0 ? "+" : ""}{(chartData[chartData.length - 1].val - chartData[0].val).toFixed(1)}</div><div style={{ fontSize: 11, color: "#6b7280" }}>Change</div></div>
-              </div>
-            </div>
+              {(() => {
+                const first = chartData[0].val, last = chartData[chartData.length - 1].val, diff = last - first;
+                return (
+                  <div className="grid grid-cols-3 gap-2 mt-4 text-center">
+                    {[["First", first, "var(--text-primary)"], ["Latest", last, col0(chartM)], ["Change", `${diff > 0 ? "+" : ""}${diff.toFixed(1)}`, diff > 0 ? "var(--danger)" : "var(--ok)"]].map(([l, v, c]) => (
+                      <div key={l} className="rounded-2xl py-2.5" style={{ background: "var(--ghost-bg)" }}>
+                        <div className="text-[18px] font-bold num" style={{ color: c }}>{v}</div>
+                        <div className="text-[11.5px]" style={{ color: "var(--text-dim)" }}>{l}</div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </Card>
           )}
-        </div>
+        </>
       )}
 
       {/* ═══ PHOTOS TAB ═══ */}
       {tab === "photos" && (
-        <div>
-          <button className="bp" onClick={startCamera} style={{ width: "100%", padding: 14, marginBottom: 16, background: "linear-gradient(135deg,#8b5cf6,#6d28d9)" }}>📸 Take Progress Photo</button>
-          {photos.length === 0 && <div className="gs" style={{ textAlign: "center", padding: "30px 0" }}><div style={{ fontSize: 32, marginBottom: 8, opacity: 0.3 }}>📸</div><div style={{ color: "#6b7280", fontSize: 14 }}>No progress photos yet. Take your first one!</div></div>}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-            {photos.slice().reverse().map((p, i) => (
-              <div key={i} style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,.06)" }}>
-                <img src={p.photo} alt="progress" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
-                <div style={{ padding: "8px 10px", background: "rgba(255,255,255,.02)" }}>
-                  <div style={{ fontSize: 11, fontWeight: 600 }}>{fmtDate(p.date, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-                  {p.weight && <div style={{ fontSize: 11, color: "#38bdf8" }}>{p.weight} kg</div>}
-                  {p.note && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{p.note}</div>}
+        <>
+          <button type="button" className="bp w-full" onClick={startCamera} style={{ padding: "13px 18px" }}><Camera size={17} /> Take progress photo</button>
+          {photos.length === 0 && (
+            <Card><EmptyState icon={Camera} title="No progress photos yet">Take your first one!</EmptyState></Card>
+          )}
+          {photos.length > 0 && (
+            <div className="grid grid-cols-2 gap-3">
+              {photos.slice().reverse().map((p, i) => (
+                <div key={i} className="card overflow-hidden" style={{ padding: 0 }}>
+                  <img src={p.photo} alt="progress" className="block w-full object-cover" style={{ aspectRatio: "3/4" }} />
+                  <div className="px-3 py-2.5">
+                    <div className="text-[12.5px] font-semibold" style={{ color: "var(--text-primary)" }}>{fmtDate(p.date, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                    {p.weight && <div className="text-[12px] font-semibold num" style={{ color: "var(--accent)" }}>{p.weight} kg</div>}
+                    {p.note && <div className="text-[11.5px] mt-0.5" style={{ color: "var(--text-dim)" }}>{p.note}</div>}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
+
+const col0 = (m) => m?.color || "var(--accent)";

@@ -2,6 +2,7 @@
 import { useMemo, useRef, useEffect } from 'react';
 import { today as todayStr, parseDateKey, dateKey } from '@/utils';
 import { hasDayWorkout } from '@/lib/workoutHelpers';
+import { Card } from '@/components/ui/kit';
 
 // GitHub-style year activity heatmap
 export default function YearHeatmap({ workoutLog = {}, title = "Activity" }) {
@@ -66,18 +67,16 @@ export default function YearHeatmap({ workoutLog = {}, title = "Activity" }) {
     const gap = 2;
     const dayLabelW = 14;
 
-    return (
-        <div className="gs" style={{ padding: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{title}</div>
-                <div style={{ fontSize: 12, color: "#38bdf8", fontWeight: 600 }}>{totalActive} days active</div>
-            </div>
+    const restBg = "var(--track)";
+    const activeBg = "var(--accent)";
 
-            <div ref={scrollRef} style={{ overflowX: "auto", paddingBottom: 4 }}>
+    return (
+        <Card title={title} action={<span className="text-[12.5px] font-semibold num" style={{ color: "var(--accent)" }}>{totalActive} days active</span>}>
+            <div ref={scrollRef} className="no-scrollbar" style={{ overflowX: "auto", paddingBottom: 2 }}>
             {/* Month labels — absolutely positioned over their week column, scroll with the grid */}
             <div style={{ position: "relative", height: 14, marginBottom: 4, width: dayLabelW + gap + weeks.length * (cellSize + gap) }}>
                 {monthLabels.map((ml, i) => (
-                    <div key={i} style={{ position: "absolute", left: dayLabelW + gap + ml.col * (cellSize + gap), top: 0, fontSize: 11, lineHeight: "14px", color: "#4b5563", whiteSpace: "nowrap" }}>
+                    <div key={i} style={{ position: "absolute", left: dayLabelW + gap + ml.col * (cellSize + gap), top: 0, fontSize: 11, lineHeight: "14px", color: "var(--text-dim)", whiteSpace: "nowrap" }}>
                         {ml.month}
                     </div>
                 ))}
@@ -88,7 +87,7 @@ export default function YearHeatmap({ workoutLog = {}, title = "Activity" }) {
                 {/* Day labels */}
                 <div style={{ display: "flex", flexDirection: "column", gap: gap, paddingTop: 0, flexShrink: 0 }}>
                     {["", "M", "", "W", "", "F", ""].map((d, i) => (
-                        <div key={i} style={{ width: dayLabelW, height: cellSize, display: "flex", alignItems: "center", fontSize: 11, color: "#4b5563" }}>{d}</div>
+                        <div key={i} style={{ width: dayLabelW, height: cellSize, display: "flex", alignItems: "center", fontSize: 10, color: "var(--text-dim)" }}>{d}</div>
                     ))}
                 </div>
 
@@ -97,11 +96,10 @@ export default function YearHeatmap({ workoutLog = {}, title = "Activity" }) {
                     <div key={wi} style={{ display: "flex", flexDirection: "column", gap: gap }}>
                         {week.map((day, di) => (
                             <div key={di} style={{
-                                width: cellSize, height: cellSize, borderRadius: 2,
-                                background: !day ? "transparent" : day.active ? "#38bdf8" : "rgba(255,255,255,.04)",
-                                opacity: !day ? 0 : day.active ? (day.date === todayKey ? 1 : 0.75) : 1,
-                                border: day?.date === todayKey ? "1px solid #38bdf8" : "none",
-                                boxSizing: "border-box",
+                                width: cellSize, height: cellSize, borderRadius: 3,
+                                background: !day ? "transparent" : day.active ? activeBg : restBg,
+                                opacity: !day ? 0 : day.active ? (day.date === todayKey ? 1 : 0.8) : 1,
+                                boxShadow: day?.date === todayKey ? "0 0 0 1.5px var(--accent) inset" : "none",
                             }} title={day ? `${day.date}: ${day.active ? "Active" : "Rest"}` : ""} />
                         ))}
                     </div>
@@ -110,12 +108,10 @@ export default function YearHeatmap({ workoutLog = {}, title = "Activity" }) {
             </div>
 
             {/* Legend */}
-            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, marginTop: 8 }}>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: "rgba(255,255,255,.04)" }} />
-                <span style={{ fontSize: 11, color: "#4b5563" }}>Rest</span>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: "#38bdf8", opacity: 0.75, marginLeft: 6 }} />
-                <span style={{ fontSize: 11, color: "#4b5563" }}>Trained</span>
+            <div className="flex justify-end items-center gap-3 mt-2.5">
+                <span className="legend"><i style={{ background: restBg }} />Rest</span>
+                <span className="legend"><i style={{ background: activeBg, opacity: 0.8 }} />Trained</span>
             </div>
-        </div>
+        </Card>
     );
 }

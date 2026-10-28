@@ -1,107 +1,107 @@
 "use client";
 import { useState } from 'react';
+import { Flame, Dumbbell, Apple, MessageCircle, Crown, ArrowRight, House, ListChecks, Backpack, Ghost, Shield } from 'lucide-react';
+import { IconBadge, Pill } from '@/components/ui/kit';
+
+const SLIDES = [
+    {
+        icon: Flame, tone: "sky",
+        title: "Welcome to IGNITE",
+        subtitle: "Level up your life",
+        desc: "The gamified self-improvement app that turns your daily routine into an RPG adventure.",
+    },
+    {
+        icon: Dumbbell, tone: "orange",
+        title: "Train like a Hunter",
+        subtitle: "22 structured programs",
+        desc: "Gym, combat, yoga, running — pick your path. Track sets, reps and calories, and clear Gates as you get stronger.",
+    },
+    {
+        icon: Apple, tone: "lime",
+        title: "Fuel your body",
+        subtitle: "Smart nutrition tracking",
+        desc: "199 Indian foods, an AI food scanner, meal plans and macro tracking. Eat right, perform better.",
+    },
+    {
+        icon: MessageCircle, tone: "violet",
+        title: "Your AI Coach",
+        subtitle: "Speaks as the System",
+        desc: "Four specialties — Trainer, Nutrition, Recovery and Commander. It knows your stats and quests.",
+    },
+    {
+        icon: Crown, tone: "amber",
+        title: "Arise, Player",
+        subtitle: "Daily Quest · Stats · Hunter ranks",
+        desc: "Clear the Daily Quest, grow STR, AGI, VIT, INT and PER, earn Gold and Items, raise your Shadow Army and climb from E-Rank to National Level.",
+    },
+];
+
+const STRIP = [House, ListChecks, Dumbbell, MessageCircle, Backpack, Ghost, Shield];
 
 export default function IntroPage({ onGetStarted }) {
     const [currentSlide, setCurrentSlide] = useState(0);
 
-    const slides = [
-        {
-            icon: "🔥",
-            title: "Welcome to IGNITE",
-            subtitle: "Level Up Your Life",
-            desc: "The gamified self-improvement platform that turns your daily routine into an RPG adventure.",
-            color: "#38bdf8",
-        },
-        {
-            icon: "⚔️",
-            title: "Train Like a Warrior",
-            subtitle: "22 Structured Programs",
-            desc: "Gym, combat, yoga, running — pick your path. Track sets, reps, calories. Watch your body transform.",
-            color: "#3b82f6",
-        },
-        {
-            icon: "🍎",
-            title: "Fuel Your Body",
-            subtitle: "Smart Nutrition Tracking",
-            desc: "199 Indian foods, AI-powered scanner, meal plans, and macro tracking. Eat right, perform better.",
-            color: "#f59e0b",
-        },
-        {
-            icon: "◈",
-            title: "The System Speaks",
-            subtitle: "AI guide",
-            desc: "An AI guide in the voice of the System. 4 specialties: Trainer, Nutrition, Recovery, Commander. It knows your stats and quests.",
-            color: "#8b5cf6",
-        },
-        {
-            icon: "⚔️",
-            title: "Arise, Player",
-            subtitle: "Daily Quest • Stats • Hunter Ranks",
-            desc: "Clear the Daily Quest, grow STR, AGI, VIT, INT and PER, earn Gold for real rewards, and climb from E-Rank to National Level.",
-            color: "#ec4899",
-        },
-    ];
-
-    const slide = slides[currentSlide];
-    const isLast = currentSlide === slides.length - 1;
+    const slide = SLIDES[currentSlide];
+    const isLast = currentSlide === SLIDES.length - 1;
 
     return (
-        <div style={{ minHeight: "100vh", background: "#07090d", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "24px 20px", position: "relative", overflow: "hidden" }}>
-            {/* Background glow */}
-            <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: 400, height: 400, borderRadius: "50%", background: `radial-gradient(circle, ${slide.color}08 0%, transparent 70%)`, pointerEvents: "none", transition: "background 0.5s" }} />
-
-            {/* Logo */}
-            <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 24 }}>🔥</span>
-                <span style={{ fontSize: 20, fontWeight: 800, color: "#38bdf8", fontFamily: "Rajdhani, sans-serif", letterSpacing: 2 }}>IGNITE</span>
-            </div>
-
-            {/* Slide content */}
-            <div style={{ textAlign: "center", maxWidth: 360, margin: "0 auto", padding: "40px 0" }}>
-                <div style={{ fontSize: 64, marginBottom: 20, transition: "all 0.3s", animation: "slideUp 0.4s ease-out" }} key={currentSlide}>
-                    {slide.icon}
+        <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-8" style={{ background: "var(--bg)" }}>
+            <div className="w-full flex flex-col items-center gap-5" style={{ maxWidth: 400 }}>
+                {/* Brand */}
+                <div className="flex items-center gap-2">
+                    <Flame size={22} strokeWidth={2.2} style={{ color: "var(--accent)" }} aria-hidden="true" />
+                    <span className="text-accent-grad text-[22px] font-extrabold" style={{ letterSpacing: 3 }}>IGNITE</span>
                 </div>
-                <h1 style={{ fontSize: 28, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif", marginBottom: 4, lineHeight: 1.2 }} key={`t${currentSlide}`}>
-                    {slide.title}
-                </h1>
-                <div style={{ fontSize: 15, fontWeight: 600, color: slide.color, marginBottom: 16, fontFamily: "Rajdhani, sans-serif" }}>
-                    {slide.subtitle}
-                </div>
-                <p style={{ fontSize: 14, color: "#9ca3af", lineHeight: 1.6, margin: 0 }}>
-                    {slide.desc}
-                </p>
-            </div>
 
-            {/* Dots */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 32 }}>
-                {slides.map((_, i) => (
-                    <div key={i} onClick={() => setCurrentSlide(i)} style={{ width: i === currentSlide ? 24 : 8, height: 8, borderRadius: 4, background: i === currentSlide ? slide.color : "rgba(255,255,255,.1)", transition: "all 0.3s", cursor: "pointer" }} />
-                ))}
-            </div>
-
-            {/* Buttons */}
-            <div style={{ width: "100%", maxWidth: 320 }}>
-                {isLast ? (
-                    <button onClick={onGetStarted} style={{ width: "100%", padding: "16px 24px", borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${slide.color}, #06b6d4)`, color: "#060a0c", fontSize: 16, fontWeight: 800, fontFamily: "Rajdhani, sans-serif", cursor: "pointer", letterSpacing: 1, transition: "all 0.2s" }}>
-                        GET STARTED 🚀
-                    </button>
-                ) : (
-                    <div style={{ display: "flex", gap: 10 }}>
-                        <button onClick={onGetStarted} style={{ flex: 1, padding: "14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", color: "#6b7280", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
-                            Skip
-                        </button>
-                        <button onClick={() => setCurrentSlide(currentSlide + 1)} style={{ flex: 2, padding: "14px", borderRadius: 12, background: `linear-gradient(135deg, ${slide.color}, #06b6d4)`, border: "none", color: "#060a0c", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Rajdhani, sans-serif" }}>
-                            Next →
-                        </button>
+                {/* Slide content */}
+                <div className="card w-full text-center" style={{ padding: "32px 22px" }} aria-live="polite">
+                    <div className="fade-in" key={currentSlide}>
+                        <div className="flex justify-center mb-5">
+                            <IconBadge icon={slide.icon} tone={slide.tone} size={76} />
+                        </div>
+                        <h1 className="text-[24px] font-extrabold leading-tight mb-2" style={{ color: "var(--text-primary)", letterSpacing: "-.01em" }}>
+                            {slide.title}
+                        </h1>
+                        <div className="mb-4"><Pill tone={slide.tone}>{slide.subtitle}</Pill></div>
+                        <p className="text-[14px] leading-relaxed m-0" style={{ color: "var(--text-secondary)" }}>
+                            {slide.desc}
+                        </p>
                     </div>
-                )}
-            </div>
+                </div>
 
-            {/* Features strip at bottom */}
-            <div style={{ position: "absolute", bottom: 20, display: "flex", gap: 16, opacity: 0.4 }}>
-                {["⚔️", "🍎", "🔮", "🎮", "💪", "🏆"].map((icon, i) => (
-                    <span key={i} style={{ fontSize: 16 }}>{icon}</span>
-                ))}
+                {/* Dots */}
+                <div className="flex items-center" role="tablist" aria-label="Intro slides">
+                    {SLIDES.map((s, i) => (
+                        <button key={i} type="button" role="tab" aria-selected={i === currentSlide} aria-label={`Slide ${i + 1}: ${s.title}`}
+                            onClick={() => setCurrentSlide(i)}
+                            className="flex items-center justify-center" style={{ width: i === currentSlide ? 36 : 20, height: 36, background: "none", border: "none", padding: 0 }}>
+                            <span style={{ display: "block", width: i === currentSlide ? 24 : 8, height: 8, borderRadius: 999, background: i === currentSlide ? "var(--accent)" : "var(--track)", transition: "width .3s, background .3s" }} />
+                        </button>
+                    ))}
+                </div>
+
+                {/* Buttons */}
+                <div className="w-full">
+                    {isLast ? (
+                        <button type="button" onClick={onGetStarted} className="bp w-full" style={{ padding: "14px 20px", fontSize: 15 }}>
+                            Get started <ArrowRight size={17} />
+                        </button>
+                    ) : (
+                        <div className="flex gap-2.5">
+                            <button type="button" onClick={onGetStarted} className="bg" style={{ flex: 1, padding: "14px 16px" }}>
+                                Skip
+                            </button>
+                            <button type="button" onClick={() => setCurrentSlide(currentSlide + 1)} className="bp" style={{ flex: 2, padding: "14px 16px", fontSize: 15 }}>
+                                Next <ArrowRight size={17} />
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Feature strip */}
+                <div className="flex gap-4 mt-2" style={{ color: "var(--text-dim)" }} aria-hidden="true">
+                    {STRIP.map((Icon, i) => <Icon key={i} size={17} />)}
+                </div>
             </div>
         </div>
     );

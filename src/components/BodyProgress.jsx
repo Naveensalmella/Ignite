@@ -2,6 +2,8 @@
 import { useState, useRef } from 'react';
 import storeV2 from '@/store-v2';
 import { today, parseDateKey } from '@/utils';
+import { Camera, Plus, LayoutGrid, Columns2, Trash2, Lightbulb } from 'lucide-react';
+import { Card, IconBadge, EmptyState } from '@/components/ui/kit';
 
 const fmtDate = (key, opts) => { const dt = parseDateKey(key); return isNaN(dt) ? String(key || "") : dt.toLocaleDateString("en-IN", opts); };
 
@@ -84,52 +86,69 @@ export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { 
         }
     };
 
-    return (
-        <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
-            {/* Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>📸 Body Progress</div>
-                    <div style={{ fontSize: 12, color: "#6b7280" }}>{sortedDates.length} photos · Track your transformation</div>
-                </div>
-                <button className="bp" onClick={() => fileRef.current?.click()} disabled={uploading} style={{ padding: "8px 16px", fontSize: 13, opacity: uploading ? 0.6 : 1 }}>{uploading ? "Uploading..." : "+ Add Photo"}</button>
-                <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={addPhoto} aria-label="Add progress photo" style={{ display: "none" }} />
-            </div>
+    const openPicker = () => fileRef.current?.click();
+    const bothPicked = compareA && compareB && photos[compareA] && photos[compareB];
 
-            {/* View toggle */}
-            {sortedDates.length >= 2 && (
-                <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-                    <span className={`chip ${mode === "grid" ? "chip-a" : "chip-i"}`} onClick={() => setViewMode("grid")} style={{ flex: 1, textAlign: "center" }}>📷 Gallery</span>
-                    <span className={`chip ${mode === "compare" ? "chip-a" : "chip-i"}`} onClick={() => setViewMode("compare")} style={{ flex: 1, textAlign: "center" }}>🔄 Compare</span>
+    return (
+        <div className="flex flex-col gap-3">
+            {/* Header */}
+            <Card>
+                <div className="flex items-center gap-3">
+                    <IconBadge icon={Camera} tone="sky" size={40} />
+                    <div className="flex-1 min-w-0">
+                        <div className="card-title">Body progress</div>
+                        <div className="card-sub">{sortedDates.length} {sortedDates.length === 1 ? "photo" : "photos"} · Track your transformation</div>
+                    </div>
+                    <button type="button" className="bp shrink-0" onClick={openPicker} disabled={uploading} style={{ padding: "9px 14px", fontSize: 13 }}>
+                        {uploading ? "Uploading..." : <><Plus size={16} /> Add photo</>}
+                    </button>
+                    <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={addPhoto} aria-label="Add progress photo" style={{ display: "none" }} />
                 </div>
-            )}
+
+                {/* View toggle */}
+                {sortedDates.length >= 2 && (
+                    <div className="flex gap-2 mt-3">
+                        <button type="button" aria-pressed={mode === "grid"} className={`chip flex-1 justify-center ${mode === "grid" ? "chip-a" : "chip-i"}`} onClick={() => setViewMode("grid")} style={{ minHeight: 36 }}>
+                            <LayoutGrid size={15} /> Gallery
+                        </button>
+                        <button type="button" aria-pressed={mode === "compare"} className={`chip flex-1 justify-center ${mode === "compare" ? "chip-a" : "chip-i"}`} onClick={() => setViewMode("compare")} style={{ minHeight: 36 }}>
+                            <Columns2 size={15} /> Compare
+                        </button>
+                    </div>
+                )}
+            </Card>
 
             {/* Empty state */}
             {sortedDates.length === 0 && (
-                <div className="gs" style={{ textAlign: "center", padding: 40 }}>
-                    <div style={{ fontSize: 48, marginBottom: 12 }}>📸</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>No photos yet</div>
-                    <p style={{ fontSize: 13, color: "#6b7280", marginTop: 6, maxWidth: 280, margin: "6px auto 0" }}>Take your first progress photo! Monthly photos show incredible transformations over time.</p>
-                    <button className="bp" onClick={() => fileRef.current?.click()} disabled={uploading} style={{ marginTop: 16, padding: "12px 24px" }}>📸 Take First Photo</button>
-                </div>
+                <Card>
+                    <EmptyState icon={Camera} title="No photos yet"
+                        action={<button type="button" className="bp" onClick={openPicker} disabled={uploading}><Camera size={16} /> Take first photo</button>}>
+                        Take your first progress photo. Monthly photos show big transformations over time.
+                    </EmptyState>
+                </Card>
             )}
 
             {/* Grid view */}
             {mode === "grid" && sortedDates.length > 0 && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+                <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
                     {sortedDates.map(date => {
                         const entry = photos[date];
                         return (
-                            <div key={date} className="gs" style={{ padding: 0, overflow: "hidden", borderRadius: 12, position: "relative" }}>
-                                <img src={entry.photo} alt={`Progress ${date}`} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
-                                <div style={{ padding: "8px 10px" }}>
-                                    <div style={{ fontSize: 12, fontWeight: 600, color: "#f3f4f6" }}>
+                            <div key={date} className="card relative overflow-hidden" style={{ padding: 0 }}>
+                                <img src={entry.photo} alt={`Progress ${date}`} className="block w-full object-cover" style={{ aspectRatio: "3/4" }} />
+                                <div className="px-3 py-2.5">
+                                    <div className="text-[12.5px] font-semibold" style={{ color: "var(--text-primary)" }}>
                                         {fmtDate(date, { day: "numeric", month: "short", year: "numeric" })}
                                     </div>
-                                    {entry.weight && <div style={{ fontSize: 11, color: "#38bdf8" }}>{entry.weight} kg</div>}
-                                    {entry.note && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{entry.note}</div>}
+                                    {entry.weight && <div className="text-[12px] font-semibold num" style={{ color: "var(--accent)" }}>{entry.weight} kg</div>}
+                                    {entry.note && <div className="text-[11.5px] mt-0.5" style={{ color: "var(--text-dim)" }}>{entry.note}</div>}
                                 </div>
-                                <button onClick={() => deletePhoto(date)} aria-label="Delete photo" style={{ position: "absolute", top: 6, right: 6, width: 24, height: 24, borderRadius: "50%", background: "rgba(0,0,0,.6)", border: "none", color: "#ef4444", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+                                {/* sits on the photo, so a dark scrim is right in both themes */}
+                                <button type="button" onClick={() => deletePhoto(date)} aria-label="Delete photo"
+                                    className="absolute flex items-center justify-center"
+                                    style={{ top: 6, right: 6, width: 36, height: 36, borderRadius: "50%", background: "rgba(0, 0, 0, .55)", border: "none", color: "#fff" }}>
+                                    <Trash2 size={16} />
+                                </button>
                             </div>
                         );
                     })}
@@ -138,46 +157,40 @@ export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { 
 
             {/* Compare view */}
             {mode === "compare" && (
-                <div>
-                    <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                <Card title="Compare">
+                    <div className="grid grid-cols-2 gap-2.5">
                         {/* Left selector */}
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6, textAlign: "center" }}>BEFORE</div>
-                            <select className="inp" value={compareA || ""} onChange={e => setCompareA(e.target.value)} style={{ width: "100%", fontSize: 12 }}>
+                        <label className="block">
+                            <span className="block text-[12px] font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>Before</span>
+                            <select className="inp" value={compareA || ""} onChange={e => setCompareA(e.target.value)} style={{ fontSize: 13 }}>
                                 <option value="">Select date</option>
                                 {sortedDates.map(d => <option key={d} value={d}>{fmtDate(d, { day: "numeric", month: "short", year: "2-digit" })}</option>)}
                             </select>
-                        </div>
+                        </label>
                         {/* Right selector */}
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6, textAlign: "center" }}>AFTER</div>
-                            <select className="inp" value={compareB || ""} onChange={e => setCompareB(e.target.value)} style={{ width: "100%", fontSize: 12 }}>
+                        <label className="block">
+                            <span className="block text-[12px] font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>After</span>
+                            <select className="inp" value={compareB || ""} onChange={e => setCompareB(e.target.value)} style={{ fontSize: 13 }}>
                                 <option value="">Select date</option>
                                 {sortedDates.map(d => <option key={d} value={d}>{fmtDate(d, { day: "numeric", month: "short", year: "2-digit" })}</option>)}
                             </select>
-                        </div>
+                        </label>
                     </div>
 
                     {/* Comparison display */}
-                    {compareA && compareB && photos[compareA] && photos[compareB] && (
-                        <div className="fade-in">
-                            <div style={{ display: "flex", gap: 6 }}>
-                                <div style={{ flex: 1, borderRadius: 12, overflow: "hidden", border: "1px solid rgba(239,68,68,.2)" }}>
-                                    <img src={photos[compareA].photo} alt="Before" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
-                                    <div style={{ padding: "8px 10px", textAlign: "center" }}>
-                                        <div style={{ fontSize: 11, color: "#ef4444", fontWeight: 600 }}>BEFORE</div>
-                                        <div style={{ fontSize: 11, color: "#6b7280" }}>{fmtDate(compareA, { day: "numeric", month: "short" })}</div>
-                                        {photos[compareA].weight && <div style={{ fontSize: 12, color: "#f3f4f6", fontWeight: 700 }}>{photos[compareA].weight} kg</div>}
+                    {bothPicked && (
+                        <div className="fade-in mt-3">
+                            <div className="grid grid-cols-2 gap-2.5">
+                                {[["Before", compareA], ["After", compareB]].map(([label, key]) => (
+                                    <div key={label} className="overflow-hidden" style={{ borderRadius: 16, background: "var(--ghost-bg)" }}>
+                                        <img src={photos[key].photo} alt={label} className="block w-full object-cover" style={{ aspectRatio: "3/4" }} />
+                                        <div className="px-2.5 py-2 text-center">
+                                            <div className="text-[12px] font-bold" style={{ color: label === "Before" ? "var(--text-secondary)" : "var(--accent)" }}>{label}</div>
+                                            <div className="text-[11.5px]" style={{ color: "var(--text-dim)" }}>{fmtDate(key, { day: "numeric", month: "short" })}</div>
+                                            {photos[key].weight && <div className="text-[12.5px] font-bold num" style={{ color: "var(--text-primary)" }}>{photos[key].weight} kg</div>}
+                                        </div>
                                     </div>
-                                </div>
-                                <div style={{ flex: 1, borderRadius: 12, overflow: "hidden", border: "1px solid rgba(34,197,94,.2)" }}>
-                                    <img src={photos[compareB].photo} alt="After" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
-                                    <div style={{ padding: "8px 10px", textAlign: "center" }}>
-                                        <div style={{ fontSize: 11, color: "#22c55e", fontWeight: 600 }}>AFTER</div>
-                                        <div style={{ fontSize: 11, color: "#6b7280" }}>{fmtDate(compareB, { day: "numeric", month: "short" })}</div>
-                                        {photos[compareB].weight && <div style={{ fontSize: 12, color: "#f3f4f6", fontWeight: 700 }}>{photos[compareB].weight} kg</div>}
-                                    </div>
-                                </div>
+                                ))}
                             </div>
 
                             {/* Weight difference */}
@@ -185,27 +198,29 @@ export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { 
                                 const diff = parseFloat(photos[compareB].weight) - parseFloat(photos[compareA].weight);
                                 const daysDiff = Math.abs(Math.round((parseDateKey(compareB) - parseDateKey(compareA)) / (24 * 60 * 60 * 1000)));
                                 return (
-                                    <div className="gs" style={{ marginTop: 12, padding: 12, textAlign: "center" }}>
-                                        <div style={{ fontSize: 22, fontWeight: 900, color: diff <= 0 ? "#22c55e" : "#f59e0b", fontFamily: "Rajdhani,sans-serif" }}>
+                                    <div className="mt-3 rounded-2xl px-3 py-3 text-center" style={{ background: "var(--ghost-bg)" }}>
+                                        <div className="text-[22px] font-extrabold num" style={{ color: diff <= 0 ? "var(--ok)" : "var(--warn)" }}>
                                             {diff > 0 ? "+" : ""}{diff.toFixed(1)} kg
                                         </div>
-                                        <div style={{ fontSize: 11, color: "#6b7280" }}>in {daysDiff} days</div>
+                                        <div className="text-[12px]" style={{ color: "var(--text-dim)" }}>in {daysDiff} days</div>
                                     </div>
                                 );
                             })()}
                         </div>
                     )}
 
-                    {(!compareA || !compareB || !photos[compareA] || !photos[compareB]) && (
-                        <div style={{ textAlign: "center", padding: "30px 0", color: "#6b7280", fontSize: 13 }}>Select two dates above to compare photos side by side</div>
+                    {!bothPicked && (
+                        <div className="text-center text-[13px] pt-6 pb-3" style={{ color: "var(--text-dim)" }}>Select two dates above to compare photos side by side.</div>
                     )}
-                </div>
+                </Card>
             )}
 
             {/* Tips */}
             {sortedDates.length > 0 && sortedDates.length < 3 && (
-                <div style={{ marginTop: 16, padding: "10px 14px", borderRadius: 10, background: "rgba(56,189,248,.04)", border: "1px solid rgba(56,189,248,.1)", fontSize: 12, color: "#38bdf8" }}>
-                    💡 Take photos monthly in the same lighting, pose, and clothing for the best comparison.
+                <div className="flex items-start gap-2 text-[12.5px] px-3.5 py-3 rounded-2xl"
+                    style={{ color: "var(--text-secondary)", background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}>
+                    <Lightbulb size={15} className="shrink-0 mt-px" style={{ color: "var(--accent)" }} aria-hidden="true" />
+                    <span>Take photos monthly in the same lighting, pose and clothing for the best comparison.</span>
                 </div>
             )}
         </div>

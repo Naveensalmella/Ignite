@@ -1,10 +1,12 @@
 "use client";
 // ═══════════════════════════════════════
-// IGNITE — PhonePe-Style History Panel
+// IGNITE — History Panel
 // Reusable date-grouped, expandable history view
 // ═══════════════════════════════════════
 import { useState } from 'react';
+import { History, ChevronDown } from 'lucide-react';
 import { today as todayKey, addDays, parseDateKey } from '@/utils';
+import { Card, EmptyState } from '@/components/ui/kit';
 
 // Format date into human labels
 function formatDateLabel(dateStr) {
@@ -55,10 +57,9 @@ export default function HistoryPanel({ entries: rawEntries = [], title = "Histor
 
     if (entries.length === 0) {
         return (
-            <div className="gs" style={{ textAlign: "center", padding: "24px 16px" }}>
-                <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.3 }}>📜</div>
-                <div style={{ fontSize: 14, color: "#6b7280" }}>{emptyText}</div>
-            </div>
+            <Card>
+                <EmptyState icon={History} title="Nothing here yet">{emptyText}</EmptyState>
+            </Card>
         );
     }
 
@@ -74,20 +75,11 @@ export default function HistoryPanel({ entries: rawEntries = [], title = "Histor
     const visibleDates = sortedDates.slice(0, limit);
 
     return (
-        <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div className="sl" style={{ margin: 0 }}>{title} · {entries.length}</div>
-                <span style={{ fontSize: 11, color: "#4b5563" }}>{sortedDates.length} days</span>
-            </div>
-
-            {visibleDates.map(date => (
-                <div key={date} style={{ marginBottom: 16 }}>
-                    {/* Date Header */}
-                    <div style={{
-                        fontSize: 12, fontWeight: 700, color: "#6b7280", fontFamily: "Rajdhani,sans-serif",
-                        letterSpacing: 1.5, padding: "4px 0", marginBottom: 6,
-                        borderBottom: "1px solid rgba(255,255,255,.04)",
-                    }}>
+        <Card title={`${title} · ${entries.length}`} sub={`${sortedDates.length} days`}>
+            {visibleDates.map((date, di) => (
+                <div key={date} className={di > 0 ? "mt-3" : ""}>
+                    {/* Date header */}
+                    <div className="text-[12px] font-bold pb-1" style={{ color: "var(--text-dim)" }}>
                         {formatDateLabel(date)}
                     </div>
 
@@ -95,66 +87,51 @@ export default function HistoryPanel({ entries: rawEntries = [], title = "Histor
                     {grouped[date].map(entry => {
                         const isExpanded = expandedId === entry._idx;
                         return (
-                            <div key={entry._idx}
-                                onClick={() => setExpandedId(isExpanded ? null : entry._idx)}
-                                style={{
-                                    padding: "12px 14px", marginBottom: 4, borderRadius: 10, cursor: "pointer",
-                                    background: isExpanded ? "rgba(56,189,248,.03)" : "rgba(255,255,255,.015)",
-                                    border: isExpanded ? "1px solid rgba(56,189,248,.12)" : "1px solid rgba(255,255,255,.03)",
-                                    transition: "all .2s",
-                                }}>
-
-                                {/* Main Row */}
-                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                    {/* Icon */}
-                                    <div style={{
-                                        width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                                        background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.05)",
-                                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
-                                    }}>
+                            <div key={entry._idx} style={{ borderTop: "1px solid var(--line)" }}>
+                                {/* Main row */}
+                                <button type="button" aria-expanded={isExpanded}
+                                    onClick={() => setExpandedId(isExpanded ? null : entry._idx)}
+                                    className="flex items-center gap-3 w-full text-left py-2.5 bg-transparent border-0 cursor-pointer" style={{ color: "inherit" }}>
+                                    {/* Icon (entry data — emoji or photo) */}
+                                    <span className="flex items-center justify-center shrink-0 overflow-hidden text-[19px]"
+                                        style={{ width: 40, height: 40, borderRadius: 12, background: "var(--ghost-bg)" }} aria-hidden="true">
                                         {entry.photo ? (
-                                            <img src={entry.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 9 }} />
+                                            <img src={entry.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                         ) : entry.icon}
-                                    </div>
+                                    </span>
 
                                     {/* Info */}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: 14, fontWeight: 600, color: "#e5e7eb", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                            {entry.title}
-                                        </div>
-                                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 1 }}>
-                                            {entry.subtitle}
-                                        </div>
-                                    </div>
+                                    <span className="flex-1 min-w-0">
+                                        <span className="row-title block truncate">{entry.title}</span>
+                                        {entry.subtitle && <span className="row-sub block">{entry.subtitle}</span>}
+                                    </span>
 
-                                    {/* Value + Badge */}
-                                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                        <div style={{ fontSize: 14, fontWeight: 700, color: entry.valueColor || "#38bdf8", fontFamily: "Rajdhani,sans-serif" }}>
+                                    {/* Value + badge */}
+                                    <span className="flex flex-col items-end shrink-0 gap-0.5">
+                                        <span className="text-[14px] font-bold num" style={{ color: entry.valueColor || "var(--accent)" }}>
                                             {entry.value}
-                                        </div>
+                                        </span>
                                         {entry.badge && (
-                                            <span style={{
-                                                fontSize: 11, padding: "2px 6px", borderRadius: 100,
-                                                background: `${entry.badge.color}12`, color: entry.badge.color,
-                                                fontWeight: 600,
+                                            <span className="text-[11px] font-semibold rounded-full px-1.5 py-px" style={{
+                                                background: `color-mix(in srgb, ${entry.badge.color || "var(--accent)"} 14%, transparent)`, color: entry.badge.color || "var(--accent)",
                                             }}>{entry.badge.text}</span>
                                         )}
-                                    </div>
+                                    </span>
 
-                                    {/* Chevron */}
-                                    <span style={{ color: "#4b5563", fontSize: 12, flexShrink: 0 }}>{isExpanded ? "▾" : "▸"}</span>
-                                </div>
+                                    <ChevronDown size={16} className="shrink-0 transition-transform duration-200"
+                                        style={{ color: "var(--text-dim)", transform: isExpanded ? "rotate(180deg)" : "none" }} aria-hidden="true" />
+                                </button>
 
-                                {/* Expanded Details */}
+                                {/* Expanded details */}
                                 {isExpanded && (
-                                    <div className="fade-in" style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.04)" }}>
+                                    <div className="fade-in mb-3 rounded-[14px] p-3" style={{ background: "var(--ghost-bg)" }}>
                                         {/* Detail rows */}
                                         {Array.isArray(entry.details) && entry.details.length > 0 && (
-                                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: entry.items?.length ? 10 : 0 }}>
+                                            <div className="grid grid-cols-2 gap-x-3 gap-y-2" style={{ marginBottom: entry.items?.length ? 10 : 0 }}>
                                                 {entry.details.map((d, i) => (
-                                                    <div key={i} style={{ padding: "6px 0" }}>
-                                                        <div style={{ fontSize: 11, color: "#6b7280" }}>{d.label}</div>
-                                                        <div style={{ fontSize: 13, fontWeight: 600, color: d.color || "#e5e7eb" }}>{d.value}</div>
+                                                    <div key={i}>
+                                                        <div className="text-[11.5px]" style={{ color: "var(--text-dim)" }}>{d.label}</div>
+                                                        <div className="text-[13px] font-semibold" style={{ color: d.color || "var(--text-primary)" }}>{d.value}</div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -163,18 +140,16 @@ export default function HistoryPanel({ entries: rawEntries = [], title = "Histor
                                         {/* Sub-items */}
                                         {Array.isArray(entry.items) && entry.items.length > 0 && (
                                             <div>
-                                                <div style={{ fontSize: 11, color: "#6b7280", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1.5, marginBottom: 6 }}>DETAILS</div>
+                                                <div className="text-[11.5px] font-bold mb-1" style={{ color: "var(--text-secondary)" }}>Details</div>
                                                 {entry.items.map((item, i) => (
-                                                    <div key={i} style={{
-                                                        display: "flex", alignItems: "center", gap: 8,
-                                                        padding: "5px 0", borderBottom: i < entry.items.length - 1 ? "1px solid rgba(255,255,255,.02)" : "none",
-                                                    }}>
-                                                        <span style={{ fontSize: 14, width: 20, textAlign: "center" }}>{item.icon || "·"}</span>
-                                                        <div style={{ flex: 1 }}>
-                                                            <div style={{ fontSize: 12, color: "#d1d5db" }}>{item.text}</div>
-                                                            {item.sub && <div style={{ fontSize: 11, color: "#4b5563" }}>{item.sub}</div>}
+                                                    <div key={i} className="flex items-center gap-2 py-1.5"
+                                                        style={{ borderTop: i > 0 ? "1px solid var(--line)" : "none" }}>
+                                                        <span className="text-[14px] w-5 text-center shrink-0" aria-hidden="true">{item.icon || "·"}</span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="text-[12.5px]" style={{ color: "var(--text-primary)" }}>{item.text}</div>
+                                                            {item.sub && <div className="text-[11.5px]" style={{ color: "var(--text-dim)" }}>{item.sub}</div>}
                                                         </div>
-                                                        {item.value && <span style={{ fontSize: 11, color: item.valueColor || "#6b7280", fontWeight: 600 }}>{item.value}</span>}
+                                                        {item.value && <span className="text-[11.5px] font-semibold shrink-0" style={{ color: item.valueColor || "var(--text-secondary)" }}>{item.value}</span>}
                                                     </div>
                                                 ))}
                                             </div>
@@ -182,8 +157,8 @@ export default function HistoryPanel({ entries: rawEntries = [], title = "Histor
 
                                         {/* Photo */}
                                         {entry.photo && (
-                                            <div style={{ marginTop: 8, textAlign: "center" }}>
-                                                <img src={entry.photo} alt="proof" style={{ width: 100, height: 100, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(56,189,248,.2)" }} />
+                                            <div className="mt-2 text-center">
+                                                <img src={entry.photo} alt="proof" className="inline-block" style={{ width: 100, height: 100, borderRadius: 12, objectFit: "cover", border: "1px solid var(--line)" }} />
                                             </div>
                                         )}
                                     </div>
@@ -194,12 +169,12 @@ export default function HistoryPanel({ entries: rawEntries = [], title = "Histor
                 </div>
             ))}
 
-            {/* Load More */}
+            {/* Load more */}
             {sortedDates.length > limit && (
-                <button className="bg" onClick={() => setLimit(l => l + 20)} style={{ width: "100%", padding: 12, marginTop: 8 }}>
-                    Load More ({sortedDates.length - limit} more days)
+                <button type="button" className="bg w-full mt-3" onClick={() => setLimit(l => l + 20)}>
+                    Load more ({sortedDates.length - limit} more days)
                 </button>
             )}
-        </div>
+        </Card>
     );
 }

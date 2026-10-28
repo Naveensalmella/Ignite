@@ -18,7 +18,7 @@ export default function SystemNotices() {
     }, [notice, dismiss]);
 
     if (!notice) return null;
-    const kind = notice.kind === "warning" ? "warning" : notice.kind === "rank" ? "gold" : "info";
+    const kind = notice.kind === "warning" ? "warning" : notice.title === "ARISE" ? "violet" : notice.kind === "rank" ? "gold" : "info";
     const rank = notice.rank ? rankById(notice.rank) : null;
 
     return (

@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { Moon, Sun } from 'lucide-react';
+import { IconBadge } from '@/components/ui/kit';
 
 function readSavedTheme() {
     try {
@@ -30,16 +32,20 @@ export default function ThemeToggle() {
         try { localStorage.setItem("ignite-theme", next); } catch { }
     };
 
+    const dark = theme !== "light";
+    // A settings row (sits inside a Card on the Profile → Settings tab)
     return (
-        <div onClick={toggle} className="flex items-center gap-[10px] px-4 py-3 rounded-xl bg-white/[.02] border border-white/[.06] cursor-pointer transition-all duration-200 hover:bg-white/[.04]">
-            <span className="text-xl">{theme === "dark" ? "🌙" : "☀️"}</span>
-            <div className="flex-1">
-                <div className="text-sm font-semibold text-gray-100">{theme === "dark" ? "Dark Mode" : "Light Mode"}</div>
-                <div className="text-[11px] text-gray-500">Tap to switch theme</div>
+        <button type="button" role="switch" aria-checked={dark} onClick={toggle} className="list-row cursor-pointer">
+            <IconBadge icon={dark ? Moon : Sun} tone={dark ? "violet" : "amber"} size={38} />
+            <div className="flex-1 min-w-0">
+                <div className="row-title">Dark mode</div>
+                <div className="row-sub">{dark ? "On · tap for light mode" : "Off · tap for dark mode"}</div>
             </div>
-            <div className={`w-11 h-6 rounded-xl p-0.5 transition-colors duration-300 ${theme === "light" ? "bg-sky-400/40" : "bg-white/10"}`}>
-                <div className={`w-5 h-5 rounded-full transition-all duration-300 ${theme === "light" ? "bg-sky-400 translate-x-5" : "bg-gray-500 translate-x-0"}`} />
-            </div>
-        </div>
+            <span className="relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors duration-200"
+                style={{ background: dark ? "var(--accent)" : "var(--track)" }} aria-hidden="true">
+                <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full transition-transform duration-200"
+                    style={{ background: dark ? "var(--accent-ink)" : "var(--text-dim)", transform: dark ? "translateX(20px)" : "translateX(0)" }} />
+            </span>
+        </button>
     );
 }

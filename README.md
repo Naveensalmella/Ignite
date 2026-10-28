@@ -7,21 +7,29 @@ Built with **Next.js 16 (App Router)**, **React 19**, **Zustand**, **Tailwind CS
 
 | Area | What it does |
 |------|--------------|
-| **Status** (home) | The Status Window: level, Hunter rank, job, title, XP, Gold, and five stats — STR, AGI, VIT, INT, PER — earned from your real activity, plus Ability Points (+3 per level) to allocate |
+| **Home** | Greeting, level ring, Daily Quest checklist and stats at a glance — the Status Window: level, Hunter rank, job, title, XP, Gold, and five stats — STR, AGI, VIT, INT, PER — earned from your real activity, plus Ability Points (+3 per level) to allocate |
 | **Quests** | The System's **Daily Quest** (push-ups, sit-ups, squats, run — scaled to your level, fully editable, resets at midnight), the **Penalty Zone** (a missed Daily Quest means a 5-minute survival workout; XP is halved until it's cleared — nothing is ever taken away), **Rank Assessments** (E → D → C → B → A → S → National Level), habits and long-term missions |
-| **Inventory & Shop** | Spend Gold on System items (Streak Shield, XP Potion, Penalty Pardon, Random Box, Stat Reset Scroll) or on real-life rewards you define yourself; achievements and titles |
+| **Items** (inventory & shop) | Spend Gold on System items (Streak Shield, XP Potion, Penalty Pardon, Random Box, Stat Reset Scroll) or on real-life rewards you define yourself; achievements and titles |
 | **Gates & Dungeons** | Three new Gates every day (one below your rank, one at it, and a Red Gate above it that needs a Gate Key): themed dungeon workouts — Goblin Den, Ant Island, Demon Castle… — with waves and a boss round. Clear 60% of the sets for XP, Gold and loot |
 | **Skills & Titles** | Skills unlock from your stats (e.g. Bloodlust at STR 20: +10% workout XP); titles are earned from feats (“Wolf Slayer”, “One Who Overcame Adversity”…) and the equipped one grants a bonus |
 | **Shadow Army** | Keep a habit for 14 days and ARISE it as a shadow (Igris, Iron, Tank…). Shadows rank up with your best streak — Soldier → Knight → Elite Knight → Commander → Marshal → Grand Marshal — add an XP bonus while active, and go dormant when the habit breaks |
 | **Job Change** | At Level 40, a 7-day Job Change Quest; then choose Fighter, Assassin, Tank, Mage-Scholar or Ranger-Monk — or the hidden Shadow Monarch class |
 | **Training** | Visual demo for **every** exercise (start/end photos or an animated athlete), 900+ exercise library, workout player with set/weight logging, rest timer and PR detection, muscle-recovery map, 22 programs (strength, combat, running, yoga, HIIT, mind), custom workouts, AI workout builder, progress analytics |
 | **Nutrition** | Food log with 190+ Indian/global foods, AI photo & text food scanner, water tracker, macro targets, meal plans & shopping list |
-| **The System** (AI) | Streaming AI guide in the System's voice, 4 specialties; knows your rank, stats and quest status; can log food from chat |
+| **AI Coach** | Streaming AI coach that speaks in the System's voice, 4 specialties; knows your rank, stats and quest status; can log food from chat |
 | **Life** | Missions (to-dos), focus timer (Pomodoro), wellness journal, finance tracker, daily routine |
 | **Body Progress** | Progress photos and body measurements, year heatmap, data export |
 | **Social** | Friends, feed, leaderboard with Hunter ranks |
 
 Works on phones (bottom navigation, installable PWA) and desktop (sidebar), in dark or light mode.
+
+## Design
+
+The UI uses the **"B6" design**: calm soft-dark cards (with a matching light version), one colourful gradient "hero" card per screen, pill buttons, Plus Jakarta Sans, and lucide line icons. The holographic blue Solo Leveling windows appear only for special moments (level-up, rank-up, quest complete, ARISE, penalty, awakening).
+
+- Colours, radii and tones are CSS tokens in `src/app/globals.css` (`:root` = dark, `[data-theme="light"]` = light).
+- Shared building blocks live in `src/components/ui/kit.jsx` (Card, Ring, Bar, Tabs, ListRow, Tile, Check, IconBadge, Pill, EmptyState) and icons in `src/components/ui/icons.js`.
+- Pages use tokens instead of hard-coded colours, so every screen works in both themes.
 
 ## Getting started
 

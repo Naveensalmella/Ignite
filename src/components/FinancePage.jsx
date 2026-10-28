@@ -1,16 +1,25 @@
 "use client";
 import { useState, useMemo } from 'react';
+import {
+  UtensilsCrossed, Car, ShoppingBag, Receipt, Gamepad2, Pill as PillIcon, GraduationCap, House, Tag,
+  Banknote, Laptop, TrendingUp, Gift, Coins, Trash2, Plus, Wallet, PieChart,
+} from 'lucide-react';
 import { today, toArr } from '@/utils';
+import { Card, ListRow, Tabs, Bar, EmptyState } from '@/components/ui/kit';
 
 const CATEGORIES = {
   income: ["Salary", "Freelance", "Investment", "Gift", "Other Income"],
   expense: ["Food", "Transport", "Shopping", "Bills", "Entertainment", "Health", "Education", "Rent", "Other"],
 };
-const CAT_COLORS = { Food: "#f59e0b", Transport: "#3b82f6", Shopping: "#ec4899", Bills: "#ef4444", Entertainment: "#8b5cf6", Health: "#38bdf8", Education: "#06b6d4", Rent: "#f97316", Other: "#6b7280", Salary: "#22c55e", Freelance: "#38bdf8", Investment: "#06b6d4", Gift: "#f59e0b", "Other Income": "#6b7280" };
+// Category → tone (see --tone-* tokens) and line icon
+const CAT_TONE = { Food: "amber", Transport: "blue", Shopping: "rose", Bills: "orange", Entertainment: "violet", Health: "sky", Education: "teal", Rent: "orange", Other: "blue", Salary: "lime", Freelance: "sky", Investment: "teal", Gift: "amber", "Other Income": "lime" };
 // Firestore data is untrusted: amounts may be strings/missing, dates may be missing, entries may be null
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const monthLabel = (m) => { const [y, mo] = String(m).split("-").map(Number); const dt = new Date(y, (mo || 1) - 1, 1); return isNaN(dt) ? m : dt.toLocaleDateString("en", { month: "short", year: "2-digit" }); };
-const CAT_ICONS = { Food: "🍽️", Transport: "🚗", Shopping: "🛍️", Bills: "📄", Entertainment: "🎮", Health: "💊", Education: "📚", Rent: "🏠", Other: "📌", Salary: "💰", Freelance: "💻", Investment: "📈", Gift: "🎁", "Other Income": "💵" };
+const CAT_ICONS = { Food: UtensilsCrossed, Transport: Car, Shopping: ShoppingBag, Bills: Receipt, Entertainment: Gamepad2, Health: PillIcon, Education: GraduationCap, Rent: House, Other: Tag, Salary: Banknote, Freelance: Laptop, Investment: TrendingUp, Gift: Gift, "Other Income": Coins };
+const catIcon = (c) => CAT_ICONS[c] || Tag;
+const catTone = (c) => CAT_TONE[c] || "blue";
+const money = (v) => `₹${num(v).toLocaleString()}`;
 
 export default function FinancePage({ finances = [], setFinances = () => { }, addXP = () => { } }) {
   const d = today();
@@ -67,147 +76,180 @@ export default function FinancePage({ finances = [], setFinances = () => { }, ad
     return [...set].sort().reverse();
   }, [txList, d]);
 
+  const maxIE = Math.max(totalIncome, totalExpense);
+
   return (
-    <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
-      <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto" }}>
-        {[["overview", "📊 Overview"], ["transactions", "📋 All"], ["add", "➕ Add"]].map(([k, l]) => (
-          <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => setTab(k)} style={{ flexShrink: 0, fontSize: 12 }}>{l}</span>
-        ))}
-      </div>
+    <div className="page fade-in">
+      {/* ══ HERO: this month's balance ══ */}
+      <Card hero>
+        <div className="flex items-center justify-between gap-2">
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>
+            {savings >= 0 ? "Saved" : "Deficit"} · {monthLabel(filterMonth)}
+          </span>
+          <Wallet size={18} aria-hidden="true" style={{ color: "var(--text-secondary)" }} />
+        </div>
+        <div className="num" style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.15, marginTop: 4, color: "var(--text-primary)" }}>
+          {savings < 0 ? "-" : ""}₹{Math.abs(savings).toLocaleString()}
+        </div>
+        <div className="flex gap-6 mt-3">
+          <div>
+            <div className="num" style={{ fontSize: 17, fontWeight: 700 }}>{money(totalIncome)}</div>
+            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Income</div>
+          </div>
+          <div>
+            <div className="num" style={{ fontSize: 17, fontWeight: 700 }}>{money(totalExpense)}</div>
+            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Expense</div>
+          </div>
+        </div>
+        {/* Month selector */}
+        <div className="chip-row mt-4" role="group" aria-label="Month">
+          {months.slice(0, 6).map(m => (
+            <button
+              key={m}
+              type="button"
+              className="chip chip-i"
+              aria-pressed={filterMonth === m}
+              onClick={() => setFilterMonth(m)}
+              style={filterMonth === m ? { background: "rgba(255,255,255,.95)", color: "#1e3a8a", flexShrink: 0 } : { flexShrink: 0 }}
+            >
+              {monthLabel(m)}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      <Tabs tabs={[["overview", "Overview"], ["transactions", "All"], ["add", "Add"]]} value={tab} onChange={setTab} label="Finance sections" />
 
       {/* ══ OVERVIEW ══ */}
       {tab === "overview" && (
-        <div>
-          {/* Month selector */}
-          <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto" }}>
-            {months.slice(0, 6).map(m => (
-              <span key={m} className={`chip ${filterMonth === m ? "chip-a" : "chip-i"}`} onClick={() => setFilterMonth(m)} style={{ flexShrink: 0, fontSize: 11 }}>
-                {monthLabel(m)}
-              </span>
-            ))}
-          </div>
-
-          {/* Summary cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
-            <div className="gc" style={{ padding: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 18, fontWeight: 900, color: "#22c55e", fontFamily: "Rajdhani,sans-serif" }}>₹{totalIncome.toLocaleString()}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Income</div>
-            </div>
-            <div className="gc" style={{ padding: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 18, fontWeight: 900, color: "#ef4444", fontFamily: "Rajdhani,sans-serif" }}>₹{totalExpense.toLocaleString()}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Expense</div>
-            </div>
-            <div className="gc" style={{ padding: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 18, fontWeight: 900, color: savings >= 0 ? "#38bdf8" : "#ef4444", fontFamily: "Rajdhani,sans-serif" }}>₹{Math.abs(savings).toLocaleString()}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>{savings >= 0 ? "Saved" : "Deficit"}</div>
-            </div>
-          </div>
-
-          {/* Income vs Expense bar */}
+        <>
+          {/* Income vs Expense */}
           {(totalIncome > 0 || totalExpense > 0) && (
-            <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 10 }}>Income vs Expense</div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontSize: 11, color: "#22c55e", width: 60 }}>Income</span>
-                <div style={{ flex: 1, height: 10, background: "rgba(255,255,255,.04)", borderRadius: 5, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${totalIncome > 0 ? Math.min(100, (totalIncome / Math.max(totalIncome, totalExpense)) * 100) : 0}%`, background: "#22c55e", borderRadius: 5, transition: "width .5s" }} />
-                </div>
+            <Card title="Income vs expense">
+              <div className="flex items-center gap-3 mb-2">
+                <span style={{ fontSize: 12.5, color: "var(--text-secondary)", width: 62 }}>Income</span>
+                <Bar className="flex-1" height={8} value={totalIncome > 0 ? totalIncome / maxIE : 0} color="var(--ok)" />
               </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span style={{ fontSize: 11, color: "#ef4444", width: 60 }}>Expense</span>
-                <div style={{ flex: 1, height: 10, background: "rgba(255,255,255,.04)", borderRadius: 5, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${totalExpense > 0 ? Math.min(100, (totalExpense / Math.max(totalIncome, totalExpense)) * 100) : 0}%`, background: "#ef4444", borderRadius: 5, transition: "width .5s" }} />
-                </div>
+              <div className="flex items-center gap-3">
+                <span style={{ fontSize: 12.5, color: "var(--text-secondary)", width: 62 }}>Expense</span>
+                <Bar className="flex-1" height={8} value={totalExpense > 0 ? totalExpense / maxIE : 0} color="var(--danger)" />
               </div>
-            </div>
+            </Card>
           )}
 
-          {/* Category pie (horizontal bars) */}
+          {/* Spending by category */}
           {categoryBreakdown.length > 0 && (
-            <div className="gs" style={{ padding: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 10 }}>Spending by Category</div>
+            <Card title="Spending by category">
               {categoryBreakdown.map(([cat, amount]) => {
                 const pct = totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0;
                 return (
-                  <div key={cat} style={{ marginBottom: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                      <span style={{ fontSize: 12, color: "#d1d5db" }}>{CAT_ICONS[cat] || "📌"} {cat}</span>
-                      <span style={{ fontSize: 12, color: CAT_COLORS[cat] || "#6b7280", fontWeight: 600 }}>₹{amount.toLocaleString()} ({pct}%)</span>
-                    </div>
-                    <div style={{ height: 6, background: "rgba(255,255,255,.04)", borderRadius: 3, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${pct}%`, background: CAT_COLORS[cat] || "#6b7280", borderRadius: 3, transition: "width .5s" }} />
-                    </div>
-                  </div>
+                  <ListRow
+                    key={cat}
+                    icon={catIcon(cat)}
+                    tone={catTone(cat)}
+                    title={cat}
+                    right={
+                      <div className="text-right">
+                        <div className="num" style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{money(amount)}</div>
+                        <div className="num" style={{ fontSize: 12, color: "var(--text-dim)" }}>{pct}%</div>
+                      </div>
+                    }
+                  >
+                    <Bar className="mt-1.5" value={pct / 100} color={`var(--tone-${catTone(cat)})`} />
+                  </ListRow>
                 );
               })}
-            </div>
+            </Card>
           )}
 
           {totalIncome === 0 && totalExpense === 0 && (
-            <div style={{ textAlign: "center", padding: 30, color: "#6b7280", fontSize: 13 }}>No transactions this month. Tap &quot;Add&quot; to start tracking.</div>
+            <Card>
+              <EmptyState
+                icon={PieChart}
+                title="No transactions this month"
+                action={<button type="button" className="bp" onClick={() => setTab("add")}><Plus size={16} /> Add transaction</button>}
+              >
+                Log your income and spending to see where your money goes.
+              </EmptyState>
+            </Card>
           )}
-        </div>
+        </>
       )}
 
       {/* ══ TRANSACTIONS ══ */}
       {tab === "transactions" && (
-        <div>
+        <Card title="All transactions" sub={recent.length ? `${recent.length} total` : undefined}>
           {recent.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 30, color: "#6b7280", fontSize: 13 }}>No transactions yet.</div>
+            <EmptyState icon={Receipt} title="No transactions yet">Tap “Add” to start tracking.</EmptyState>
           ) : (
             recent.map((tx, i) => (
-              <div key={tx.id ?? `i${i}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
-                <span style={{ fontSize: 20 }}>{CAT_ICONS[tx.category] || "📌"}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, color: "#f3f4f6" }}>{tx.category || "Other"}</div>
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>{[tx.note, tx.date].filter(Boolean).join(" · ")}</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: tx.type === "income" ? "#22c55e" : "#ef4444", fontFamily: "Rajdhani,sans-serif" }}>
-                    {tx.type === "income" ? "+" : "-"}₹{num(tx.amount).toLocaleString()}
+              <ListRow
+                key={tx.id ?? `i${i}`}
+                icon={catIcon(tx.category)}
+                tone={catTone(tx.category)}
+                title={tx.category || "Other"}
+                sub={[tx.note, tx.date].filter(Boolean).join(" · ")}
+                right={
+                  <div className="flex items-center gap-1">
+                    <span className="num" style={{ fontSize: 14, fontWeight: 700, color: tx.type === "income" ? "var(--ok)" : "var(--danger)" }}>
+                      {tx.type === "income" ? "+" : "-"}{money(tx.amount)}
+                    </span>
+                    <button type="button" className="icon-btn" style={{ width: 36, height: 36, background: "none", color: "var(--text-dim)" }} onClick={() => deleteTx(tx.id)} aria-label="Delete transaction">
+                      <Trash2 size={15} />
+                    </button>
                   </div>
-                </div>
-                <span onClick={() => deleteTx(tx.id)} role="button" aria-label="Delete transaction" style={{ fontSize: 14, color: "#4b5563", cursor: "pointer", padding: "0 4px" }}>×</span>
-              </div>
+                }
+              />
             ))
           )}
-        </div>
+        </Card>
       )}
 
       {/* ══ ADD ══ */}
       {tab === "add" && (
-        <div className="gs" style={{ padding: 14 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>Add Transaction</div>
-
+        <Card title="Add transaction">
           {/* Type */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <span className={`chip ${txType === "expense" ? "chip-a" : "chip-i"}`} onClick={() => { setTxType("expense"); setTxCategory(""); }} style={{ flex: 1, textAlign: "center" }}>💸 Expense</span>
-            <span className={`chip ${txType === "income" ? "chip-a" : "chip-i"}`} onClick={() => { setTxType("income"); setTxCategory(""); }} style={{ flex: 1, textAlign: "center" }}>💰 Income</span>
-          </div>
+          <Tabs
+            className="mb-3"
+            tabs={[["expense", "Expense"], ["income", "Income"]]}
+            value={txType}
+            onChange={(k) => { setTxType(k); setTxCategory(""); }}
+            label="Transaction type"
+          />
 
           {/* Amount */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
-            <span style={{ fontSize: 20, color: "#f3f4f6" }}>₹</span>
-            <input className="inp" type="number" min="0" step="0.01" inputMode="decimal" placeholder="Amount" aria-label="Amount" value={txAmount} onChange={e => setTxAmount(e.target.value)} style={{ flex: 1, fontSize: 18, fontWeight: 700 }} />
+          <div className="flex items-center gap-2 mb-3">
+            <span style={{ fontSize: 20, fontWeight: 700, color: "var(--text-secondary)" }}>₹</span>
+            <input className="inp num" type="number" min="0" step="0.01" inputMode="decimal" placeholder="Amount" aria-label="Amount" value={txAmount} onChange={e => setTxAmount(e.target.value)} style={{ flex: 1, fontSize: 18, fontWeight: 700 }} />
           </div>
 
           {/* Category */}
-          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6 }}>Category</div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-            {CATEGORIES[txType].map(cat => (
-              <span key={cat} className={`chip ${txCategory === cat ? "chip-a" : "chip-i"}`} onClick={() => setTxCategory(cat)} style={{ fontSize: 11 }}>
-                {CAT_ICONS[cat] || "📌"} {cat}
-              </span>
-            ))}
+          <div className="sl">Category</div>
+          <div className="flex gap-2 flex-wrap mb-3">
+            {CATEGORIES[txType].map(cat => {
+              const Icon = catIcon(cat);
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`chip ${txCategory === cat ? "chip-a" : "chip-i"}`}
+                  aria-pressed={txCategory === cat}
+                  onClick={() => setTxCategory(cat)}
+                  style={{ minHeight: 36 }}
+                >
+                  <Icon size={14} style={txCategory === cat ? undefined : { color: `var(--tone-${catTone(cat)})` }} /> {cat}
+                </button>
+              );
+            })}
           </div>
 
           {/* Note */}
-          <input className="inp" placeholder="Note (optional)" value={txNote} onChange={e => setTxNote(e.target.value)} style={{ width: "100%", marginBottom: 12 }} />
+          <input className="inp mb-3" placeholder="Note (optional)" aria-label="Note" value={txNote} onChange={e => setTxNote(e.target.value)} />
 
-          <button className="bp" onClick={addTransaction} disabled={!amountValid || !txCategory} style={{ width: "100%", padding: 14, fontSize: 14 }}>
-            {txType === "income" ? "💰" : "💸"} Add {txType === "income" ? "Income" : "Expense"}
+          <button type="button" className="bp w-full" onClick={addTransaction} disabled={!amountValid || !txCategory} style={{ padding: 14 }}>
+            <Plus size={16} /> Add {txType === "income" ? "income" : "expense"}
           </button>
-        </div>
+        </Card>
       )}
     </div>
   );

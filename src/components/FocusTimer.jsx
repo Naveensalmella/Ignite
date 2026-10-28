@@ -3,11 +3,12 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { requestWakeLock, releaseWakeLock } from './wakeLock';
 import { today, dateKey, toArr } from '@/utils';
 import { beep } from '@/lib/beep';
+import { Play, Pause, Square, Timer, Hourglass, Coffee, Tag, Target, CalendarDays } from 'lucide-react';
+import { Card, Ring, IconBadge, Pill, ListRow, Tabs, EmptyState } from '@/components/ui/kit';
 
 const TAGS = ["Study", "Work", "Code", "Read", "Create", "Exercise", "Other"];
 const POMODORO = { work: 25, shortBreak: 5, longBreak: 15 };
 
-function Ring({ pct, color, size = 56, stroke = 5, children }) { const p = Number.isFinite(pct) ? pct : 0; const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, p / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset 1s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
 
 const STORE_KEY = "ignite-focus-timer";
 const GOAL_KEY = "ignite-focus-goal";
@@ -20,7 +21,6 @@ function loadTimer() {
 export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, addXP = () => { } }) {
   const d = today();
   const [saved] = useState(loadTimer);
-  const [tab, setTab] = useState("focus");
   const [mode, setMode] = useState(saved?.mode || "pomodoro"); // pomodoro | freeform
   const [isRunning, setIsRunning] = useState(!!saved?.running);
   const [phase, setPhase] = useState(saved?.phase || "work"); // work | break
@@ -154,153 +154,129 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
 
   const maxMin = Math.max(1, ...weekHistory.map(d => d.minutes));
 
+  const ringPct = mode === "pomodoro" ? ((1 - timeLeft / ((phase === "work" ? POMODORO.work : breakMinutes(pomCount)) * 60)) * 100) : (freeformElapsed % 3600) / 36;
+  const statusText = mode === "pomodoro" ? (phase === "work" ? "Focus time" : "Break time") : `Focusing on ${tag}`;
+  const totalSessions = Object.values(focusLog).reduce((n, v) => n + toArr(v).length, 0);
+  const totalHours = Math.round(Object.values(focusLog).reduce((n, v) => n + toArr(v).reduce((s, sess) => s + (Number(sess?.duration) || 0), 0), 0) / 6) / 10;
+  const goalDone = goalPct >= 100;
+
   return (
-    <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
-      <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto" }}>
-        {[["focus", "⏱ Focus"], ["stats", "📊 Stats"]].map(([k, l]) => (
-          <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => setTab(k)} style={{ flexShrink: 0, fontSize: 12 }}>{l}</span>
-        ))}
-      </div>
-
-      {/* ══ FOCUS TAB ══ */}
-      {tab === "focus" && (
-        <div>
-          {/* Daily Goal */}
-          <div className="gs" style={{ marginBottom: 14, padding: 14, display: "flex", alignItems: "center", gap: 14 }}>
-            <Ring pct={goalPct} color={goalPct >= 100 ? "#22c55e" : "#06b6d4"} size={64} stroke={6}>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{todayMinutes}</div>
-                <div style={{ fontSize: 11, color: "#6b7280" }}>min</div>
-              </div>
-            </Ring>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Daily Focus Goal</div>
-              <div style={{ fontSize: 12, color: goalPct >= 100 ? "#22c55e" : "#6b7280" }}>{goalPct >= 100 ? "✅ Goal reached!" : `${dailyGoal - todayMinutes} min to go`}</div>
-              <div style={{ fontSize: 10, color: "#4b5563", marginTop: 2 }}>{todaySessions.length} sessions today · {pomCount} pomodoros</div>
+    <div className="page fade-in">
+      {/* ══ HERO: countdown ══ */}
+      <Card hero>
+        <div className="flex items-center justify-between gap-2">
+          <Pill icon={mode === "pomodoro" ? (phase === "work" ? Timer : Coffee) : Hourglass}>{mode === "pomodoro" ? (phase === "work" ? "Pomodoro" : "Break") : "Free focus"}</Pill>
+          <Pill icon={Tag}>{tag}</Pill>
+        </div>
+        <div className="flex justify-center py-4">
+          <Ring value={ringPct / 100} size={208} stroke={10} color={phase === "work" ? "var(--text-primary)" : "var(--ok)"}>
+            <div className="big-timer" style={{ fontSize: 50, lineHeight: 1.05 }}>
+              {mode === "pomodoro" ? fmtTime(timeLeft) : fmtTime(freeformElapsed)}
             </div>
-          </div>
-
-          {/* Mode selector */}
-          {!isRunning && !hasProgress && (
-            <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-              <div className={`gc ${mode === "pomodoro" ? "" : ""}`} onClick={() => switchMode("pomodoro")} style={{ flex: 1, padding: 14, textAlign: "center", cursor: "pointer", border: mode === "pomodoro" ? "1px solid rgba(6,182,212,.2)" : "1px solid rgba(255,255,255,.04)", background: mode === "pomodoro" ? "rgba(6,182,212,.04)" : undefined }}>
-                <div style={{ fontSize: 20 }}>🍅</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: mode === "pomodoro" ? "#06b6d4" : "#f3f4f6", marginTop: 4 }}>Pomodoro</div>
-                <div style={{ fontSize: 10, color: "#6b7280" }}>25 min work + 5 break</div>
-              </div>
-              <div className="gc" onClick={() => switchMode("freeform")} style={{ flex: 1, padding: 14, textAlign: "center", cursor: "pointer", border: mode === "freeform" ? "1px solid rgba(56,189,248,.2)" : "1px solid rgba(255,255,255,.04)", background: mode === "freeform" ? "rgba(56,189,248,.04)" : undefined }}>
-                <div style={{ fontSize: 20 }}>⏱</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: mode === "freeform" ? "#38bdf8" : "#f3f4f6", marginTop: 4 }}>Free Focus</div>
-                <div style={{ fontSize: 10, color: "#6b7280" }}>Open-ended timer</div>
-              </div>
+            <div className="text-[13px] font-semibold mt-1.5" style={{ color: "var(--text-secondary)" }}>
+              {hasProgress ? <>{!isRunning && "Paused · "}{statusText}</> : (mode === "pomodoro" ? `${POMODORO.work} min focus` : "Open-ended")}
             </div>
+          </Ring>
+        </div>
+
+        {/* Controls */}
+        <div className="flex gap-2.5 justify-center">
+          {!isRunning ? (
+            <button type="button" className="bp flex-1 max-w-[260px] text-[15px] py-3.5" style={{ background: "#fff", color: "#1d4ed8" }} onClick={startTimer}>
+              <Play size={18} fill="currentColor" />{hasProgress ? "Resume" : `Start ${mode === "pomodoro" ? "pomodoro" : "focus"}`}
+            </button>
+          ) : (
+            <button type="button" className="bp flex-1 max-w-[260px] text-[15px] py-3.5" style={{ background: "#fff", color: "#1d4ed8" }} onClick={pauseTimer}>
+              <Pause size={18} fill="currentColor" />Pause
+            </button>
           )}
-
-          {/* Tag selector */}
-          {!isRunning && (
-            <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-              {TAGS.map(t => (
-                <span key={t} className={`chip ${tag === t ? "chip-a" : "chip-i"}`} onClick={() => setTag(t)} style={{ fontSize: 11 }}>{t}</span>
-              ))}
-            </div>
-          )}
-
-          {/* Timer Display */}
-          <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <Ring pct={mode === "pomodoro" ? ((1 - timeLeft / ((phase === "work" ? POMODORO.work : breakMinutes(pomCount)) * 60)) * 100) : (freeformElapsed % 3600) / 36} color={phase === "work" ? "#06b6d4" : "#22c55e"} size={180} stroke={8}>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 48, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>
-                  {mode === "pomodoro" ? fmtTime(timeLeft) : fmtTime(freeformElapsed)}
-                </div>
-                {hasProgress && (
-                  <div style={{ fontSize: 12, color: phase === "work" ? "#06b6d4" : "#22c55e", fontWeight: 600, marginTop: 4 }}>
-                    {!isRunning && "⏸ Paused · "}
-                    {mode === "pomodoro" ? (phase === "work" ? "🍅 Focus Time" : "☕ Break Time") : `⏱ Focusing on ${tag}`}
-                  </div>
-                )}
-              </div>
-            </Ring>
-          </div>
-
-          {/* Controls */}
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 8 }}>
-            {!isRunning ? (
-              <button className="bp" onClick={startTimer} style={{ padding: "14px 40px", fontSize: 16 }}>▶ {hasProgress ? "Resume" : `Start ${mode === "pomodoro" ? "Pomodoro" : "Focus"}`}</button>
-            ) : (
-              <button className="bg" onClick={pauseTimer} style={{ padding: "14px 20px" }}>⏸ Pause</button>
-            )}
-            {hasProgress && (
-              <button style={{ padding: "14px 24px", background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.2)", borderRadius: 12, color: "#ef4444", cursor: "pointer", fontSize: 14 }} onClick={stopTimer}>⏹ {mode === "pomodoro" && phase === "break" ? "End break" : "Stop & save"}</button>
-            )}
-          </div>
-
-          {/* Today's sessions */}
-          {todaySessions.length > 0 && (
-            <div className="gs" style={{ marginTop: 16, padding: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>Today&apos;s Sessions</div>
-              {todaySessions.map((sess, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: i < todaySessions.length - 1 ? "1px solid rgba(255,255,255,.03)" : "none" }}>
-                  <span style={{ fontSize: 12, color: "#d1d5db" }}>{sess.tag || "Focus"} · {sess.type === "pomodoro" ? "🍅" : "⏱"}</span>
-                  <span style={{ fontSize: 12, color: "#06b6d4", fontWeight: 600 }}>{sess.duration} min</span>
-                </div>
-              ))}
-            </div>
+          {hasProgress && (
+            <button type="button" className="bg py-3.5" style={{ background: "var(--chip-inactive-bg)", color: "var(--chip-inactive-color)", borderColor: "transparent" }} onClick={stopTimer}>
+              <Square size={15} fill="currentColor" />{mode === "pomodoro" && phase === "break" ? "End break" : "Stop & save"}
+            </button>
           )}
         </div>
+      </Card>
+
+      {/* ══ Mode + tag pickers ══ */}
+      {!isRunning && (
+        <Card>
+          {!hasProgress && (
+            <div className="mb-3">
+              <Tabs tabs={[["pomodoro", "Pomodoro"], ["freeform", "Free focus"]]} value={mode} onChange={switchMode} label="Timer mode" />
+              <div className="text-[12.5px] text-center mt-2" style={{ color: "var(--text-dim)" }}>
+                {mode === "pomodoro" ? `${POMODORO.work} min work + ${POMODORO.shortBreak} min break · long break every 4` : "Open-ended timer — stop when you're done"}
+              </div>
+            </div>
+          )}
+          <div className="text-[12.5px] font-bold mb-2" style={{ color: "var(--text-secondary)" }}>What are you working on?</div>
+          <div className="flex gap-1.5 flex-wrap">
+            {TAGS.map(t => (
+              <button type="button" key={t} className={`chip ${tag === t ? "chip-a" : "chip-i"}`} aria-pressed={tag === t} onClick={() => setTag(t)}>{t}</button>
+            ))}
+          </div>
+        </Card>
       )}
 
-      {/* ══ STATS TAB ══ */}
-      {tab === "stats" && (
-        <div>
-          {/* Weekly chart */}
-          <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>📊 Focus This Week</div>
-            <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 80, marginBottom: 8 }}>
-              {weekHistory.map((day, i) => (
-                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ fontSize: 11, color: day.minutes > 0 ? "#06b6d4" : "#4b5563", fontWeight: 600, marginBottom: 2 }}>{day.minutes > 0 ? `${day.minutes}m` : ""}</div>
-                  <div style={{ width: "100%", background: day.isToday ? "#06b6d4" : day.minutes > 0 ? "rgba(6,182,212,.3)" : "rgba(255,255,255,.03)", borderRadius: "4px 4px 0 0", height: `${Math.max(4, (day.minutes / maxMin) * 65)}px`, transition: "height .5s" }} />
-                  <div style={{ fontSize: 10, color: day.isToday ? "#06b6d4" : "#6b7280", marginTop: 4, fontWeight: day.isToday ? 700 : 400 }}>{day.label}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#4b5563" }}>
-              <span>Total: {weekHistory.reduce((s, d) => s + d.minutes, 0)} min</span>
-              <span>Avg: {Math.round(weekHistory.reduce((s, d) => s + d.minutes, 0) / Math.max(1, weekHistory.filter(d => d.minutes > 0).length))} min/day</span>
-            </div>
-          </div>
-
-          {/* Stats cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div className="gc" style={{ padding: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#06b6d4", fontFamily: "Rajdhani,sans-serif" }}>{todayMinutes}</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>Minutes Today</div>
-            </div>
-            <div className="gc" style={{ padding: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#38bdf8", fontFamily: "Rajdhani,sans-serif" }}>{todaySessions.length}</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>Sessions Today</div>
-            </div>
-            <div className="gc" style={{ padding: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#f59e0b", fontFamily: "Rajdhani,sans-serif" }}>{Object.values(focusLog).reduce((n, v) => n + toArr(v).length, 0)}</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>Total Sessions</div>
-            </div>
-            <div className="gc" style={{ padding: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#8b5cf6", fontFamily: "Rajdhani,sans-serif" }}>{Math.round(Object.values(focusLog).reduce((n, v) => n + toArr(v).reduce((s, sess) => s + (Number(sess?.duration) || 0), 0), 0) / 6) / 10}h</div>
-              <div style={{ fontSize: 10, color: "#6b7280" }}>Total Hours</div>
-            </div>
-          </div>
-
-          {/* Goal setting */}
-          <div className="gs" style={{ marginTop: 14, padding: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>🎯 Daily Goal</div>
-            <div style={{ display: "flex", gap: 6 }}>
+      {/* ══ Today ══ */}
+      <Card title="Today" sub={`${todaySessions.length} session${todaySessions.length === 1 ? "" : "s"} · ${pomCount} pomodoro${pomCount === 1 ? "" : "s"}`}>
+        <div className="flex items-center gap-4">
+          <Ring value={goalPct / 100} color={goalDone ? "var(--ok)" : "var(--tone-violet)"} size={72} stroke={7}>
+            <b className="text-[17px] font-extrabold num leading-none" style={{ color: "var(--text-primary)" }}>{todayMinutes}</b>
+            <small className="text-[11px]" style={{ color: "var(--text-dim)" }}>min</small>
+          </Ring>
+          <div className="flex-1 min-w-0">
+            <div className="row-title">Daily focus goal</div>
+            <div className="row-sub" style={goalDone ? { color: "var(--ok)" } : undefined}>{goalDone ? "Goal reached!" : `${dailyGoal - todayMinutes} min to go`}</div>
+            <div className="flex gap-1 mt-2 flex-wrap" role="group" aria-label="Daily goal">
               {[60, 90, 120, 180, 240].map(min => (
-                <span key={min} className={`chip ${dailyGoal === min ? "chip-a" : "chip-i"}`} onClick={() => setDailyGoal(min)} style={{ flex: 1, textAlign: "center", fontSize: 11 }}>{min >= 60 ? `${min / 60}h` : `${min}m`}</span>
+                <button type="button" key={min} className={`chip ${dailyGoal === min ? "chip-a" : "chip-i"} px-2.5 py-1 text-[12px]`} aria-pressed={dailyGoal === min} onClick={() => setDailyGoal(min)}>{min >= 60 ? `${min / 60}h` : `${min}m`}</button>
               ))}
             </div>
           </div>
         </div>
-      )}
+
+        {todaySessions.length > 0 && (
+          <div className="mt-3 pt-1 border-t" style={{ borderColor: "var(--line)" }}>
+            {todaySessions.map((sess, i) => (
+              <ListRow key={i} icon={sess.type === "pomodoro" ? Timer : Hourglass} tone={sess.type === "pomodoro" ? "violet" : "sky"}
+                title={sess.tag || "Focus"} sub={sess.type === "pomodoro" ? "Pomodoro" : "Free focus"}
+                right={<span className="num text-[13.5px] font-semibold shrink-0" style={{ color: "var(--text-secondary)" }}>{sess.duration} min</span>} />
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* ══ History ══ */}
+      <Card title="This week" sub={`${weekHistory.reduce((s, d) => s + d.minutes, 0)} min total`}>
+        {weekHistory.some(day => day.minutes > 0) || totalSessions > 0 ? (<>
+          <div className="flex gap-1.5 items-end h-[96px] mb-2">
+            {weekHistory.map((day, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center min-w-0">
+                <div className="text-[10.5px] font-semibold mb-0.5 num" style={{ color: day.minutes > 0 ? "var(--text-secondary)" : "var(--text-dim)" }}>{day.minutes > 0 ? `${day.minutes}m` : ""}</div>
+                <div className="w-full rounded-md" style={{ background: day.isToday ? "var(--tone-violet)" : day.minutes > 0 ? "color-mix(in srgb, var(--tone-violet) 38%, transparent)" : "var(--track)", height: `${Math.max(4, (day.minutes / maxMin) * 65)}px`, transition: "height .5s" }} />
+                <div className={`text-[11px] mt-1 ${day.isToday ? "font-bold" : ""}`} style={{ color: day.isToday ? "var(--tone-violet)" : "var(--text-dim)" }}>{day.label}</div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between text-[12px] num" style={{ color: "var(--text-dim)" }}>
+            <span>Avg: {Math.round(weekHistory.reduce((s, d) => s + d.minutes, 0) / Math.max(1, weekHistory.filter(d => d.minutes > 0).length))} min/day</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            {[[CalendarDays, "amber", totalSessions, "Total sessions"], [Target, "teal", `${totalHours}h`, "Total hours"]].map(([Icon, tone, v, l]) => (
+              <div key={l} className="flex items-center gap-2.5 p-3 rounded-2xl" style={{ background: "var(--ghost-bg)" }}>
+                <IconBadge icon={Icon} tone={tone} size={34} />
+                <div className="min-w-0">
+                  <div className="text-[17px] font-extrabold num leading-tight" style={{ color: "var(--text-primary)" }}>{v}</div>
+                  <div className="text-[11.5px]" style={{ color: "var(--text-dim)" }}>{l}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>) : (
+          <EmptyState icon={Timer} title="No focus sessions yet">Start your first session above — every minute counts toward XP.</EmptyState>
+        )}
+      </Card>
     </div>
   );
 }

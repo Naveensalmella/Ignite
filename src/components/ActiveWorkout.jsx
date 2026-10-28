@@ -251,8 +251,8 @@ export default function ActiveWorkout({ workout, sessions = [], onComplete, onQu
                     <span className="w-10" />
                 </div>
                 {stage === "warmup"
-                    ? <Guided title="🔥 WARM-UP" list={WARMUP} color="#f59e0b" onDone={() => { setStage("workout"); setNow(Date.now()); }} />
-                    : <Guided title="🧊 COOL-DOWN" list={COOLDOWN} color="#38bdf8" onDone={() => { victorySound(); setStage("summary"); }} />}
+                    ? <Guided title="WARM-UP" list={WARMUP} color="#f59e0b" onDone={() => { setStage("workout"); setNow(Date.now()); }} />
+                    : <Guided title="COOL-DOWN" list={COOLDOWN} color="#38bdf8" onDone={() => { victorySound(); setStage("summary"); }} />}
             </div>
         );
     }

@@ -6,6 +6,8 @@ import { playerRank, rankById } from '@/lib/system/ranks';
 import useAppStore from '@/stores/useAppStore';
 import { collection, query, where, getDocs, doc, getDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { Card, Pill, Tabs, Tile, IconBadge, EmptyState } from '@/components/ui/kit';
+import { Dumbbell, Zap, Flame, Swords, TrendingUp, Send, Search, UserPlus, Check, X, RotateCw, Users, Rss, Trophy, Inbox, Clock, Medal } from 'lucide-react';
 import { countWorkoutDays, getDayEntries } from '@/lib/workoutHelpers';
 
 // ── Firestore model ──
@@ -126,6 +128,14 @@ async function fetchSocial({ user, profile, totalXP, streak, workoutLog, system 
     return { me: { ...me, uid, friends: myFriends, outgoingRequests: myOut, declinedRequests: myDeclined }, friendDocs, incoming };
 }
 
+// Display-only helpers
+const initialOf = (name) => (asStr(name) || "U").trim().charAt(0).toUpperCase() || "U";
+function Avatar({ name, size = 38 }) {
+    return <span className="avatar" style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }} aria-hidden="true">{initialOf(name)}</span>;
+}
+const CHALLENGE_LOOK = { workouts: [Swords, "orange"], xp: [Zap, "sky"], streak: [Flame, "rose"] };
+const PODIUM_TONE = ["amber", "blue", "orange"];
+
 export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {}, totalXP = 0, streak = 0, workoutLog = {}, addXP = () => { } }) {
     const user = rawUser || {};
     const profile = rawProfile || {};
@@ -237,8 +247,8 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
             if (!snap.empty) {
                 const foundDoc = snap.docs[0];
                 const fd = foundDoc.data();
-                if (foundDoc.id === uid) setSearchResult({ error: "That's you! 😄" });
-                else if (friendIds.includes(foundDoc.id)) setSearchResult({ error: "Already friends! ✅" });
+                if (foundDoc.id === uid) setSearchResult({ error: "That's you!" });
+                else if (friendIds.includes(foundDoc.id)) setSearchResult({ error: "Already friends!" });
                 else setSearchResult({ uid: foundDoc.id, name: asStr(fd.name) || "Warrior", email: term, totalXP: Number(fd.totalXP) || 0, streak: Number(fd.streak) || 0, theyRequested: uidList(fd.outgoingRequests).includes(uid), theyListMe: uidList(fd.friends).includes(uid) });
             } else setSearchResult({ error: "No user found with that email (they need to open IGNITE's Social page once)." });
         } catch (e) { console.error("Search error:", e); setSearchResult({ error: "Search failed." }); }
@@ -252,13 +262,13 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
             if (target.theyRequested || target.theyListMe) {
                 // They already asked (or still list us) — just accept
                 await setDoc(myRef, { friends: arrayUnion(target.uid), declinedRequests: arrayRemove(target.uid) }, { merge: true });
-                setSentMsg("You're now friends! ✅");
+                setSentMsg("You're now friends!");
                 addXP(10, "New friend connected");
             } else if (uidList(me.outgoingRequests).includes(target.uid)) {
-                setSentMsg("Request already sent! ⏳");
+                setSentMsg("Request already sent.");
             } else {
                 await setDoc(myRef, { outgoingRequests: arrayUnion(target.uid), declinedRequests: arrayRemove(target.uid) }, { merge: true });
-                setSentMsg("Request sent! ✅");
+                setSentMsg("Request sent!");
             }
             setSearchResult(null); setSearchEmail("");
             reload();
@@ -357,65 +367,72 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
         return `${Math.floor(diff / 86400)}d ago`;
     };
 
+    const tabs = [
+        ["feed", "Feed"],
+        ["leaderboard", "Leaderboard"],
+        ["friends", `Friends (${friendIds.length})`],
+        ["challenges", "Challenges"],
+        ["requests", <span key="rq" className="inline-flex items-center gap-1.5">Requests{pendingRequests.length > 0 && <span className="min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-bold inline-flex items-center justify-center num" style={{ background: "var(--danger)", color: "#fff" }}>{pendingRequests.length}</span>}</span>],
+    ];
+    const outCount = uidList(me.outgoingRequests).length;
+
     return (
-        <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
+        <div className="page fade-in max-w-full overflow-x-hidden">
             {/* Tabs */}
-            <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto" }}>
-                {[["feed", "📰 Feed"], ["leaderboard", "🏆 Board"], ["friends", `👥 Friends (${friendIds.length})`], ["challenges", "🏅 Challenges"], ["requests", `📩 Requests`, pendingRequests.length]].map(([k, l, badge]) => (
-                    <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => { setTab(k); if (k === "requests") reload(); }} style={{ flexShrink: 0, fontSize: 12, position: "relative" }}>
-                        {l}
-                        {badge > 0 && <span style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "#ef4444", fontSize: 11, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>{badge}</span>}
-                    </span>
-                ))}
+            <div className="overflow-x-auto no-scrollbar">
+                <Tabs tabs={tabs} value={tab} onChange={k => { setTab(k); if (k === "requests") reload(); }} label="Social sections" className="min-w-full w-max" />
             </div>
 
             {loadError && (
-                <div style={{ fontSize: 12, color: "#ef4444", padding: "8px 12px", borderRadius: 8, background: "rgba(239,68,68,.06)", marginBottom: 12, display: "flex", justifyContent: "space-between", gap: 8 }}>
-                    <span>{loadError}</span>
-                    <span onClick={reload} style={{ cursor: "pointer", color: "#38bdf8", flexShrink: 0 }}>Retry</span>
-                </div>
+                <Card tone="rose" className="!py-3">
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="text-[13px]" style={{ color: "var(--danger)" }}>{loadError}</span>
+                        <button type="button" className="link-btn shrink-0 min-h-[36px]" onClick={reload}><RotateCw size={14} />Retry</button>
+                    </div>
+                </Card>
             )}
 
             {/* ══ FEED TAB ══ */}
             {tab === "feed" && (
-                <StaggerContainer>
+                <StaggerContainer style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     {/* Post composer */}
                     <StaggerItem>
-                        <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
-                            <div style={{ display: "flex", gap: 10 }}>
-                                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#38bdf8,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", flexShrink: 0 }}>{(profile.name || "U")[0]?.toUpperCase()}</div>
-                                <div style={{ flex: 1 }}>
-                                    <textarea className="inp" rows={2} placeholder="Share your progress, thoughts, or wins..." value={postText} onChange={e => setPostText(e.target.value)} style={{ resize: "none", marginBottom: 8 }} />
-                                    <button className="bp" onClick={createPost} disabled={!postText.trim() || posting} style={{ padding: "8px 20px", fontSize: 12 }}>📤 Post</button>
+                        <Card>
+                            <div className="flex gap-3">
+                                <Avatar name={profile.name} size={38} />
+                                <div className="flex-1 min-w-0">
+                                    <textarea className="inp" rows={2} aria-label="Write a post" placeholder="Share your progress, thoughts, or wins…" value={postText} onChange={e => setPostText(e.target.value)} style={{ resize: "none" }} />
+                                    <div className="flex justify-end mt-2">
+                                        <button type="button" className="bp !py-2 !px-5 !text-[13px]" onClick={createPost} disabled={!postText.trim() || posting}><Send size={15} />Post</button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </Card>
                     </StaggerItem>
 
                     {/* Feed items */}
                     {feedItems.length === 0 && !loading && !loadError && (
-                        <div style={{ textAlign: "center", padding: 30, color: "#6b7280" }}>
-                            <div style={{ fontSize: 32, marginBottom: 8 }}>📰</div>
-                            <div style={{ fontSize: 14, fontWeight: 600 }}>No feed yet</div>
-                            <div style={{ fontSize: 12, marginTop: 4 }}>Add friends to see their workouts and achievements!</div>
-                        </div>
+                        <Card><EmptyState icon={Rss} title="No feed yet">Add friends to see their workouts and achievements!</EmptyState></Card>
                     )}
 
                     {feedItems.map((item, i) => (
                         <StaggerItem key={`${item.type}-${item.uid}-${item.id ?? item.time}-${i}`}>
-                            <div className="gs" style={{ marginBottom: 10, padding: 14 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(56,189,248,.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#38bdf8" }}>{(item.user || "U")[0]?.toUpperCase()}</div>
-                                    <div style={{ flex: 1 }}>
-                                        <span style={{ fontSize: 13, fontWeight: 600, color: "#f3f4f6" }}>{item.user}</span>
-                                        <span style={{ fontSize: 11, color: "#6b7280", marginLeft: 8 }}>{timeAgo(item.time)}</span>
+                            <Card>
+                                <div className="flex items-center gap-3 mb-2.5">
+                                    <Avatar name={item.user} size={34} />
+                                    <div className="flex-1 min-w-0 flex items-baseline gap-2">
+                                        <span className="row-title truncate">{item.user}</span>
+                                        <span className="text-[12px] shrink-0" style={{ color: "var(--text-dim)" }}>{timeAgo(item.time)}</span>
                                     </div>
                                 </div>
 
                                 {item.type === "workout" && (
-                                    <div>
-                                        <div style={{ fontSize: 13, color: "#d1d5db" }}>💪 Completed a workout: <span style={{ color: "#38bdf8", fontWeight: 600 }}>{item.data?.splitName || "Training"}</span></div>
-                                        {item.data?.calBurned > 0 && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>🔥 {item.data.calBurned} cal · {Math.round((item.data.duration || 0) / 60)} min</div>}
+                                    <div className="flex items-center gap-3">
+                                        <IconBadge icon={Dumbbell} tone="orange" size={34} />
+                                        <div className="min-w-0">
+                                            <div className="text-[13.5px]" style={{ color: "var(--text-secondary)" }}>Completed a workout: <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{item.data?.splitName || "Training"}</span></div>
+                                            {item.data?.calBurned > 0 && <div className="text-[12px] mt-0.5 num" style={{ color: "var(--text-dim)" }}>{item.data.calBurned} cal · {Math.round((item.data.duration || 0) / 60)} min</div>}
+                                        </div>
                                     </div>
                                 )}
 
@@ -424,24 +441,32 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
                                     const liked = likers.includes(uid);
                                     return (
                                         <div>
-                                            <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{item.text}</div>
-                                            <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-                                                <span onClick={() => likePost(item.uid, item.id)} style={{ fontSize: 12, color: liked ? "#ef4444" : "#6b7280", cursor: "pointer" }}>
-                                                    {liked ? "❤️" : "🤍"} {likers.length}
-                                                </span>
+                                            <div className="text-[14px] leading-normal whitespace-pre-wrap break-words" style={{ color: "var(--text-primary)" }}>{item.text}</div>
+                                            <div className="flex mt-2">
+                                                <button type="button" onClick={() => likePost(item.uid, item.id)} aria-pressed={liked} aria-label={liked ? "Unlike" : "Like"}
+                                                    className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full border-0 text-[13px] font-semibold num"
+                                                    style={{ background: liked ? "color-mix(in srgb, var(--danger) 12%, transparent)" : "var(--ghost-bg)", color: liked ? "var(--danger)" : "var(--text-secondary)" }}>
+                                                    <span aria-hidden="true">{liked ? "❤️" : "🤍"}</span>{likers.length}
+                                                </button>
                                             </div>
                                         </div>
                                     );
                                 })()}
 
                                 {item.type === "streak" && (
-                                    <div style={{ fontSize: 13, color: "#f59e0b" }}>🔥 Reached a {item.streak}-day streak!</div>
+                                    <div className="flex items-center gap-3">
+                                        <IconBadge icon={Flame} tone="orange" size={34} />
+                                        <div className="text-[13.5px]" style={{ color: "var(--text-secondary)" }}>Reached a <span className="font-bold" style={{ color: "var(--tone-orange)" }}>{item.streak}-day streak</span>!</div>
+                                    </div>
                                 )}
 
                                 {item.type === "level" && (
-                                    <div style={{ fontSize: 13, color: "#8b5cf6" }}>⬆️ Leveled up to <span style={{ fontWeight: 700 }}>Level {item.level}</span> — {item.rank}</div>
+                                    <div className="flex items-center gap-3">
+                                        <IconBadge icon={TrendingUp} tone="violet" size={34} />
+                                        <div className="text-[13.5px]" style={{ color: "var(--text-secondary)" }}>Leveled up to <span className="font-bold" style={{ color: "var(--tone-violet)" }}>Level {item.level}</span> · {item.rank}</div>
+                                    </div>
                                 )}
-                            </div>
+                            </Card>
                         </StaggerItem>
                     ))}
                 </StaggerContainer>
@@ -449,19 +474,9 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
 
             {/* ══ LEADERBOARD TAB ══ */}
             {tab === "leaderboard" && (
-                <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                        <span className="sl">🏆 XP Leaderboard</span>
-                        <span onClick={reload} style={{ fontSize: 11, color: "#38bdf8", cursor: "pointer" }}>🔄 Refresh</span>
-                    </div>
-
+                <Card title="XP leaderboard" action={<button type="button" className="link-btn min-h-[36px]" onClick={reload}><RotateCw size={14} />Refresh</button>}>
                     {friendProfiles.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: 30, color: "#6b7280" }}>
-                            <div style={{ fontSize: 40, marginBottom: 8 }}>👥</div>
-                            <div style={{ fontSize: 14, fontWeight: 600 }}>No friends yet</div>
-                            <div style={{ fontSize: 12, marginTop: 4 }}>Add friends to see the leaderboard!</div>
-                            <button className="bp" onClick={() => setTab("friends")} style={{ marginTop: 12, padding: "10px 24px" }}>+ Add Friends</button>
-                        </div>
+                        <EmptyState icon={Trophy} title="No friends yet" action={<button type="button" className="bp" onClick={() => setTab("friends")}><UserPlus size={16} />Add friends</button>}>Add friends to see the leaderboard!</EmptyState>
                     ) : (
                         <div>
                             {/* Add yourself to the list */}
@@ -470,141 +485,150 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
                                 .map((p, i) => {
                                     const lv = getLevel(p.totalXP);
                                     const rank = p.isMe ? playerRank(system, lv) : p.rank ? rankById(p.rank) : getRank(lv);
+                                    const podium = PODIUM_TONE[i];
                                     return (
-                                        <div key={p.uid} className="gc" style={{ marginBottom: 8, padding: 14, border: p.isMe ? "1px solid rgba(56,189,248,.15)" : undefined, background: p.isMe ? "rgba(56,189,248,.03)" : undefined }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                <div style={{ width: 28, height: 28, borderRadius: "50%", background: i === 0 ? "linear-gradient(135deg,#f59e0b,#f97316)" : i === 1 ? "linear-gradient(135deg,#9ca3af,#6b7280)" : i === 2 ? "linear-gradient(135deg,#b45309,#92400e)" : "rgba(255,255,255,.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: i < 3 ? "#fff" : "#6b7280" }}>
-                                                    {i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1}
+                                        <div key={p.uid} className="list-row">
+                                            <span className="w-7 h-7 rounded-full shrink-0 inline-flex items-center justify-center text-[13px] font-extrabold num"
+                                                style={podium ? { background: `color-mix(in srgb, var(--tone-${podium}) 18%, transparent)`, color: `var(--tone-${podium})` } : { color: "var(--text-dim)" }}
+                                                aria-label={`Rank ${i + 1}`}>{i + 1}</span>
+                                            <Avatar name={p.name} size={36} />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                    <span className="row-title truncate" style={p.isMe ? { color: "var(--accent)" } : undefined}>{p.name}</span>
+                                                    {p.isMe && <Pill tone="sky" className="!py-0.5 !px-2 !text-[11px]">You</Pill>}
                                                 </div>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ fontSize: 13, fontWeight: 600, color: p.isMe ? "#38bdf8" : "#f3f4f6" }}>{p.name} {p.isMe ? "(You)" : ""}</div>
-                                                    <div style={{ fontSize: 11, color: "#6b7280" }}>Lv.{lv} {rank.name} · {p.workouts || 0} workouts</div>
-                                                </div>
-                                                <div style={{ textAlign: "right" }}>
-                                                    <div style={{ fontSize: 16, fontWeight: 800, color: rank.color || "#38bdf8", fontFamily: "Rajdhani,sans-serif" }}>{p.totalXP.toLocaleString()}</div>
-                                                    <div style={{ fontSize: 11, color: "#6b7280" }}>XP</div>
-                                                </div>
+                                                <div className="row-sub truncate">Lv.{lv} · <span style={rank.color ? { color: rank.color } : undefined}>{rank.name}</span> · {p.workouts || 0} workouts</div>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <div className="text-[15px] font-extrabold num" style={{ color: "var(--text-primary)" }}>{p.totalXP.toLocaleString()}</div>
+                                                <div className="text-[11px]" style={{ color: "var(--text-dim)" }}>XP</div>
                                             </div>
                                         </div>
                                     );
                                 })}
                         </div>
                     )}
-                </div>
+                </Card>
             )}
 
             {/* ══ FRIENDS TAB ══ */}
             {tab === "friends" && (
-                <div>
+                <>
                     {/* Search */}
-                    <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>Add Friend by Email</div>
-                        <div style={{ display: "flex", gap: 8 }}>
-                            <input className="inp" placeholder="friend@email.com" value={searchEmail} onChange={e => setSearchEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSearch()} style={{ flex: 1 }} />
-                            <button className="bp" onClick={handleSearch} disabled={searching} style={{ padding: "10px 16px", fontSize: 13 }}>{searching ? "..." : "🔍"}</button>
+                    <Card title="Add friend by email">
+                        <div className="flex gap-2">
+                            <input className="inp flex-1" type="email" aria-label="Friend's email" placeholder="friend@email.com" value={searchEmail} onChange={e => setSearchEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSearch()} />
+                            <button type="button" className="bp !px-4 shrink-0" onClick={handleSearch} disabled={searching} aria-label="Search">{searching ? "…" : <Search size={17} />}</button>
                         </div>
-                        {sentMsg && <div style={{ fontSize: 12, color: "#38bdf8", marginTop: 8 }}>{sentMsg}</div>}
+                        {sentMsg && <div className="text-[13px] mt-2" style={{ color: "var(--accent)" }}>{sentMsg}</div>}
 
                         {searchResult && !searchResult.error && (
-                            <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(56,189,248,.04)", border: "1px solid rgba(56,189,248,.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                <div>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: "#f3f4f6" }}>{searchResult.name}</div>
-                                    <div style={{ fontSize: 11, color: "#6b7280" }}>{searchResult.email} · {searchResult.totalXP} XP</div>
+                            <div className="mt-3 p-3 rounded-2xl flex items-center gap-3" style={{ background: "var(--ghost-bg)" }}>
+                                <Avatar name={searchResult.name} size={38} />
+                                <div className="flex-1 min-w-0">
+                                    <div className="row-title truncate">{searchResult.name}</div>
+                                    <div className="row-sub truncate num">{searchResult.email} · {searchResult.totalXP} XP</div>
                                 </div>
-                                <button className="bp" onClick={() => sendRequest(searchResult)} style={{ padding: "8px 16px", fontSize: 12 }}>{searchResult.theyRequested ? "✓ Accept" : "+ Add"}</button>
+                                <button type="button" className="bp !py-2 !px-4 !text-[13px] shrink-0" onClick={() => sendRequest(searchResult)}>{searchResult.theyRequested ? <><Check size={15} />Accept</> : <><UserPlus size={15} />Add</>}</button>
                             </div>
                         )}
-                        {searchResult?.error && <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 8 }}>{searchResult.error}</div>}
-                    </div>
+                        {searchResult?.error && <div className="text-[13px] mt-2" style={{ color: "var(--warn)" }}>{searchResult.error}</div>}
+                    </Card>
 
                     {/* Friends list */}
-                    {friendProfiles.map(f => (
-                        <div key={f.uid} className="gc" style={{ marginBottom: 8, padding: 14 }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                <div>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: "#f3f4f6" }}>{f.name}</div>
-                                    <div style={{ fontSize: 11, color: "#6b7280" }}>{f.totalXP.toLocaleString()} XP · 🔥{f.streak}d · {f.workouts} workouts</div>
-                                </div>
-                                <span onClick={() => removeFriend(f.uid)} style={{ fontSize: 14, color: "#4b5563", cursor: "pointer", padding: "4px 8px" }}>✕</span>
+                    <Card title="Friends" sub={`${friendIds.length}`}>
+                        {friendProfiles.length > 0 && (
+                            <div>
+                                {friendProfiles.map(f => (
+                                    <div key={f.uid} className="list-row">
+                                        <Avatar name={f.name} size={38} />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="row-title truncate">{f.name}</div>
+                                            <div className="row-sub num">Lv.{getLevel(f.totalXP)} · {f.totalXP.toLocaleString()} XP · {f.workouts} workouts</div>
+                                        </div>
+                                        {f.streak > 0 && <Pill tone="orange" icon={Flame} className="num">{f.streak}d</Pill>}
+                                        <button type="button" className="icon-btn !w-9 !h-9 shrink-0" onClick={() => removeFriend(f.uid)} aria-label={`Remove ${f.name}`} style={{ background: "transparent", color: "var(--text-dim)" }}><X size={16} /></button>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
-                    ))}
-
-                    {friendIds.length === 0 && !loading && <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 12 }}>No friends yet. Search by email above!</div>}
-                    {uidList(me.outgoingRequests).length > 0 && (
-                        <div style={{ textAlign: "center", padding: 8, color: "#6b7280", fontSize: 11 }}>⏳ {uidList(me.outgoingRequests).length} sent request{uidList(me.outgoingRequests).length !== 1 ? "s" : ""} awaiting response</div>
-                    )}
-                </div>
+                        )}
+                        {friendIds.length === 0 && !loading && <EmptyState icon={Users} title="No friends yet">Search by email above!</EmptyState>}
+                        {outCount > 0 && (
+                            <div className="flex items-center justify-center gap-1.5 text-[12.5px] pt-3 mt-1" style={{ color: "var(--text-dim)", borderTop: friendProfiles.length > 0 ? "1px solid var(--line)" : undefined }}>
+                                <Clock size={14} />{outCount} sent request{outCount !== 1 ? "s" : ""} awaiting response
+                            </div>
+                        )}
+                    </Card>
+                </>
             )}
 
             {/* ══ CHALLENGES TAB ══ */}
             {tab === "challenges" && (
-                <div>
+                <>
                     {/* Create challenge */}
-                    <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 10 }}>Create Group Challenge</div>
-                        <div style={{ display: "flex", gap: 8 }}>
+                    <Card title="Create group challenge">
+                        <div className={`tile-grid ${friendIds.length === 0 ? "opacity-50" : ""}`}>
                             {[
-                                { type: "workouts", icon: "⚔️", label: "Most Workouts" },
-                                { type: "xp", icon: "⚡", label: "XP Race" },
-                                { type: "streak", icon: "🔥", label: "Streak Battle" },
+                                { type: "workouts", label: "Most Workouts", sub: "7 days" },
+                                { type: "xp", label: "XP Race", sub: "7 days" },
+                                { type: "streak", label: "Streak Battle", sub: "14 days" },
                             ].map(ch => (
-                                <div key={ch.type} onClick={() => createChallenge(ch.type)} className="gc" style={{ flex: 1, padding: 14, textAlign: "center", cursor: "pointer", opacity: friendIds.length === 0 ? 0.5 : 1 }}>
-                                    <div style={{ fontSize: 24 }}>{ch.icon}</div>
-                                    <div style={{ fontSize: 11, color: "#d1d5db", marginTop: 4 }}>{ch.label}</div>
-                                </div>
+                                <Tile key={ch.type} icon={CHALLENGE_LOOK[ch.type][0]} tone={CHALLENGE_LOOK[ch.type][1]} label={ch.label} sub={ch.sub} onClick={() => createChallenge(ch.type)} />
                             ))}
                         </div>
-                        {friendIds.length === 0 && <div style={{ fontSize: 11, color: "#f59e0b", marginTop: 8, textAlign: "center" }}>Add friends first to create challenges!</div>}
-                    </div>
+                        {friendIds.length === 0 && <div className="text-[12.5px] mt-3 text-center" style={{ color: "var(--warn)" }}>Add friends first to create challenges!</div>}
+                    </Card>
 
                     {/* Active challenges */}
-                    {challenges.length > 0 ? challenges.map(ch => {
-                        const ended = /^\d{4}-\d{2}-\d{2}$/.test(asStr(ch.startDate)) && shiftDay(ch.startDate, Number(ch.duration) || 0) <= d;
-                        return (
-                            <div key={ch.key} className="gs" style={{ marginBottom: 10, padding: 14, opacity: ended ? 0.6 : 1 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                                    <span style={{ fontSize: 20 }}>{ch.icon}</span>
-                                    <div>
-                                        <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{ch.title}</div>
-                                        <div style={{ fontSize: 11, color: "#6b7280" }}>By {ch.creatorName} · Started {ch.startDate} · {ch.duration} days{ended ? " · Ended" : ""}</div>
-                                    </div>
-                                </div>
-                                <div style={{ fontSize: 12, color: "#38bdf8" }}>{toArr(ch.participants).length} participants</div>
+                    <Card title="Challenges">
+                        {challenges.length > 0 ? (
+                            <div>
+                                {challenges.map(ch => {
+                                    const ended = /^\d{4}-\d{2}-\d{2}$/.test(asStr(ch.startDate)) && shiftDay(ch.startDate, Number(ch.duration) || 0) <= d;
+                                    const [Icon, tone] = CHALLENGE_LOOK[ch.metric] || [Medal, "amber"];
+                                    return (
+                                        <div key={ch.key} className={`list-row ${ended ? "opacity-60" : ""}`}>
+                                            <IconBadge icon={Icon} tone={tone} size={38} />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="row-title truncate">{ch.title}</div>
+                                                <div className="row-sub">By {ch.creatorName} · Started {ch.startDate} · {ch.duration} days{ended ? " · Ended" : ""}</div>
+                                            </div>
+                                            <Pill tone="sky" icon={Users} className="num">{toArr(ch.participants).length}</Pill>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        );
-                    }) : (
-                        <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 12 }}>No active challenges. Create one above!</div>
-                    )}
-                </div>
+                        ) : (
+                            <EmptyState icon={Trophy} title="No active challenges">Create one above!</EmptyState>
+                        )}
+                    </Card>
+                </>
             )}
 
             {/* ══ REQUESTS TAB ══ */}
             {tab === "requests" && (
-                <div>
-                    {pendingRequests.length > 0 ? pendingRequests.map(r => (
-                        <div key={r.uid} className="gs" style={{ marginBottom: 10, padding: 14 }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                <div>
-                                    <div style={{ fontSize: 14, fontWeight: 600, color: "#f3f4f6" }}>{asStr(r.name) || "Warrior"}</div>
-                                    <div style={{ fontSize: 11, color: "#6b7280" }}>Lv.{getLevel(Number(r.totalXP) || 0)} · {(Number(r.totalXP) || 0).toLocaleString()} XP</div>
+                <Card title="Friend requests">
+                    {pendingRequests.length > 0 ? (
+                        <div>
+                            {pendingRequests.map(r => (
+                                <div key={r.uid} className="list-row">
+                                    <Avatar name={r.name} size={38} />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="row-title truncate">{asStr(r.name) || "Warrior"}</div>
+                                        <div className="row-sub num">Lv.{getLevel(Number(r.totalXP) || 0)} · {(Number(r.totalXP) || 0).toLocaleString()} XP</div>
+                                    </div>
+                                    <button type="button" className="bp !py-2 !px-3.5 !text-[13px] shrink-0" onClick={() => acceptRequest(r.uid)}><Check size={15} />Accept</button>
+                                    <button type="button" className="icon-btn !w-9 !h-9 shrink-0" onClick={() => declineRequest(r.uid)} aria-label="Decline request"><X size={16} /></button>
                                 </div>
-                                <div style={{ display: "flex", gap: 6 }}>
-                                    <button className="bp" onClick={() => acceptRequest(r.uid)} style={{ padding: "8px 14px", fontSize: 12 }}>✓ Accept</button>
-                                    <button className="bg" onClick={() => declineRequest(r.uid)} style={{ padding: "8px 14px", fontSize: 12 }}>✕</button>
-                                </div>
-                            </div>
+                            ))}
                         </div>
-                    )) : (
-                        <div style={{ textAlign: "center", padding: 30, color: "#6b7280" }}>
-                            <div style={{ fontSize: 28, marginBottom: 8 }}>📩</div>
-                            <div style={{ fontSize: 13 }}>No pending requests</div>
-                        </div>
+                    ) : (
+                        <EmptyState icon={Inbox} title="No pending requests" />
                     )}
-                </div>
+                </Card>
             )}
 
-            {loading && <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 12 }}>Loading...</div>}
+            {loading && <div className="text-center py-4 text-[13px]" style={{ color: "var(--text-dim)" }}>Loading…</div>}
         </div>
     );
 }

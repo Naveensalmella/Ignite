@@ -1,19 +1,42 @@
 "use client";
 import { useState, useEffect, useMemo } from 'react';
 import { requestWakeLock, releaseWakeLock } from './wakeLock';
+import { Moon, NotebookPen, HandHeart, Flower2, Lightbulb, BarChart3, Smile, Play, Square, Clock } from 'lucide-react';
 import { today, toArr, dateKey } from '@/utils';
+import { Card, Ring, Bar, IconBadge, Tabs, Check, EmptyState } from '@/components/ui/kit';
 
 const MOODS = [
-  { emoji: "😄", label: "Great", color: "#22c55e", value: 5 },
-  { emoji: "🙂", label: "Good", color: "#38bdf8", value: 4 },
-  { emoji: "😐", label: "Okay", color: "#f59e0b", value: 3 },
-  { emoji: "😔", label: "Low", color: "#f97316", value: 2 },
-  { emoji: "😢", label: "Bad", color: "#ef4444", value: 1 },
+  { emoji: "😄", label: "Great", color: "var(--tone-teal)", value: 5 },
+  { emoji: "🙂", label: "Good", color: "var(--tone-sky)", value: 4 },
+  { emoji: "😐", label: "Okay", color: "var(--tone-amber)", value: 3 },
+  { emoji: "😔", label: "Low", color: "var(--tone-orange)", value: 2 },
+  { emoji: "😢", label: "Bad", color: "var(--tone-rose)", value: 1 },
 ];
 
 const SLEEP_QUALITY = ["😴 Deep", "🙂 Good", "😐 Fair", "😟 Poor", "😩 Awful"];
 
-function Ring({ pct, color, size = 56, stroke = 5, children }) { const p = Number.isFinite(pct) ? pct : 0; const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, p / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
+// Tinted colour helper (works in dark and light mode)
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, transparent)`;
+
+/** Card title with a small icon badge in front. */
+function Title({ icon, tone, children }) {
+  return (
+    <span className="flex items-center gap-2.5">
+      <IconBadge icon={icon} tone={tone} size={30} />
+      <span>{children}</span>
+    </span>
+  );
+}
+
+/** Small uppercase-free field label. */
+function Field({ label, children }) {
+  return (
+    <label className="flex-1 min-w-0 block">
+      <span className="block mb-1" style={{ fontSize: 12, color: "var(--text-dim)" }}>{label}</span>
+      {children}
+    </label>
+  );
+}
 
 // Journal entries are raw Firestore objects; legacy entries may be a bare string.
 const asEntry = (v) => (v && typeof v === "object" && !Array.isArray(v)) ? v : (typeof v === "string" ? { entry: v } : {});
@@ -149,218 +172,244 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
 
   const fmtMedTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
+  // Today's check-in items (shown in the hero card)
+  const todayMood = MOODS.find(m => m.emoji === todayData.mood);
+  const checkins = [
+    ["Mood", !!todayData.mood],
+    ["Sleep", !!todayData.sleepHours],
+    ["Journal", typeof todayData.entry === "string" && todayData.entry.length > 10],
+    ["Gratitude", toArr(todayData.gratitude).filter(g => typeof g === "string" && g.length > 0).length >= 2],
+    ["Meditate", !!todayData.meditationMin],
+  ];
+  const sleepColor = (h) => h >= 7 ? "var(--ok)" : h >= 5 ? "var(--warn)" : "var(--danger)";
+  const sleepAvg = (sleepHistory.reduce((s, d) => s + d.hours, 0) / Math.max(1, sleepHistory.filter(d => d.hours > 0).length)).toFixed(1);
+  const moodLogged = moodHistory.filter(d => d.value > 0).length;
+  const moodAvg = (moodHistory.reduce((s, d) => s + d.value, 0) / Math.max(1, moodLogged)).toFixed(1);
+
   return (
-    <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto" }}>
-        {[["today", "💛 Today"], ["sleep", "😴 Sleep"], ["meditate", "🧘 Meditate"], ["trends", "📊 Trends"]].map(([k, l]) => (
-          <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => setTab(k)} style={{ flexShrink: 0, fontSize: 12 }}>{l}</span>
-        ))}
-      </div>
+    <div className="page fade-in">
+      <Tabs
+        tabs={[["today", "Today"], ["sleep", "Sleep"], ["meditate", "Meditate"], ["trends", "Trends"]]}
+        value={tab}
+        onChange={setTab}
+        label="Wellness sections"
+      />
 
       {/* ══ TODAY TAB ══ */}
       {tab === "today" && (
-        <div>
-          {/* Wellness Score */}
-          <div className="gs" style={{ marginBottom: 14, padding: 14, display: "flex", alignItems: "center", gap: 14 }}>
-            <Ring pct={wellnessScore} color={wellnessScore >= 70 ? "#22c55e" : wellnessScore >= 40 ? "#f59e0b" : "#ef4444"} size={64} stroke={6}>
-              <span style={{ fontSize: 18, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{wellnessScore}</span>
-            </Ring>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Wellness Score</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>{wellnessScore >= 70 ? "You're doing great today!" : wellnessScore >= 40 ? "Log more to boost your score" : "Start by tracking your mood"}</div>
-            </div>
-          </div>
-
-          {/* Mood */}
-          <div className="gs" style={{ marginBottom: 12, padding: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 10 }}>How are you feeling?</div>
-            <div style={{ display: "flex", justifyContent: "space-around" }}>
-              {MOODS.map(m => (
-                <div key={m.emoji} onClick={() => { setMood(m.emoji); save({ mood: m.emoji }); if (!todayData.mood) addXP(5, "Mood logged"); }}
-                  style={{ textAlign: "center", cursor: "pointer", padding: "8px 6px", borderRadius: 12, background: mood === m.emoji ? `${m.color}15` : "transparent", border: mood === m.emoji ? `1px solid ${m.color}30` : "1px solid transparent", transition: "all .2s" }}>
-                  <div style={{ fontSize: 28 }}>{m.emoji}</div>
-                  <div style={{ fontSize: 11, color: mood === m.emoji ? m.color : "#6b7280", marginTop: 4 }}>{m.label}</div>
+        <>
+          {/* Hero: today's check-in */}
+          <Card hero>
+            <div className="flex items-center gap-4">
+              <Ring value={wellnessScore / 100} size={84} stroke={8} color="#fff">
+                <b className="num" style={{ fontSize: 24, fontWeight: 800, lineHeight: 1 }}>{wellnessScore}</b>
+                <small style={{ fontSize: 11, color: "var(--text-secondary)" }}>score</small>
+              </Ring>
+              <div className="min-w-0">
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 600 }}>Today&apos;s check-in</div>
+                <div className="flex items-center gap-2" style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginTop: 2 }}>
+                  {todayMood ? <><span aria-hidden="true">{todayMood.emoji}</span> Feeling {todayMood.label.toLowerCase()}</> : "Wellness score"}
                 </div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 2 }}>
+                  {wellnessScore >= 70 ? "You're doing great today!" : wellnessScore >= 40 ? "Log more to boost your score" : "Start by tracking your mood"}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4">
+              {checkins.map(([l, on]) => (
+                <span key={l} className="inline-flex items-center gap-1.5" style={{ fontSize: 12.5, color: on ? "var(--text-primary)" : "var(--text-dim)" }}>
+                  <Check on={on} label={`${l} ${on ? "logged" : "not logged"}`} /> {l}
+                </span>
               ))}
             </div>
-          </div>
+          </Card>
+
+          {/* Mood */}
+          <Card title={<Title icon={Smile} tone="amber">How are you feeling?</Title>}>
+            <div className="grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Mood">
+              {MOODS.map(m => {
+                const on = mood === m.emoji;
+                return (
+                  <button
+                    key={m.emoji}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => { setMood(m.emoji); save({ mood: m.emoji }); if (!todayData.mood) addXP(5, "Mood logged"); }}
+                    className="flex flex-col items-center"
+                    style={{ padding: "10px 2px", borderRadius: 14, background: on ? tint(m.color, 14) : "var(--ghost-bg)", border: `1px solid ${on ? tint(m.color, 40) : "transparent"}`, transition: "background .2s, border-color .2s" }}
+                  >
+                    <span style={{ fontSize: 26, lineHeight: 1.1 }}>{m.emoji}</span>
+                    <span style={{ fontSize: 11.5, fontWeight: on ? 700 : 500, color: on ? m.color : "var(--text-secondary)", marginTop: 4 }}>{m.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
 
           {/* Quick Sleep Log */}
-          <div className="gs" style={{ marginBottom: 12, padding: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>😴 Last night&apos;s sleep</div>
-            <div style={{ display: "flex", gap: 8 }}>
+          <Card title={<Title icon={Moon} tone="blue">Last night&apos;s sleep</Title>}>
+            <div className="flex gap-2">
               <input className="inp" type="number" step="0.5" min="0" max="14" placeholder="Hours" aria-label="Hours slept" value={sleepHours} onChange={e => setSleepHours(e.target.value)} onBlur={() => { save(); if (!todayData.sleepHours && sleepHours) addXP(5, "Sleep logged"); }} style={{ flex: 1 }} />
-              <select className="inp" value={sleepQuality} onChange={e => { setSleepQuality(e.target.value); save({ sleepQuality: e.target.value }); }} style={{ flex: 1 }}>
+              <select className="inp" aria-label="Sleep quality" value={sleepQuality} onChange={e => { setSleepQuality(e.target.value); save({ sleepQuality: e.target.value }); }} style={{ flex: 1 }}>
                 <option value="">Quality</option>
                 {SLEEP_QUALITY.map(q => <option key={q} value={q}>{q}</option>)}
               </select>
             </div>
-          </div>
+          </Card>
 
           {/* Journal */}
-          <div className="gs" style={{ marginBottom: 12, padding: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>📝 Journal</div>
-            <textarea className="inp" rows={3} placeholder="How was your day? What's on your mind?" value={entry} onChange={e => setEntry(e.target.value)} onBlur={() => { save(); if (!todayData.entry && entry.length > 10) addXP(10, "Journal entry"); }} style={{ width: "100%", resize: "none" }} />
-          </div>
+          <Card title={<Title icon={NotebookPen} tone="rose">Journal</Title>}>
+            <textarea className="inp" rows={3} aria-label="Journal entry" placeholder="How was your day? What's on your mind?" value={entry} onChange={e => setEntry(e.target.value)} onBlur={() => { save(); if (!todayData.entry && entry.length > 10) addXP(10, "Journal entry"); }} style={{ width: "100%", resize: "none" }} />
+          </Card>
 
           {/* Gratitude */}
-          <div className="gs" style={{ padding: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>🙏 3 Things I&apos;m Grateful For</div>
-            {[0, 1, 2].map(i => (
-              <input key={i} className="inp" placeholder={`${i + 1}. I'm grateful for...`} value={gratitude[i]} onChange={e => { const g = [...gratitude]; g[i] = e.target.value; setGratitude(g); }} onBlur={() => save()} style={{ marginBottom: 6, width: "100%" }} />
-            ))}
-          </div>
-        </div>
+          <Card title={<Title icon={HandHeart} tone="teal">3 things I&apos;m grateful for</Title>}>
+            <div className="flex flex-col gap-2">
+              {[0, 1, 2].map(i => (
+                <input key={i} className="inp" aria-label={`Gratitude ${i + 1}`} placeholder={`${i + 1}. I'm grateful for...`} value={gratitude[i]} onChange={e => { const g = [...gratitude]; g[i] = e.target.value; setGratitude(g); }} onBlur={() => save()} />
+              ))}
+            </div>
+          </Card>
+        </>
       )}
 
       {/* ══ SLEEP TAB ══ */}
       {tab === "sleep" && (
-        <div>
-          <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>😴 Sleep Tracker</div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Bed Time</div>
-                <input className="inp" type="time" value={bedTime} onChange={e => setBedTime(e.target.value)} onBlur={() => save()} style={{ width: "100%" }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Wake Time</div>
-                <input className="inp" type="time" value={wakeTime} onChange={e => setWakeTime(e.target.value)} onBlur={() => save()} style={{ width: "100%" }} />
-              </div>
+        <>
+          <Card title={<Title icon={Moon} tone="blue">Sleep tracker</Title>}>
+            <div className="flex gap-2 mb-3">
+              <Field label="Bed time">
+                <input className="inp" type="time" value={bedTime} onChange={e => setBedTime(e.target.value)} onBlur={() => save()} />
+              </Field>
+              <Field label="Wake time">
+                <input className="inp" type="time" value={wakeTime} onChange={e => setWakeTime(e.target.value)} onBlur={() => save()} />
+              </Field>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Hours Slept</div>
-                <input className="inp" type="number" step="0.5" min="0" max="14" placeholder="Hours" value={sleepHours} onChange={e => setSleepHours(e.target.value)} onBlur={() => save()} style={{ width: "100%" }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Quality</div>
-                <select className="inp" value={sleepQuality} onChange={e => { setSleepQuality(e.target.value); save({ sleepQuality: e.target.value }); }} style={{ width: "100%" }}>
+            <div className="flex gap-2">
+              <Field label="Hours slept">
+                <input className="inp" type="number" step="0.5" min="0" max="14" placeholder="Hours" value={sleepHours} onChange={e => setSleepHours(e.target.value)} onBlur={() => save()} />
+              </Field>
+              <Field label="Quality">
+                <select className="inp" value={sleepQuality} onChange={e => { setSleepQuality(e.target.value); save({ sleepQuality: e.target.value }); }}>
                   <option value="">Select</option>
                   {SLEEP_QUALITY.map(q => <option key={q} value={q}>{q}</option>)}
                 </select>
-              </div>
+              </Field>
             </div>
-          </div>
+          </Card>
 
           {/* 7-day sleep chart */}
-          <div className="gs" style={{ padding: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>📊 Sleep This Week</div>
-            <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 80, marginBottom: 8 }}>
+          <Card title="Sleep this week" sub={`Avg ${sleepAvg}h`}>
+            <div className="flex gap-1.5 items-end mb-2" style={{ height: 88 }}>
               {sleepHistory.map((day, i) => (
-                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ fontSize: 11, color: day.hours >= 7 ? "#22c55e" : day.hours >= 5 ? "#f59e0b" : "#ef4444", fontWeight: 600, marginBottom: 2 }}>{day.hours > 0 ? `${day.hours}h` : ""}</div>
-                  <div style={{ width: "100%", background: day.hours >= 7 ? "#22c55e" : day.hours >= 5 ? "rgba(245,158,11,.4)" : day.hours > 0 ? "rgba(239,68,68,.3)" : "rgba(255,255,255,.03)", borderRadius: "4px 4px 0 0", height: `${Math.min(65, Math.max(4, (day.hours / 10) * 65))}px`, transition: "height .5s" }} />
-                  <div style={{ fontSize: 11, color: day.isToday ? "#38bdf8" : "#6b7280", marginTop: 4, fontWeight: day.isToday ? 700 : 400 }}>{day.label}</div>
+                <div key={i} className="flex-1 flex flex-col items-center">
+                  <div className="num" style={{ fontSize: 11, color: sleepColor(day.hours), fontWeight: 600, marginBottom: 3 }}>{day.hours > 0 ? `${day.hours}h` : ""}</div>
+                  <div style={{ width: "100%", background: day.hours > 0 ? (day.hours >= 7 ? "var(--ok)" : tint(sleepColor(day.hours), 45)) : "var(--track)", borderRadius: 6, height: `${Math.min(65, Math.max(4, (day.hours / 10) * 65))}px`, transition: "height .5s" }} />
+                  <div style={{ fontSize: 11, color: day.isToday ? "var(--accent)" : "var(--text-dim)", marginTop: 5, fontWeight: day.isToday ? 700 : 500 }}>{day.label}</div>
                 </div>
               ))}
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#4b5563" }}>
-              <span>Target: 7-8 hours</span>
-              <span>Avg: {(sleepHistory.reduce((s, d) => s + d.hours, 0) / Math.max(1, sleepHistory.filter(d => d.hours > 0).length)).toFixed(1)}h</span>
+            <div className="flex items-center gap-1.5" style={{ fontSize: 12, color: "var(--text-dim)" }}>
+              <Clock size={13} aria-hidden="true" /> Target: 7–8 hours
             </div>
-          </div>
-        </div>
+          </Card>
+        </>
       )}
 
       {/* ══ MEDITATE TAB ══ */}
       {tab === "meditate" && (
-        <div>
-          <div style={{ textAlign: "center", padding: "20px 0" }}>
-            {/* Breathing circle */}
-            <div style={{ width: 180, height: 180, borderRadius: "50%", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", background: `radial-gradient(circle, ${medActive ? "rgba(139,92,246,.08)" : "rgba(56,189,248,.04)"} 0%, transparent 70%)`, border: `2px solid ${medActive ? "rgba(139,92,246,.2)" : "rgba(255,255,255,.06)"}`, transition: "all 1s", transform: medActive ? (breathPhase === "Inhale" ? "scale(1.15)" : breathPhase === "Hold" ? "scale(1.15)" : "scale(0.9)") : "scale(1)" }}>
-              <div style={{ textAlign: "center" }}>
-                {medActive ? (
-                  <>
-                    <div style={{ fontSize: 36, fontWeight: 900, color: "#8b5cf6", fontFamily: "Rajdhani,sans-serif" }}>{fmtMedTime(medTime)}</div>
-                    <div style={{ fontSize: 14, color: "#8b5cf6", fontWeight: 600, marginTop: 4 }}>{breathPhase}</div>
-                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{breathPhase === "Inhale" ? "Breathe in..." : breathPhase === "Hold" ? "Hold..." : "Breathe out..."}</div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontSize: 36 }}>🧘</div>
-                    <div style={{ fontSize: 14, color: "#8b5cf6", fontWeight: 600, marginTop: 4 }}>Meditation</div>
-                  </>
-                )}
+        <>
+          <Card>
+            <div className="text-center py-3">
+              {/* Breathing circle */}
+              <div style={{ width: 180, height: 180, borderRadius: "50%", margin: "8px auto 24px", display: "flex", alignItems: "center", justifyContent: "center", background: `radial-gradient(circle, ${tint("var(--tone-violet)", medActive ? 16 : 8)} 0%, transparent 70%)`, border: `2px solid ${medActive ? tint("var(--tone-violet)", 35) : "var(--line)"}`, transition: "all 1s", transform: medActive ? (breathPhase === "Inhale" ? "scale(1.15)" : breathPhase === "Hold" ? "scale(1.15)" : "scale(0.9)") : "scale(1)" }}>
+                <div className="text-center">
+                  {medActive ? (
+                    <>
+                      <div className="big-timer" style={{ fontSize: 34, color: "var(--tone-violet)" }}>{fmtMedTime(medTime)}</div>
+                      <div style={{ fontSize: 14, color: "var(--tone-violet)", fontWeight: 700, marginTop: 2 }}>{breathPhase}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-dim)", marginTop: 2 }}>{breathPhase === "Inhale" ? "Breathe in..." : breathPhase === "Hold" ? "Hold..." : "Breathe out..."}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-center"><IconBadge icon={Flower2} tone="violet" size={56} round /></div>
+                      <div style={{ fontSize: 15, color: "var(--text-primary)", fontWeight: 700, marginTop: 8 }}>Meditation</div>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {!medActive ? (
-              <div>
-                <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 12 }}>Choose duration</div>
-                <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 16 }}>
-                  {[3, 5, 10, 15, 20].map(min => (
-                    <span key={min} className={`chip ${medTarget === min * 60 ? "chip-a" : "chip-i"}`} onClick={() => setMedTarget(min * 60)} style={{ padding: "10px 18px" }}>{min} min</span>
-                  ))}
+              {!medActive ? (
+                <div>
+                  <div className="sl">Choose duration</div>
+                  <div className="flex gap-2 justify-center flex-wrap mb-4">
+                    {[3, 5, 10, 15, 20].map(min => (
+                      <button key={min} type="button" aria-pressed={medTarget === min * 60} className={`chip ${medTarget === min * 60 ? "chip-a" : "chip-i"}`} onClick={() => setMedTarget(min * 60)} style={{ padding: "10px 16px" }}>{min} min</button>
+                    ))}
+                  </div>
+                  <button type="button" className="bp" onClick={() => { setMedActive(true); setMedTime(0); }} style={{ padding: "13px 32px", fontSize: 15 }}>
+                    <Play size={16} /> Start meditation
+                  </button>
                 </div>
-                <button className="bp" onClick={() => { setMedActive(true); setMedTime(0); }} style={{ padding: "14px 40px", fontSize: 16 }}>🧘 Start Meditation</button>
-              </div>
-            ) : (
-              <div>
-                <div style={{ height: 6, background: "rgba(255,255,255,.04)", borderRadius: 3, margin: "0 40px 16px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${(medTime / medTarget) * 100}%`, background: "linear-gradient(90deg,#8b5cf6,#06b6d4)", borderRadius: 3, transition: "width 1s" }} />
+              ) : (
+                <div>
+                  <Bar className="mx-10 mb-4" value={medTime / medTarget} color="var(--tone-violet)" label="Meditation progress" />
+                  <button type="button" className="bg" onClick={() => { setMedActive(false); if (medTime >= 60) { addXP(10, "Meditation session"); save({ meditationMin: Math.round(medTime / 60) }); } }} style={{ padding: "12px 28px" }}>
+                    <Square size={14} /> End session
+                  </button>
                 </div>
-                <button className="bg" onClick={() => { setMedActive(false); if (medTime >= 60) { addXP(10, "Meditation session"); save({ meditationMin: Math.round(medTime / 60) }); } }} style={{ padding: "12px 32px" }}>⏹ End Session</button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </Card>
 
           {/* Meditation tips */}
-          <div className="gs" style={{ padding: 14, marginTop: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>💡 Breathing Guide (4-7-8)</div>
-            <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.8 }}>
+          <Card title={<Title icon={Lightbulb} tone="amber">Breathing guide (4-7-8)</Title>}>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7 }}>
               Inhale through nose for 4 seconds. Hold for 7 seconds. Exhale through mouth for 8 seconds. This activates your parasympathetic nervous system and reduces stress.
-            </div>
-          </div>
-        </div>
+            </p>
+          </Card>
+        </>
       )}
 
       {/* ══ TRENDS TAB ══ */}
       {tab === "trends" && (
-        <div>
+        <>
           {/* 14-day mood chart */}
-          <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>😊 Mood Trend (14 Days)</div>
-            <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 70 }}>
+          <Card title="Mood · last 14 days" sub={`Avg ${moodAvg}/5`}>
+            <div className="flex gap-1 items-end" style={{ height: 84 }}>
               {moodHistory.map((day, i) => {
                 const moodObj = MOODS.find(m => m.emoji === day.mood);
                 return (
-                  <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div key={i} className="flex-1 flex flex-col items-center min-w-0">
                     <div style={{ fontSize: 12, marginBottom: 2 }}>{day.mood || ""}</div>
-                    <div style={{ width: "100%", background: moodObj ? `${moodObj.color}40` : "rgba(255,255,255,.03)", borderRadius: "4px 4px 0 0", height: `${Math.max(4, day.value * 12)}px`, transition: "height .5s" }} />
-                    <div style={{ fontSize: 11, color: day.isToday ? "#38bdf8" : "#4b5563", marginTop: 2 }}>{day.day}</div>
+                    <div style={{ width: "100%", background: moodObj ? tint(moodObj.color, 45) : "var(--track)", borderRadius: 5, height: `${Math.max(4, day.value * 12)}px`, transition: "height .5s" }} />
+                    <div className="num" style={{ fontSize: 11, color: day.isToday ? "var(--accent)" : "var(--text-dim)", marginTop: 3, fontWeight: day.isToday ? 700 : 500 }}>{day.day}</div>
                   </div>
                 );
               })}
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#4b5563", marginTop: 6 }}>
-              <span>Avg: {(moodHistory.reduce((s, d) => s + d.value, 0) / Math.max(1, moodHistory.filter(d => d.value > 0).length)).toFixed(1)}/5</span>
-              <span>Logged: {moodHistory.filter(d => d.value > 0).length}/14 days</span>
-            </div>
-          </div>
+            <div className="mt-2" style={{ fontSize: 12, color: "var(--text-dim)" }}>Logged {moodLogged}/14 days</div>
+          </Card>
 
           {/* Mood vs Sleep correlation */}
-          <div className="gs" style={{ padding: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 12 }}>😴 Sleep vs Mood</div>
+          <Card title="Sleep vs mood">
             {moodHistory.filter(d => d.value > 0 && d.sleep > 0).length < 3 ? (
-              <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 12 }}>Log mood + sleep for 3+ days to see correlation</div>
+              <EmptyState icon={BarChart3} title="Not enough data yet">Log mood + sleep for 3+ days to see correlation</EmptyState>
             ) : (
               <div>
                 {moodHistory.filter(d => d.value > 0).slice(-7).map((day, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
-                    <span style={{ fontSize: 11, color: "#6b7280", width: 24 }}>{day.day}</span>
-                    <span style={{ fontSize: 16 }}>{day.mood}</span>
-                    <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,.04)", borderRadius: 2, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${Math.min(100, (day.sleep / 10) * 100)}%`, background: day.sleep >= 7 ? "#22c55e" : "#f59e0b", borderRadius: 2 }} />
-                    </div>
-                    <span style={{ fontSize: 11, color: "#6b7280", width: 28 }}>{day.sleep}h</span>
+                  <div key={i} className="list-row">
+                    <span className="num" style={{ fontSize: 12, color: "var(--text-dim)", width: 22 }}>{day.day}</span>
+                    <span style={{ fontSize: 18 }}>{day.mood}</span>
+                    <Bar className="flex-1" value={Math.min(1, day.sleep / 10)} color={day.sleep >= 7 ? "var(--ok)" : "var(--warn)"} />
+                    <span className="num" style={{ fontSize: 12, color: "var(--text-secondary)", width: 32, textAlign: "right" }}>{day.sleep}h</span>
                   </div>
                 ))}
               </div>
             )}
-          </div>
-        </div>
+          </Card>
+        </>
       )}
     </div>
   );

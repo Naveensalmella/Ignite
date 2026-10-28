@@ -4,7 +4,8 @@
 // and tabs for Workouts · Programs · Exercise library · Progress.
 // ══════════════════════════════════════════════════════════════
 import { useEffect, useMemo, useState } from "react";
-import { Play, Eye, Sparkles, Plus, Flame, Clock, Dumbbell, ChevronRight } from "lucide-react";
+import { Play, Eye, Sparkles, Plus, Flame, Clock, Dumbbell, ChevronRight, Trophy, Zap, Activity } from "lucide-react";
+import { IconBadge, Bar } from "./ui/kit";
 import { today, toArr } from "@/utils";
 import { EXERCISES } from "@/data/exercises";
 import { localSync } from "@/utils/localSync";
@@ -39,6 +40,9 @@ const CHALLENGES = [
     { id: "calisthenics", title: "Calisthenics", days: 28, color: "linear-gradient(135deg,#7c3aed,#a855f7)", desc: "Master bodyweight strength", icon: "🤸", getDayExercises: (day) => buildChallengeDay(["chest", "back", "core", "legs"], Math.min(3, 1 + Math.floor(day / 10)), Math.min(10, 6 + Math.floor(day / 7)), day) },
     { id: "full_body", title: "Full Body Kickstart", days: 14, color: "linear-gradient(135deg,#0284c7,#38bdf8)", desc: "Two weeks to build the habit", icon: "⚡", getDayExercises: (day) => buildChallengeDay(["chest", "back", "legs", "core", "arms"], 2, Math.min(9, 5 + Math.floor(day / 3)), day) },
 ];
+
+const CHALLENGE_ICON = { massive_body: Dumbbell, fat_burner: Flame, calisthenics: Activity, full_body: Zap };
+const CHALLENGE_TONE = { massive_body: "blue", fat_burner: "rose", calisthenics: "violet", full_body: "sky" };
 
 // ── Quick workouts ──
 const T = (name, duration, rest = 10) => ({ name, sets: 1, duration, rest });
@@ -79,9 +83,9 @@ function WorkoutCard({ w, onOpen, accent }) {
         <button type="button" className="wk-card" onClick={() => onOpen(w)}>
             <div className="wk-card-img">{first && <ExerciseDemo info={getExerciseInfo(first)} animate={false} rounded={0} showBadge={false} />}</div>
             <div className="wk-card-body">
-                <div className="wk-card-name">{w.icon ? `${w.icon} ` : ""}{w.name}</div>
+                <div className="wk-card-name">{w.name}</div>
                 <div className="wk-card-meta">{w.tag || `${w.exercises.length} exercises`} · {est.minutes} min</div>
-                {accent && <div className="wk-card-level">{[1, 2, 3].map(i => <span key={i} style={{ opacity: i <= accent ? 1 : 0.25 }}>⚡</span>)}</div>}
+                {accent && <div className="wk-card-level flex gap-1 mt-1.5" aria-label={`Level ${accent} of 3`}>{[1, 2, 3].map(i => <span key={i} className="h-1.5 w-5 rounded-full" style={{ background: i <= accent ? "var(--accent)" : "var(--track)" }} />)}</div>}
             </div>
         </button>
     );
@@ -104,7 +108,7 @@ function AIGenerator({ onReady }) {
     }
     return (
         <div className="gs">
-            <div className="flex items-center gap-2 mb-1"><Sparkles size={16} className="text-violet-400" /><span className="text-[15px] font-bold" style={{ color: "var(--text-primary)" }}>AI workout builder</span></div>
+            <div className="flex items-center gap-2 mb-1"><Sparkles size={16} style={{ color: "var(--tone-violet)" }} /><span className="text-[15px] font-bold" style={{ color: "var(--text-primary)" }}>AI workout builder</span></div>
             <div className="text-[12px] mb-3" style={{ color: "var(--text-secondary)" }}>Describe what you want — every exercise comes with a visual guide.</div>
             <div className="flex gap-2">
                 <input className="inp" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === "Enter" && generate()} placeholder="e.g. 20 min chest & triceps with dumbbells" aria-label="Describe your workout" />
@@ -351,14 +355,18 @@ export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, pr
                                 const pr = challengeProgress[ch.id] || { currentDay: 1, completedDays: 0 };
                                 const finished = pr.completedDays >= ch.days;
                                 return (
-                                    <div key={ch.id} className="challenge" style={{ background: ch.color }}>
-                                        <div className="challenge-icon">{ch.icon}</div>
-                                        <div className="text-[11px] font-bold tracking-[1px] text-white/80">{ch.days}-DAY CHALLENGE</div>
-                                        <div className="text-[20px] font-black text-white leading-tight">{ch.title}</div>
-                                        <div className="text-[12px] text-white/75 mb-3">{ch.desc}</div>
-                                        <div className="flex justify-between text-[11px] text-white/80 mb-1"><span>{finished ? "Completed!" : `Day ${pr.currentDay}`}</span><span>{pr.completedDays}/{ch.days}</span></div>
-                                        <div className="h-1.5 rounded bg-white/25 mb-3"><div className="h-full rounded bg-white" style={{ width: `${Math.min(100, pr.completedDays / ch.days * 100)}%` }} /></div>
-                                        <button type="button" className="w-full py-2.5 rounded-full bg-white text-[#111] font-extrabold text-[13px]" onClick={() => startChallenge(ch)}>{finished ? "Restart ↺" : `Start day ${pr.currentDay} →`}</button>
+                                    <div key={ch.id} className="card w-[260px] shrink-0 flex flex-col">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <IconBadge icon={CHALLENGE_ICON[ch.id] || Trophy} tone={CHALLENGE_TONE[ch.id] || "sky"} size={40} />
+                                            <div className="min-w-0">
+                                                <div className="text-[11px] font-bold dim">{ch.days}-DAY CHALLENGE</div>
+                                                <div className="row-title truncate">{ch.title}</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-[12.5px] muted mb-3 flex-1">{ch.desc}</div>
+                                        <div className="flex justify-between text-[12px] dim mb-1"><span>{finished ? "Completed!" : `Day ${pr.currentDay}`}</span><span className="num">{pr.completedDays}/{ch.days}</span></div>
+                                        <Bar value={pr.completedDays / ch.days} className="mb-3" />
+                                        <button type="button" className={finished ? "bg w-full" : "bp w-full"} onClick={() => startChallenge(ch)}>{finished ? "Restart" : `Start day ${pr.currentDay}`}</button>
                                     </div>
                                 );
                             })}

@@ -1,7 +1,8 @@
 "use client";
 import { useState, useMemo, useEffect } from 'react';
-import { StaggerContainer, StaggerItem } from './PageTransition';
+import { Sun, Bird, GraduationCap, TreePalm, Sparkles, CalendarDays, ChevronLeft, ChevronRight, CheckCheck, Plus, X, RotateCcw, Check as CheckIcon } from 'lucide-react';
 import { today, toArr } from '@/utils';
+import { Card, Ring, Pill, ListRow, IconBadge, Check, EmptyState } from '@/components/ui/kit';
 
 const TEMPLATES = {
   default: {
@@ -71,13 +72,43 @@ const TEMPLATES = {
 };
 
 const CATS = {
-  fitness: { color: "#38bdf8", label: "Fitness" },
-  nutrition: { color: "#f59e0b", label: "Nutrition" },
-  work: { color: "#3b82f6", label: "Work" },
-  health: { color: "#06b6d4", label: "Health" },
-  mind: { color: "#8b5cf6", label: "Mind" },
-  leisure: { color: "#ec4899", label: "Leisure" },
+  fitness: { tone: "sky", label: "Fitness" },
+  nutrition: { tone: "amber", label: "Nutrition" },
+  work: { tone: "blue", label: "Work" },
+  health: { tone: "teal", label: "Health" },
+  mind: { tone: "violet", label: "Mind" },
+  leisure: { tone: "rose", label: "Leisure" },
 };
+
+// Line icon per template (the emoji in TEMPLATES stays as data)
+const TMPL_ICON = { default: Sun, earlybird: Bird, student: GraduationCap, weekend: TreePalm };
+const TMPL_TONE = { default: "amber", earlybird: "sky", student: "violet", weekend: "teal" };
+
+const toneVar = (t) => `var(--tone-${t})`;
+const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, transparent)`;
+const fmtDur = (m) => m >= 60 ? `${Math.floor(m / 60)}h${m % 60 > 0 ? ` ${m % 60}m` : ""}` : `${m}m`;
+
+/** The block's own emoji (user/template content) in a soft rounded square. */
+function EmojiBadge({ icon, tone }) {
+  return (
+    <span aria-hidden="true" className="inline-flex items-center justify-center flex-shrink-0"
+      style={{ width: 38, height: 38, borderRadius: 12, fontSize: 18, background: tone ? tint(toneVar(tone), 14) : "var(--ghost-bg)" }}>
+      {icon}
+    </span>
+  );
+}
+
+/** Choice chip as a real button. */
+function ChoiceChip({ on, onClick, children, style }) {
+  return (
+    <button type="button" aria-pressed={on} className={`chip ${on ? "chip-a" : "chip-i"}`} onClick={onClick} style={{ minHeight: 36, flexShrink: 0, ...style }}>
+      {children}
+    </button>
+  );
+}
+
+/** Small field label. */
+const FieldLabel = ({ children }) => <div className="sl" style={{ marginBottom: 6 }}>{children}</div>;
 
 // Firestore data is untrusted: routine may be an object with numeric keys, blocks may lack ids
 const normRoutine = (r) => toArr(r).filter(b => b && typeof b === "object").map((b, i) => (b.id != null ? b : { ...b, id: `r${i}` }));
@@ -202,77 +233,87 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
     setShowTemplates(false);
   };
 
+
+  // ── Custom Plan Builder ──
   if (customMode) {
     return (
-      <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>✨ Build Your Day</div>
-            <div style={{ fontSize: 11, color: "#6b7280" }}>{customBlocks.length} activities added</div>
+      <div className="page fade-in">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <IconBadge icon={Sparkles} tone="sky" size={40} />
+            <div className="min-w-0">
+              <div style={{ fontSize: 19, fontWeight: 800, color: "var(--text-primary)" }}>Build your day</div>
+              <div style={{ fontSize: 12.5, color: "var(--text-dim)" }}>{customBlocks.length} activities added</div>
+            </div>
           </div>
-          <span onClick={() => { setCustomMode(false); setShowTemplates(true); setCustomBlocks([]); }} style={{ fontSize: 12, color: "#6b7280", cursor: "pointer" }}>← Back</span>
+          <button type="button" className="bg" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => { setCustomMode(false); setShowTemplates(true); setCustomBlocks([]); }}>
+            <ChevronLeft size={16} /> Back
+          </button>
         </div>
 
         {/* Add activity form */}
-        <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
-          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <input className="inp" type="time" aria-label="Start time" value={customTime} onChange={e => setCustomTime(e.target.value)} style={{ width: 100 }} />
-            <input className="inp" placeholder="Activity name" value={customName} onChange={e => setCustomName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCustomBlock()} style={{ flex: 1 }} />
+        <Card title="Add an activity">
+          <div className="flex gap-2 mb-3">
+            <input className="inp num" type="time" aria-label="Start time" value={customTime} onChange={e => setCustomTime(e.target.value)} style={{ width: 112, flexShrink: 0 }} />
+            <input className="inp" placeholder="Activity name" aria-label="Activity name" value={customName} onChange={e => setCustomName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCustomBlock()} style={{ flex: 1, minWidth: 0 }} />
           </div>
 
-          {/* Icon picker */}
-          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Icon</div>
-          <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
+          {/* Icon picker (the emojis are the user's choice, so they stay) */}
+          <FieldLabel>Icon</FieldLabel>
+          <div className="flex gap-1 mb-3 flex-wrap">
             {ICONS.map(icon => (
-              <span key={icon} onClick={() => setCustomIcon(icon)} style={{ fontSize: 18, padding: "4px 6px", borderRadius: 8, cursor: "pointer", background: customIcon === icon ? "rgba(56,189,248,.15)" : "transparent", border: customIcon === icon ? "1px solid rgba(56,189,248,.2)" : "1px solid transparent" }}>{icon}</span>
+              <button key={icon} type="button" aria-label={`Icon ${icon}`} aria-pressed={customIcon === icon} onClick={() => setCustomIcon(icon)}
+                style={{ fontSize: 18, width: 38, height: 38, borderRadius: 10, background: customIcon === icon ? tint("var(--accent)", 16) : "transparent", border: `1px solid ${customIcon === icon ? tint("var(--accent)", 40) : "transparent"}` }}>
+                {icon}
+              </button>
             ))}
           </div>
 
           {/* Duration */}
-          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Duration</div>
-          <div style={{ display: "flex", gap: 6, marginBottom: 10, overflowX: "auto" }}>
+          <FieldLabel>Duration</FieldLabel>
+          <div className="chip-row mb-3">
             {DURATIONS.map(dur => (
-              <span key={dur} className={`chip ${customDuration === dur ? "chip-a" : "chip-i"}`} onClick={() => setCustomDuration(dur)} style={{ fontSize: 11, flexShrink: 0 }}>
+              <ChoiceChip key={dur} on={customDuration === dur} onClick={() => setCustomDuration(dur)}>
                 {dur >= 60 ? `${dur / 60}h` : `${dur}m`}
-              </span>
+              </ChoiceChip>
             ))}
           </div>
 
           {/* Category */}
-          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Category</div>
-          <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+          <FieldLabel>Category</FieldLabel>
+          <div className="flex gap-2 mb-4 flex-wrap">
             {Object.entries(CATS).map(([key, cat]) => (
-              <span key={key} className={`chip ${customCat === key ? "chip-a" : "chip-i"}`} onClick={() => setCustomCat(key)} style={{ fontSize: 11 }}>{cat.label}</span>
+              <ChoiceChip key={key} on={customCat === key} onClick={() => setCustomCat(key)}>
+                <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 99, background: toneVar(cat.tone) }} /> {cat.label}
+              </ChoiceChip>
             ))}
           </div>
 
-          <button className="bp" onClick={addCustomBlock} disabled={!customName.trim()} style={{ width: "100%", padding: 12, fontSize: 13 }}>
-            ＋ Add Activity
+          <button type="button" className="bp w-full" onClick={addCustomBlock} disabled={!customName.trim()}>
+            <Plus size={16} /> Add activity
           </button>
-        </div>
+        </Card>
 
         {/* Preview of added blocks */}
         {customBlocks.length > 0 && (
-          <div>
-            <div className="sl" style={{ marginBottom: 8 }}>Your Plan Preview</div>
-            {customBlocks.map((block, i) => (
-              <div key={block.id} style={{ display: "flex", gap: 10, padding: "8px 12px", marginBottom: 4, borderRadius: 10, background: "rgba(255,255,255,.02)" }}>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 14 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: CATS[block.category]?.color || "#6b7280" }} />
-                  {i < customBlocks.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 16, background: "rgba(255,255,255,.04)", marginTop: 2 }} />}
+          <Card title="Your plan" sub={`${customBlocks.length} activities`}>
+            {customBlocks.map((block) => (
+              <div key={block.id} className="list-row">
+                <EmojiBadge icon={block.icon} tone={CATS[block.category]?.tone} />
+                <div className="flex-1 min-w-0">
+                  <div className="row-title truncate">{block.name}</div>
+                  <div className="row-sub num">{block.time} · {block.duration >= 60 ? `${block.duration / 60}h` : `${block.duration}m`} · {CATS[block.category]?.label || block.category}</div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: "#f3f4f6" }}>{block.icon} {block.name}</div>
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>{block.time} · {block.duration >= 60 ? `${block.duration / 60}h` : `${block.duration}m`}</div>
-                </div>
-                <span onClick={() => setCustomBlocks(customBlocks.filter(b => b.id !== block.id))} style={{ fontSize: 14, color: "#4b5563", cursor: "pointer" }}>×</span>
+                <button type="button" className="icon-btn" style={{ width: 36, height: 36, background: "none", color: "var(--text-dim)" }} aria-label={`Remove ${block.name}`} onClick={() => setCustomBlocks(customBlocks.filter(b => b.id !== block.id))}>
+                  <X size={16} />
+                </button>
               </div>
             ))}
 
-            <button className="bp" onClick={saveCustomPlan} disabled={customBlocks.length < 2} style={{ width: "100%", marginTop: 12, padding: 14, fontSize: 14 }}>
-              ✅ Save My Plan ({customBlocks.length} activities)
+            <button type="button" className="bp w-full mt-3" onClick={saveCustomPlan} disabled={customBlocks.length < 2} style={{ padding: 14 }}>
+              <CheckIcon size={16} /> Save my plan ({customBlocks.length} activities)
             </button>
-          </div>
+          </Card>
         )}
       </div>
     );
@@ -281,156 +322,152 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
   // ── Template Selection ──
   if (showTemplates || routine.length === 0) {
     return (
-      <div>
-        <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>📅</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>Set Up Your Day</div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Choose a template to get started</div>
-          {routine.length > 0 && <span onClick={() => setShowTemplates(false)} style={{ display: "inline-block", marginTop: 8, fontSize: 12, color: "#6b7280", cursor: "pointer" }}>← Back to my routine</span>}
+      <div className="page fade-in">
+        <div className="text-center pt-2 pb-1">
+          <div className="flex justify-center mb-3"><IconBadge icon={CalendarDays} tone="teal" size={52} /></div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>Set up your day</div>
+          <div style={{ fontSize: 13, color: "var(--text-dim)", marginTop: 2 }}>Choose a template to get started</div>
+          {routine.length > 0 && (
+            <button type="button" className="link-btn mt-3" style={{ minHeight: 36 }} onClick={() => setShowTemplates(false)}>
+              <ChevronLeft size={15} /> Back to my routine
+            </button>
+          )}
         </div>
 
-        <StaggerContainer>
-          {/* Custom Plan */}
-          <StaggerItem>
-            <div className="gc" onClick={() => { setShowTemplates(false); setCustomMode(true); }} style={{ marginBottom: 10, padding: 16, cursor: "pointer", border: "1px solid rgba(56,189,248,.15)", background: "rgba(56,189,248,.03)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 28 }}>✨</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#38bdf8", fontFamily: "Rajdhani, sans-serif" }}>Custom Plan</div>
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>Build your own day from scratch</div>
-                </div>
-                <span style={{ fontSize: 11, color: "#38bdf8" }}>Create →</span>
-              </div>
+        {/* Custom Plan */}
+        <Card tone="sky" onClick={() => { setShowTemplates(false); setCustomMode(true); }}>
+          <div className="flex items-center gap-3">
+            <IconBadge icon={Sparkles} tone="sky" size={40} />
+            <div className="flex-1 min-w-0">
+              <div className="row-title" style={{ fontSize: 15 }}>Custom plan</div>
+              <div className="row-sub">Build your own day from scratch</div>
             </div>
-          </StaggerItem>
+            <span className="link-btn">Create <ChevronRight size={16} /></span>
+          </div>
+        </Card>
 
+        <Card title="Templates">
           {Object.entries(TEMPLATES).map(([key, tmpl]) => (
-            <StaggerItem key={key}>
-              <div className="gc" onClick={() => applyTemplate(key)} style={{ marginBottom: 10, padding: 16, cursor: "pointer" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 28 }}>{tmpl.icon}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>{tmpl.name}</div>
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>{tmpl.blocks.length} activities · {tmpl.blocks[0]?.time} — {tmpl.blocks[tmpl.blocks.length - 1]?.time}</div>
-                  </div>
-                  <span style={{ fontSize: 11, color: "#38bdf8" }}>Use →</span>
-                </div>
-              </div>
-            </StaggerItem>
+            <ListRow
+              key={key}
+              icon={TMPL_ICON[key] || Sun}
+              tone={TMPL_TONE[key] || "teal"}
+              title={tmpl.name}
+              sub={`${tmpl.blocks.length} activities · ${tmpl.blocks[0]?.time} – ${tmpl.blocks[tmpl.blocks.length - 1]?.time}`}
+              right={<span className="link-btn">Use <ChevronRight size={16} /></span>}
+              onClick={() => applyTemplate(key)}
+            />
           ))}
-        </StaggerContainer>
+        </Card>
       </div>
     );
   }
 
+  const current = currentIdx >= 0 ? routine[currentIdx] : null;
+
   return (
-    <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
-      <StaggerContainer>
-        {/* Today's Progress */}
-        <StaggerItem>
-          <div className="gs" style={{ marginBottom: 14, padding: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>Today&apos;s Progress</div>
-                <div style={{ fontSize: 11, color: "#6b7280" }}>{doneCount}/{totalBlocks} completed</div>
+    <div className="page fade-in">
+      {/* Hero: today's progress */}
+      <Card hero>
+        <div className="flex items-center gap-4">
+          <Ring value={pct / 100} size={84} stroke={8} color="#fff">
+            <b className="num" style={{ fontSize: 20, fontWeight: 800, lineHeight: 1 }}>{pct}%</b>
+          </Ring>
+          <div className="min-w-0">
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>Today&apos;s progress</div>
+            <div className="num" style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", marginTop: 2 }}>{doneCount} of {totalBlocks} done</div>
+            {current && (
+              <div className="truncate" style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 2 }}>
+                Now: {current.icon} {current.name}
               </div>
-              <div style={{ position: "relative", width: 48, height: 48 }}>
-                <svg width={48} height={48} style={{ transform: "rotate(-90deg)" }}>
-                  <circle cx={24} cy={24} r={20} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={4} />
-                  <circle cx={24} cy={24} r={20} fill="none" stroke={pct >= 100 ? "#22c55e" : "#38bdf8"} strokeWidth={4} strokeDasharray={125.6} strokeDashoffset={125.6 * (1 - pct / 100)} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} />
-                </svg>
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>{pct}%</div>
-              </div>
-            </div>
-
-            {/* Category breakdown */}
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {catStats.map(([cat, mins]) => (
-                <span key={cat} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 100, background: `${CATS[cat]?.color || "#6b7280"}12`, color: CATS[cat]?.color || "#6b7280", border: `1px solid ${CATS[cat]?.color || "#6b7280"}20` }}>
-                  {CATS[cat]?.label || cat} · {Math.round(mins / 60)}h
-                </span>
-              ))}
-            </div>
+            )}
           </div>
-        </StaggerItem>
+        </div>
 
-        {/* Actions */}
-        <StaggerItem>
-          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-            <button className="bp" onClick={markAllDone} style={{ flex: 1, padding: "10px 14px", fontSize: 12 }}>✅ Mark All Done</button>
-            <button className="bg" onClick={() => setAddMode(!addMode)} style={{ padding: "10px 14px", fontSize: 12 }}>{addMode ? "✕" : "＋ Add"}</button>
-            <button className="bg" onClick={resetRoutine} style={{ padding: "10px 14px", fontSize: 12 }}>🔄</button>
+        {/* Category breakdown */}
+        {catStats.length > 0 && (
+          <div className="flex gap-1.5 flex-wrap mt-4">
+            {catStats.map(([cat, mins]) => (
+              <Pill key={cat}>{CATS[cat]?.label || cat} · {Math.round(mins / 60)}h</Pill>
+            ))}
           </div>
-        </StaggerItem>
-
-        {/* Add new block */}
-        {addMode && (
-          <StaggerItem>
-            <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif", marginBottom: 10 }}>Add Activity</div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                <input className="inp" type="time" aria-label="Start time" value={newTime} onChange={e => setNewTime(e.target.value)} style={{ width: 110 }} />
-                <input className="inp" placeholder="Activity name" value={newName} onChange={e => setNewName(e.target.value)} style={{ flex: 1 }} />
-              </div>
-              <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                {Object.entries(CATS).map(([key, cat]) => (
-                  <span key={key} className={`chip ${newCat === key ? "chip-a" : "chip-i"}`} onClick={() => setNewCat(key)} style={{ fontSize: 11 }}>{cat.label}</span>
-                ))}
-              </div>
-              <button className="bp" onClick={addBlock} disabled={!newName.trim()} style={{ width: "100%", padding: 10, fontSize: 13 }}>Add to Routine</button>
-            </div>
-          </StaggerItem>
         )}
+      </Card>
 
-        {/* Timeline */}
+      {/* Actions */}
+      <div className="flex gap-2">
+        <button type="button" className="bp flex-1" onClick={markAllDone}>
+          <CheckCheck size={16} /> Mark all done
+        </button>
+        <button type="button" className="bg" onClick={() => setAddMode(!addMode)} aria-expanded={addMode}>
+          {addMode ? <><X size={16} /> Close</> : <><Plus size={16} /> Add</>}
+        </button>
+        <button type="button" className="icon-btn" style={{ width: 44, height: 44, flexShrink: 0 }} onClick={resetRoutine} aria-label="Reset routine">
+          <RotateCcw size={17} />
+        </button>
+      </div>
+
+      {/* Add new block */}
+      {addMode && (
+        <Card title="Add activity">
+          <div className="flex gap-2 mb-3">
+            <input className="inp num" type="time" aria-label="Start time" value={newTime} onChange={e => setNewTime(e.target.value)} style={{ width: 112, flexShrink: 0 }} />
+            <input className="inp" placeholder="Activity name" aria-label="Activity name" value={newName} onChange={e => setNewName(e.target.value)} style={{ flex: 1, minWidth: 0 }} />
+          </div>
+          <div className="flex gap-2 mb-4 flex-wrap">
+            {Object.entries(CATS).map(([key, cat]) => (
+              <ChoiceChip key={key} on={newCat === key} onClick={() => setNewCat(key)}>
+                <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 99, background: toneVar(cat.tone) }} /> {cat.label}
+              </ChoiceChip>
+            ))}
+          </div>
+          <button type="button" className="bp w-full" onClick={addBlock} disabled={!newName.trim()}>
+            <Plus size={16} /> Add to routine
+          </button>
+        </Card>
+      )}
+
+      {/* Timeline */}
+      <Card title="Today" sub={`${doneCount}/${totalBlocks} completed`}>
+        {routine.length === 0 && <EmptyState icon={CalendarDays} title="No activities yet" />}
         {routine.map((block, i) => {
           const isDone = todayDone.includes(block.id);
           const isCurrent = i === currentIdx;
           const cat = CATS[block.category] || CATS.work;
 
           return (
-            <StaggerItem key={block.id}>
-              <div onClick={() => toggleDone(block.id)} style={{ display: "flex", gap: 12, marginBottom: 4, cursor: "pointer", padding: "10px 12px", borderRadius: 12, background: isCurrent ? "rgba(56,189,248,.06)" : isDone ? "rgba(34,197,94,.03)" : "transparent", border: isCurrent ? "1px solid rgba(56,189,248,.15)" : "1px solid transparent", transition: "all .2s" }}>
-                {/* Timeline line + dot */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 16, flexShrink: 0 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: isDone ? "#22c55e" : isCurrent ? "#38bdf8" : "rgba(255,255,255,.08)", border: isCurrent ? "2px solid #38bdf8" : "none", boxShadow: isCurrent ? "0 0 8px rgba(56,189,248,.3)" : "none", flexShrink: 0 }} />
-                  {i < routine.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 24, background: isDone ? "rgba(34,197,94,.2)" : "rgba(255,255,255,.04)", marginTop: 4 }} />}
-                </div>
-
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 18 }}>{block.icon}</span>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: isDone ? "#6b7280" : "#f3f4f6", textDecoration: isDone ? "line-through" : "none" }}>{block.name}</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                          <span style={{ fontSize: 11, color: "#6b7280" }}>{block.time}</span>
-                          {block.duration > 0 && <span style={{ fontSize: 11, color: "#4b5563" }}>· {block.duration >= 60 ? `${Math.floor(block.duration / 60)}h${block.duration % 60 > 0 ? ` ${block.duration % 60}m` : ""}` : `${block.duration}m`}</span>}
-                          <span style={{ fontSize: 11, padding: "1px 5px", borderRadius: 100, background: `${cat.color}12`, color: cat.color }}>{cat.label}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      {isDone && <span style={{ fontSize: 14, color: "#22c55e" }}>✓</span>}
-                      {isCurrent && !isDone && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: "rgba(56,189,248,.15)", color: "#38bdf8", fontWeight: 600 }}>NOW</span>}
-                      <span onClick={e => { e.stopPropagation(); removeBlock(block.id); }} style={{ fontSize: 14, color: "#4b5563", padding: "2px 4px", cursor: "pointer" }}>×</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </StaggerItem>
+            <div
+              key={block.id}
+              className="list-row"
+              style={isCurrent ? { background: tint("var(--accent)", 9), borderRadius: 14, margin: "0 -10px", padding: "11px 10px", width: "calc(100% + 20px)", borderTopColor: "transparent" } : undefined}
+            >
+              <Check on={isDone} onClick={() => toggleDone(block.id)} label={isDone ? `Mark ${block.name} not done` : `Mark ${block.name} done`} />
+              <button type="button" className="flex items-center gap-3 flex-1 min-w-0 text-left" style={{ background: "none", border: "none", padding: 0, minHeight: 38 }} onClick={() => toggleDone(block.id)}>
+                <EmojiBadge icon={block.icon} tone={cat.tone} />
+                <span className="flex-1 min-w-0">
+                  <span className="row-title truncate block" style={{ color: isDone ? "var(--text-dim)" : "var(--text-primary)", textDecoration: isDone ? "line-through" : "none" }}>{block.name}</span>
+                  <span className="row-sub num flex items-center gap-1.5 flex-wrap">
+                    <span>{block.time}</span>
+                    {block.duration > 0 && <span>· {fmtDur(block.duration)}</span>}
+                    <span style={{ color: toneVar(cat.tone), fontWeight: 600 }}>· {cat.label}</span>
+                  </span>
+                </span>
+              </button>
+              {isCurrent && !isDone && <Pill tone="sky">Now</Pill>}
+              <button type="button" className="icon-btn" style={{ width: 36, height: 36, background: "none", color: "var(--text-dim)", flexShrink: 0 }} onClick={() => removeBlock(block.id)} aria-label={`Remove ${block.name}`}>
+                <X size={16} />
+              </button>
+            </div>
           );
         })}
+      </Card>
 
-        {/* Change template */}
-        <StaggerItem>
-          <div style={{ textAlign: "center", marginTop: 12 }}>
-            <span onClick={() => setShowTemplates(true)} style={{ fontSize: 11, color: "#6b7280", cursor: "pointer", textDecoration: "underline" }}>Change template</span>
-          </div>
-        </StaggerItem>
-      </StaggerContainer>
+      {/* Change template */}
+      <div className="text-center">
+        <button type="button" className="link-btn" style={{ minHeight: 36, color: "var(--text-secondary)" }} onClick={() => setShowTemplates(true)}>
+          Change template
+        </button>
+      </div>
     </div>
   );
 }

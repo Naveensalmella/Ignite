@@ -1,5 +1,7 @@
 "use client";
 import { Component } from 'react';
+import { TriangleAlert, RotateCcw, RefreshCw } from "lucide-react";
+import { IconBadge } from "@/components/ui/kit";
 
 export default class ErrorBoundary extends Component {
     constructor(props) { super(props); this.state = { hasError: false, error: null }; }
@@ -8,13 +10,24 @@ export default class ErrorBoundary extends Component {
     render() {
         if (this.state.hasError) {
             return (
-                <div style={{ padding: 40, textAlign: "center", minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ fontSize: 48, marginBottom: 16 }}>💥</div>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>Something went wrong</div>
-                    <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 20, maxWidth: 300 }}>Don't worry — your data is safe. Try refreshing the page.</p>
-                    <div style={{ fontSize: 11, color: "#ef4444", marginBottom: 20, padding: "8px 14px", borderRadius: 8, background: "rgba(239,68,68,.06)", maxWidth: 300, wordBreak: "break-all" }}>{this.state.error?.message || "Unknown error"}</div>
-                    <button className="bp" onClick={() => { this.setState({ hasError: false, error: null }); }} style={{ padding: "12px 32px", marginBottom: 8 }}>Try Again</button>
-                    <button className="bg" onClick={() => window.location.reload()} style={{ padding: "10px 24px", fontSize: 12 }}>Reload App</button>
+                <div className="flex items-center justify-center px-4 py-10" style={{ minHeight: "60vh" }}>
+                    <div className="card w-full text-center" style={{ maxWidth: 380, padding: 24 }} role="alert">
+                        <div className="flex justify-center mb-3"><IconBadge icon={TriangleAlert} tone="rose" size={52} /></div>
+                        <div className="text-[19px] font-extrabold mb-1" style={{ color: "var(--text-primary)" }}>Something went wrong</div>
+                        <p className="text-[13.5px] mb-4" style={{ color: "var(--text-secondary)" }}>Don&apos;t worry — your data is safe. Try again or reload the app.</p>
+                        <div className="text-[12px] mb-5 px-3 py-2 rounded-xl text-left break-all"
+                            style={{ color: "var(--danger)", background: "color-mix(in srgb, var(--danger) 10%, transparent)" }}>
+                            {this.state.error?.message || "Unknown error"}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <button type="button" className="bp w-full" onClick={() => { this.setState({ hasError: false, error: null }); }}>
+                                <RotateCcw size={16} /> Try again
+                            </button>
+                            <button type="button" className="bg w-full" onClick={() => window.location.reload()}>
+                                <RefreshCw size={16} /> Reload app
+                            </button>
+                        </div>
+                    </div>
                 </div>
             );
         }

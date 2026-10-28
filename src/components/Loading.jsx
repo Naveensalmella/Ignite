@@ -1,25 +1,27 @@
 "use client";
 
-// ── Shimmer skeleton line ──
-function Skeleton({ width = "100%", height = 14, radius = 6, style = {} }) {
+const SHIMMER_BG = "linear-gradient(90deg, var(--ghost-bg) 25%, var(--ghost-hover) 50%, var(--ghost-bg) 75%)";
+
+// ── Shimmer skeleton block ──
+function Skeleton({ width = "100%", height = 14, radius = 8, style = {} }) {
   return (
-    <div style={{
+    <div aria-hidden="true" style={{
       width, height, borderRadius: radius,
-      background: "linear-gradient(90deg, rgba(255,255,255,.03) 25%, rgba(255,255,255,.06) 50%, rgba(255,255,255,.03) 75%)",
+      background: SHIMMER_BG,
       backgroundSize: "200% 100%",
-      animation: "shimmer 1.5s infinite",
+      animation: "shimmer 1.5s ease-in-out infinite",
       ...style,
     }} />
   );
 }
 
-// ── Skeleton card (glass style) ──
+// ── Skeleton card (B6 card) ──
 function SkeletonCard({ lines = 3, style = {} }) {
   return (
-    <div className="gs" style={{ padding: 16, marginBottom: 12, ...style }}>
-      <Skeleton width="40%" height={16} style={{ marginBottom: 12 }} />
+    <div className="card flex flex-col gap-2" style={style} aria-hidden="true">
+      <Skeleton width="40%" height={16} style={{ marginBottom: 4 }} />
       {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton key={i} width={i === lines - 1 ? "60%" : "100%"} height={12} style={{ marginBottom: 8 }} />
+        <Skeleton key={i} width={i === lines - 1 ? "60%" : "100%"} height={12} />
       ))}
     </div>
   );
@@ -28,22 +30,23 @@ function SkeletonCard({ lines = 3, style = {} }) {
 // ── Full page loading skeleton ──
 export function SkeletonPage() {
   return (
-    <div style={{ padding: 16, animation: "fadeIn .3s ease-out" }}>
-      {/* Header skeleton */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-        <Skeleton width={48} height={48} radius={24} />
-        <div style={{ flex: 1 }}>
-          <Skeleton width="50%" height={16} style={{ marginBottom: 6 }} />
-          <Skeleton width="30%" height={10} />
+    <div className="page fade-in" role="status" aria-label="Loading">
+      {/* Hero placeholder */}
+      <div className="card flex items-center gap-4" aria-hidden="true">
+        <Skeleton width={72} height={72} radius={36} />
+        <div className="flex-1 flex flex-col gap-2">
+          <Skeleton width="45%" height={16} />
+          <Skeleton width="70%" height={12} />
+          <Skeleton width="30%" height={12} />
         </div>
       </div>
 
       {/* Stats row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+      <div className="grid grid-cols-3 gap-3" aria-hidden="true">
         {[1, 2, 3].map(i => (
-          <div key={i} className="gs" style={{ padding: 14, textAlign: "center" }}>
-            <Skeleton width={40} height={28} radius={6} style={{ margin: "0 auto 8px" }} />
-            <Skeleton width="60%" height={10} style={{ margin: "0 auto" }} />
+          <div key={i} className="card flex flex-col items-center gap-2" style={{ padding: 14 }}>
+            <Skeleton width={40} height={24} />
+            <Skeleton width="60%" height={10} />
           </div>
         ))}
       </div>
@@ -51,28 +54,30 @@ export function SkeletonPage() {
       {/* Content cards */}
       <SkeletonCard lines={3} />
       <SkeletonCard lines={2} />
-      <SkeletonCard lines={4} />
 
-      {/* List items */}
-      {[1, 2, 3].map(i => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
-          <Skeleton width={36} height={36} radius={10} />
-          <div style={{ flex: 1 }}>
-            <Skeleton width="70%" height={12} style={{ marginBottom: 6 }} />
-            <Skeleton width="40%" height={10} />
+      {/* List card */}
+      <div className="card" aria-hidden="true">
+        <Skeleton width="35%" height={16} style={{ marginBottom: 10 }} />
+        {[1, 2, 3].map(i => (
+          <div key={i} className="flex items-center gap-3 py-2.5" style={{ borderTop: i > 1 ? "1px solid var(--line)" : "none" }}>
+            <Skeleton width={38} height={38} radius={12} />
+            <div className="flex-1 flex flex-col gap-1.5">
+              <Skeleton width="70%" height={12} />
+              <Skeleton width="40%" height={10} />
+            </div>
+            <Skeleton width={50} height={20} radius={999} />
           </div>
-          <Skeleton width={50} height={20} radius={10} />
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
 
 // ── Inline loading spinner ──
-export function Spinner({ size = 20, color = "#38bdf8" }) {
+export function Spinner({ size = 20, color = "var(--accent)" }) {
   return (
-    <div style={{
-      width: size, height: size, border: `2px solid rgba(255,255,255,.06)`,
+    <div role="status" aria-label="Loading" style={{
+      width: size, height: size, border: "2px solid var(--track)",
       borderTopColor: color, borderRadius: "50%",
       animation: "spin .6s linear infinite",
     }} />
@@ -82,9 +87,9 @@ export function Spinner({ size = 20, color = "#38bdf8" }) {
 // ── Loading overlay ──
 export function LoadingOverlay({ text = "Loading..." }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40, gap: 12 }}>
+    <div className="flex flex-col items-center justify-center gap-3" style={{ padding: 40 }}>
       <Spinner size={32} />
-      <span style={{ fontSize: 13, color: "#6b7280" }}>{text}</span>
+      <span className="text-[13px]" style={{ color: "var(--text-dim)" }}>{text}</span>
     </div>
   );
 }

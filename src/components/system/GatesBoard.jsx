@@ -1,10 +1,12 @@
 "use client";
 // Today's Gates — dungeon workouts that end in a boss. Shown as the first tab of the Training hub.
+import { KeyRound, Check as CheckIcon, Clock, Swords } from "lucide-react";
 import useAppStore from "@/stores/useAppStore";
-import SysWin, { RankEmblem, GoldAmount } from "./SysWin";
-import MoveFigure from "../training/MoveFigure";
+import { Card, Pill } from "../ui/kit";
+import { GATE_ICON } from "../ui/icons";
+import { RankEmblem, GoldAmount } from "./SysWin";
 import { estimateWorkout } from "../training/WorkoutPreview";
-import { toWorkoutExercise, getExerciseInfo } from "@/lib/exerciseVisuals";
+import { toWorkoutExercise } from "@/lib/exerciseVisuals";
 import { dailyGates } from "@/lib/system/gates";
 import { rankById } from "@/lib/system/ranks";
 import { gateCleared, awaken } from "@/lib/system/actions";
@@ -17,37 +19,42 @@ function GateCard({ gate, system, onEnter }) {
     const locked = gate.red && keys === 0;
     const est = estimateWorkout(gate.exercises.map(toWorkoutExercise));
     const bossEx = gate.exercises[gate.exercises.length - 1];
+    const Icon = GATE_ICON[gate.theme] || Swords;
     const setPage = useAppStore.getState().setPage;
+    const art = gate.red ? "linear-gradient(135deg,#e11d48,#9f1239)" : `linear-gradient(135deg, ${rank.color}, color-mix(in srgb, ${rank.color} 45%, #1e1b4b))`;
 
     return (
-        <div className={`gate-card ${gate.red ? "is-red" : ""} ${cleared ? "is-cleared" : ""}`} style={{ "--gc": gate.red ? "#ef4444" : rank.color }}>
-            <div className="gate-portal" aria-hidden="true"><span>{gate.icon}</span></div>
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                    <RankEmblem rank={rank} size={22} />
-                    <span className="gate-name truncate">{gate.name}</span>
-                </div>
-                <div className="text-[12px] mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                    {gate.red ? "Red Gate · " : ""}{gate.focus} · {gate.exercises.length - 1} waves + boss · ~{est.minutes} min
-                </div>
-                <div className="gate-waves">
-                    {gate.exercises.slice(0, -1).map((e, i) => <span key={i}>{e.name}</span>)}
-                    <span className="is-boss">☠ {gate.boss}: {bossEx.name}</span>
-                </div>
-                <div className="sys-row mt-2 flex-wrap gap-y-2">
-                    <span className="text-[12px]" style={{ color: "var(--text-secondary)" }}>
-                        +{gate.rewards.xp} XP · <GoldAmount value={gate.rewards.gold} size={12} /> · {Math.round(gate.rewards.dropChance * 100)}% loot
-                    </span>
-                    {cleared ? <span className="gate-status">✓ Cleared</span>
-                        : locked ? <button type="button" className="sys-btn is-danger !py-1.5 !px-3 !text-[12px]" onClick={() => setPage("shop")}>🗝️ Needs Gate Key</button>
-                            : <button type="button" className={`sys-btn !py-1.5 !px-3 !text-[12px] ${gate.red ? "is-danger" : ""}`}
-                                onClick={() => onEnter({ id: `gate_${gate.id}`, name: `${gate.icon} ${gate.name} [${gate.rank}]`, source: "gate", gate, exercises: gate.exercises })}>
-                                Enter Gate{gate.red ? ` (🗝️ ${keys})` : ""}
-                            </button>}
+        <Card className={cleared ? "opacity-60" : ""} tone={gate.red ? "rose" : undefined}>
+            <div className="gate">
+                <div className="gate-art" style={{ background: art }} aria-hidden="true"><Icon size={26} strokeWidth={2} /></div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <RankEmblem rank={rank} size={22} />
+                        <span className="gate-name truncate">{gate.name}</span>
+                    </div>
+                    <div className="text-[12.5px] dim mt-0.5 inline-flex items-center gap-1 flex-wrap">
+                        {gate.red && <b style={{ color: "var(--danger)" }}>Red Gate ·</b>} {gate.focus} · {gate.exercises.length - 1} waves + boss · <Clock size={12} /> {est.minutes} min
+                    </div>
                 </div>
             </div>
-            <div className="gate-boss-fig" aria-hidden="true"><MoveFigure pattern={getExerciseInfo(bossEx).pattern} animate={!cleared} accent={gate.red ? "#fca5a5" : rank.color} /></div>
-        </div>
+            <div className="gate-waves">
+                {gate.exercises.slice(0, -1).map((e, i) => <span key={i}>{e.name}</span>)}
+                <span className="is-boss">Boss · {gate.boss}: {bossEx.name}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2 mt-3 flex-wrap">
+                <div className="flex gap-1.5 flex-wrap items-center">
+                    <Pill tone="sky">+{gate.rewards.xp} XP</Pill>
+                    <span className="pill" style={{ "--tone": "var(--warn)" }}><GoldAmount value={gate.rewards.gold} size={12} /></span>
+                    <Pill>{Math.round(gate.rewards.dropChance * 100)}% loot</Pill>
+                </div>
+                {cleared ? <Pill tone="teal" icon={CheckIcon}>Cleared</Pill>
+                    : locked ? <button type="button" className="bg !py-2 !px-3.5 !text-[13px]" onClick={() => setPage("shop")}><KeyRound size={15} /> Needs Gate Key</button>
+                        : <button type="button" className="bp !py-2 !px-4 !text-[13px]" style={gate.red ? { background: "var(--danger)", color: "#fff" } : undefined}
+                            onClick={() => onEnter({ id: `gate_${gate.id}`, name: `${gate.name} [${gate.rank}]`, source: "gate", gate, exercises: gate.exercises })}>
+                            Enter{gate.red ? ` · ${keys} key${keys === 1 ? "" : "s"}` : ""}
+                        </button>}
+            </div>
+        </Card>
     );
 }
 
@@ -55,27 +62,27 @@ export default function GatesBoard({ onEnter }) {
     const system = useAppStore(s => s.system);
     if (!system?.awakened) {
         return (
-            <SysWin title="Gates">
-                <div className="sys-notice-lines"><p>Only Players can enter Gates.</p></div>
-                <button type="button" className="sys-btn w-full mt-4" onClick={awaken}>Accept the System</button>
-            </SysWin>
+            <Card title="Gates">
+                <p className="text-[13.5px] muted">Accept the System to unlock daily Gates — themed workouts with a boss round.</p>
+                <button type="button" className="bp w-full mt-3" onClick={awaken}>Accept</button>
+            </Card>
         );
     }
     const gates = dailyGates(today(), system.rank || "E");
     const stats = system.gateStats || {};
     return (
-        <SysWin title="Gates">
-            <p className="text-[12.5px] text-center -mt-1 mb-3" style={{ color: "var(--text-secondary)" }}>
-                New Gates open every midnight. Clear the waves and defeat the boss (finish 60% of the sets) for XP, Gold and loot.
-            </p>
-            <div className="flex flex-col gap-3">
-                {gates.map(g => <GateCard key={g.id} gate={g} system={system} onEnter={onEnter} />)}
+        <div className="flex flex-col gap-3">
+            <div className="flex items-end justify-between gap-3 px-1">
+                <div>
+                    <div className="card-title">Today&apos;s Gates</div>
+                    <div className="text-[12.5px] dim">New Gates every midnight · finish 60% of the sets to clear</div>
+                </div>
+                <div className="text-right shrink-0">
+                    <div className="text-[18px] font-extrabold num">{Number(stats.cleared) || 0}</div>
+                    <div className="text-[11px] dim">cleared</div>
+                </div>
             </div>
-            <div className="sys-divider" />
-            <div className="sys-row text-[12px]" style={{ color: "var(--text-dim)" }}>
-                <span>Gates cleared: <b style={{ color: "var(--text-primary)" }}>{Number(stats.cleared) || 0}</b></span>
-                <span>Highest: <b style={{ color: "var(--text-primary)" }}>{stats.highestTier ? rankById(["E", "D", "C", "B", "A", "S", "N"][stats.highestTier - 1]).name : "—"}</b></span>
-            </div>
-        </SysWin>
+            {gates.map(g => <GateCard key={g.id} gate={g} system={system} onEnter={onEnter} />)}
+        </div>
     );
 }

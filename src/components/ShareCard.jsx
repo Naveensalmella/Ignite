@@ -1,5 +1,7 @@
 "use client";
 import { useRef, useState, useMemo } from 'react';
+import { Share2, Download, X } from 'lucide-react';
+import { Card, IconBadge, Tabs } from '@/components/ui/kit';
 import { getLevel, toArr } from '@/utils';
 import useAppStore from '@/stores/useAppStore';
 import { playerRank } from '@/lib/system/ranks';
@@ -234,47 +236,54 @@ export default function ShareCard({ type = "workout", data: rawData = null, prof
   };
 
   const wrapperStyle = isModal
-    ? { position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.8)", backdropFilter: "blur(8px)", padding: 16 }
-    : { display: "flex", justifyContent: "center" };
+    ? { position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.7)", backdropFilter: "blur(8px)", padding: 16 }
+    : undefined;
 
   return (
-    <div style={wrapperStyle} onClick={isModal ? onClose : undefined}>
-      <div onClick={e => e.stopPropagation()} style={{ maxWidth: 400, width: "100%" }}>
-        {/* Card picker (page mode) */}
-        {!isModal && !hasData && (
-          <div style={{ display: "flex", gap: 6, marginBottom: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            {[["streak", "🔥 Streak"], ["levelup", "⚡ Level"], ["workout", "💪 Workout"]].map(([k, l]) => (
-              <span key={k} className={`chip ${selType === k ? "chip-a" : "chip-i"}`} onClick={() => setSelType(k)} style={{ fontSize: 12 }}>{l}</span>
-            ))}
+    <div style={wrapperStyle} className={isModal ? "" : "page fade-in"} onClick={isModal ? onClose : undefined}>
+      <div onClick={e => e.stopPropagation()} className="w-full mx-auto" style={{ maxWidth: 440 }}>
+        <Card>
+          <div className="flex items-center gap-3 mb-3">
+            <IconBadge icon={Share2} tone="sky" size={38} />
+            <div className="flex-1 min-w-0">
+              <div className="card-title">Share your progress</div>
+              <div className="row-sub">Post a card to your story or chat</div>
+            </div>
+            {isModal && <button type="button" className="icon-btn shrink-0" onClick={onClose} aria-label="Close"><X size={18} /></button>}
           </div>
-        )}
-        {!isModal && !hasData && cardType === "workout" && !latestWorkout && (
-          <div style={{ fontSize: 12, color: "#6b7280", textAlign: "center", marginBottom: 10 }}>No workouts logged yet — finish a session to share it.</div>
-        )}
-        {/* Preview */}
-        <div style={{ background: "#07090d", borderRadius: 16, border: `1px solid ${template.color}30`, padding: 20, marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: template.color, fontWeight: 600, marginBottom: 4 }}>🔥 IGNITE</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>{template.title}</div>
-          <div style={{ fontSize: 14, color: template.color, marginTop: 2 }}>{template.subtitle}</div>
-          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-            {template.stats.map(s => (
-              <div key={s.label} style={{ flex: 1, padding: 12, borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.05)", textAlign: "center" }}>
-                <div style={{ fontSize: 20, fontWeight: 800, color: template.color, fontFamily: "Rajdhani, sans-serif" }}>{s.value}</div>
-                <div style={{ fontSize: 11, color: "#6b7280" }}>{s.label}</div>
-              </div>
-            ))}
+
+          {/* Card picker (page mode) */}
+          {!isModal && !hasData && (
+            <Tabs className="mb-3" label="Card type" tabs={[["streak", "Streak"], ["levelup", "Level"], ["workout", "Workout"]]} value={selType} onChange={setSelType} />
+          )}
+          {!isModal && !hasData && cardType === "workout" && !latestWorkout && (
+            <div className="row-sub text-center mb-3">No workouts logged yet — finish a session to share it.</div>
+          )}
+
+          {/* Preview — mirrors the generated image, which is always dark */}
+          <div className="keep-dark mb-3" style={{ background: "var(--bg)", borderRadius: 16, border: `1px solid ${template.color}40`, padding: 18 }}>
+            <div style={{ fontSize: 11, color: template.color, fontWeight: 700, marginBottom: 4 }}>🔥 IGNITE</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.2 }}>{template.title}</div>
+            <div style={{ fontSize: 13.5, color: template.color, marginTop: 2 }}>{template.subtitle}</div>
+            <div className="flex gap-2 mt-4">
+              {template.stats.map(s => (
+                <div key={s.label} className="flex-1 min-w-0 text-center" style={{ padding: "10px 6px", borderRadius: 12, background: "var(--ghost-bg)" }}>
+                  <div className="num truncate" style={{ fontSize: 18, fontWeight: 800, color: template.color }}>{s.value}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-dim)" }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="bp" onClick={shareCard} disabled={busy} style={{ flex: 1, padding: 14, fontSize: 14 }}>📤 Share</button>
-          <button className="bg" onClick={downloadCard} style={{ flex: 1, padding: 14, fontSize: 14 }}>💾 Save Image</button>
-          {isModal && <button className="bg" onClick={onClose} style={{ padding: "14px 16px" }}>✕</button>}
-        </div>
+          {/* Actions */}
+          <div className="flex gap-2">
+            <button type="button" className="bp flex-1" onClick={shareCard} disabled={busy}><Share2 size={16} /> Share</button>
+            <button type="button" className="bg flex-1" onClick={downloadCard}><Download size={16} /> Save image</button>
+          </div>
 
-        {/* Hidden canvas */}
-        <canvas ref={canvasRef} style={{ display: "none" }} />
+          {/* Hidden canvas */}
+          <canvas ref={canvasRef} style={{ display: "none" }} />
+        </Card>
       </div>
     </div>
   );

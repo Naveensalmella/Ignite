@@ -2,13 +2,18 @@
 import { useState, useMemo } from 'react';
 import { getLevel, today, toArr } from '@/utils';
 import {
-    getDailyXPProgress, getXPBreakdown, XP_SOURCES, getComboStatus,
+    getDailyXPProgress, getXPBreakdown, getComboStatus,
     getLoginBonus, claimLoginBonus, generateWeeklyChallenges, getChallengeProgress,
     getUnlockedTitles, getCurrentTier,
     QUEST_CHAINS, getQuestChainProgress, getXPHistory,
     SKILL_TREE, getSkillTreeProgress, getWeekStart, getWeekSeed,
 } from '@/data/gamingSystem';
 import { countWorkoutDays } from '@/lib/workoutHelpers';
+import { Card, Ring, Bar, IconBadge, Pill, ListRow, Tabs, EmptyState } from '@/components/ui/kit';
+import {
+    Dumbbell, Apple, Flame, Target, Timer, NotebookPen, Droplet, Zap, Sparkles, Swords, Star, Link2, Brain,
+    Medal, Gem, Lock, CalendarCheck, Gift, RotateCcw, Play, Trophy, Crown, Check as CheckIcon, Award,
+} from 'lucide-react';
 
 
 // Level-up rewards (inline to avoid import issues)
@@ -26,7 +31,19 @@ const LEVEL_REWARDS = {
     100: { title: "The Absolute", reward: "Title: The Absolute + Diamond frame", type: "title" },
 };
 
-function Ring({ pct, color, size = 56, stroke = 5, children }) { const p = Number.isFinite(pct) ? pct : 0; const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, p / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
+// Display-only icon/tone maps (the data keeps its own emoji fields).
+const CHALLENGE_ICON = {
+    workouts: [Dumbbell, "orange"], foodDays: [Apple, "lime"], calBurned: [Flame, "orange"], quests: [Target, "teal"],
+    focusSessions: [Timer, "violet"], journalDays: [NotebookPen, "rose"], waterDays: [Droplet, "sky"], weeklyXP: [Zap, "sky"], comboDays: [Sparkles, "rose"],
+};
+const CHAIN_ICON = { warrior_week: [Swords, "orange"], nutrition_master: [Apple, "lime"], focus_marathon: [Timer, "violet"], all_rounder: [Star, "amber"] };
+const BRANCH_ICON = { strength: [Dumbbell, "orange"], nutrition: [Apple, "lime"], mind: [Brain, "violet"], discipline: [Flame, "rose"] };
+const SOURCE_TONE = { Training: "orange", Nutrition: "lime", Quest: "teal", Focus: "violet", Wellness: "rose", Streak: "orange", Challenge: "amber", Login: "blue", Combo: "rose" };
+const TIER_ICON = { workout_count: Dumbbell, streak: Flame, xp_total: Zap, food_days: Apple, focus_sessions: Timer };
+const TIER_TONE = { bronze: "orange", silver: "blue", gold: "amber", diamond: "violet" };
+const TIER_LABELS = { workout_count: "Workouts", streak: "Streak", xp_total: "Total XP", food_days: "Nutrition days", focus_sessions: "Focus sessions" };
+const HUB_TABS = [["overview", "Overview"], ["challenges", "Weekly"], ["chains", "Chains"], ["titles", "Titles"], ["tree", "Skills"]];
+const stripEmoji = (t) => String(t || "").replace(/^[^\p{L}\p{N}]+/u, "");
 
 export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, workoutLog = {}, addXP = () => { }, loginData = {}, setLoginData = () => { }, xpLog = {}, activeTitle = null, setActiveTitle = () => { }, questChainData = {}, setQuestChainData = () => { } }) {
     const [tab, setTab] = useState("overview"); // overview | challenges | chains | titles | tree
@@ -94,281 +111,254 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
     // ── Skill Tree ──
     const stats = { totalWorkouts, foodDays, focusSessions, streak };
 
+    const totalHistXP = xpHistory.reduce((sum, h) => sum + h.xp, 0);
+    const avgHistXP = Math.round(totalHistXP / Math.max(1, xpHistory.filter(h => h.xp > 0).length));
+    const goalHit = xpProgress.pct >= 100;
+
     return (
-        <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
-            {/* Tabs */}
-            <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto" }}>
-                {[["overview", "⚡ Overview"], ["challenges", "🏆 Challenges"], ["chains", "⛓️ Quests"], ["titles", "👑 Titles"], ["tree", "🌳 Skill Tree"]].map(([k, l]) => (
-                    <span key={k} className={`chip ${tab === k ? "chip-a" : "chip-i"}`} onClick={() => setTab(k)} style={{ flexShrink: 0, fontSize: 12 }}>{l}</span>
-                ))}
+        <div className="flex flex-col gap-3 max-w-full overflow-x-hidden">
+            <div className="overflow-x-auto no-scrollbar">
+                <Tabs tabs={HUB_TABS} value={tab} onChange={setTab} label="Badges sections" className="min-w-full w-max" />
             </div>
 
             {/* ══ OVERVIEW ══ */}
             {tab === "overview" && (
-                <div>
+                <>
                     {/* Daily XP Goal */}
-                    <div className="gs" style={{ marginBottom: 12, padding: 14 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                            <Ring pct={xpProgress.pct} color={xpProgress.pct >= 100 ? "#22c55e" : "#38bdf8"} size={64} stroke={6}>
-                                <div style={{ textAlign: "center" }}>
-                                    <div style={{ fontSize: 16, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{xpProgress.earned}</div>
-                                    <div style={{ fontSize: 11, color: "#6b7280" }}>/{xpProgress.goal}</div>
-                                </div>
+                    <Card>
+                        <div className="flex items-center gap-4">
+                            <Ring value={xpProgress.pct / 100} size={72} stroke={7} color={goalHit ? "var(--ok)" : "var(--accent)"}>
+                                <b className="text-[17px] font-extrabold leading-none num" style={{ color: "var(--text-primary)" }}>{xpProgress.earned}</b>
+                                <small className="text-[11px] num" style={{ color: "var(--text-dim)" }}>/{xpProgress.goal}</small>
                             </Ring>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Daily XP Goal</div>
-                                <div style={{ fontSize: 12, color: xpProgress.pct >= 100 ? "#22c55e" : "#6b7280" }}>
-                                    {xpProgress.pct >= 100 ? "✅ Goal reached!" : `${xpProgress.goal - xpProgress.earned} XP to go`}
+                            <div className="flex-1 min-w-0">
+                                <div className="card-title">Daily XP goal</div>
+                                <div className="text-[13px] mt-0.5" style={{ color: goalHit ? "var(--ok)" : "var(--text-secondary)" }}>
+                                    {goalHit ? "Goal reached!" : `${xpProgress.goal - xpProgress.earned} XP to go`}
                                 </div>
-                                {/* XP Breakdown */}
                                 {Object.keys(xpBreakdown).length > 0 && (
-                                    <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                                    <div className="flex gap-1.5 mt-2 flex-wrap">
                                         {Object.entries(xpBreakdown).map(([cat, amount]) => (
-                                            <span key={cat} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: `${(XP_SOURCES[cat] || XP_SOURCES.Other).color}10`, color: (XP_SOURCES[cat] || XP_SOURCES.Other).color }}>
-                                                {(XP_SOURCES[cat] || XP_SOURCES.Other).icon} +{amount}
-                                            </span>
+                                            <Pill key={cat} tone={SOURCE_TONE[cat]} className="num">{cat} +{amount}</Pill>
                                         ))}
                                     </div>
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Combo Status */}
                     {combo.count >= 2 && (
-                        <div className="gs" style={{ marginBottom: 12, padding: "10px 14px", border: `1px solid rgba(236,72,153,.15)`, background: "rgba(236,72,153,.04)" }}>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: "#ec4899", fontFamily: "Rajdhani,sans-serif" }}>{combo.label}</div>
-                            <div style={{ fontSize: 11, color: "#6b7280" }}>{combo.activities.join(" + ")} · +{combo.bonusXP} bonus XP</div>
-                        </div>
+                        <Card tone="rose" className="!py-3">
+                            <div className="flex items-center gap-3">
+                                <IconBadge icon={Sparkles} tone="rose" size={36} />
+                                <div className="flex-1 min-w-0">
+                                    <div className="row-title">{stripEmoji(combo.label)}</div>
+                                    <div className="row-sub">{combo.activities.join(" + ")} · +{combo.bonusXP} bonus XP</div>
+                                </div>
+                            </div>
+                        </Card>
                     )}
 
                     {/* Login Bonus */}
                     {!bonusClaimed && (
-                        <div className="gs slide-up" onClick={claimBonus} style={{ marginBottom: 12, padding: 14, cursor: "pointer", border: "1px solid rgba(59,130,246,.2)", background: "rgba(59,130,246,.04)" }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                <div>
-                                    <div style={{ fontSize: 14, fontWeight: 700, color: "#3b82f6", fontFamily: "Rajdhani,sans-serif" }}>📅 Daily Login Bonus</div>
-                                    <div style={{ fontSize: 12, color: "#6b7280" }}>Day {loginBonus.streak} streak · Tap to claim!</div>
+                        <Card className="slide-up">
+                            <div className="flex items-center gap-3">
+                                <IconBadge icon={CalendarCheck} tone="blue" size={40} />
+                                <div className="flex-1 min-w-0">
+                                    <div className="row-title">Daily login bonus</div>
+                                    <div className="row-sub">Day {loginBonus.streak} streak</div>
                                 </div>
-                                <div style={{ fontSize: 22, fontWeight: 900, color: "#3b82f6", fontFamily: "Rajdhani,sans-serif" }}>+{loginBonus.reward} XP</div>
+                                <button type="button" className="bp !py-2 !px-4 !text-[13px]" onClick={claimBonus}><Gift size={15} />+{loginBonus.reward} XP</button>
                             </div>
-                            <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+                            <div className="flex gap-1 mt-3" aria-hidden="true">
                                 {[5, 10, 15, 20, 25, 35, 50].map((r, i) => (
-                                    <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i < loginBonus.dayIdx ? "#3b82f6" : i === loginBonus.dayIdx ? "#60a5fa" : "rgba(255,255,255,.06)" }} />
+                                    <div key={i} className="flex-1 h-1 rounded-full" style={{ background: i < loginBonus.dayIdx ? "var(--tone-blue)" : i === loginBonus.dayIdx ? "color-mix(in srgb, var(--tone-blue) 55%, transparent)" : "var(--track)" }} />
                                 ))}
                             </div>
-                        </div>
+                        </Card>
                     )}
 
                     {/* XP History Chart */}
-                    <div className="gs" style={{ marginBottom: 12, padding: 14 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 10 }}>📈 XP History (14 days)</div>
-                        <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 60 }}>
+                    <Card title="XP history" sub="Last 14 days">
+                        <div className="flex gap-0.5 items-end h-[64px]">
                             {xpHistory.map((h, i) => (
-                                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                                    <div style={{ width: "100%", background: h.xp > 0 ? (h.date === d ? "#38bdf8" : "rgba(56,189,248,.3)") : "rgba(255,255,255,.03)", borderRadius: "3px 3px 0 0", height: `${Math.max(2, (h.xp / maxDayXP) * 50)}px`, transition: "height .5s" }} />
-                                    <div style={{ fontSize: 11, color: h.date === d ? "#38bdf8" : "#4b5563", marginTop: 2 }}>{h.day}</div>
+                                <div key={i} className="flex-1 flex flex-col items-center">
+                                    <div className="w-full rounded-t-[3px]" style={{ background: h.xp > 0 ? (h.date === d ? "var(--accent)" : "color-mix(in srgb, var(--accent) 38%, transparent)") : "var(--track)", height: `${Math.max(2, (h.xp / maxDayXP) * 50)}px`, transition: "height .5s" }} />
+                                    <div className="text-[10.5px] mt-1" style={{ color: h.date === d ? "var(--accent)" : "var(--text-dim)", fontWeight: h.date === d ? 700 : 400 }}>{h.day}</div>
                                 </div>
                             ))}
                         </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#4b5563", marginTop: 4 }}>
-                            <span>Total: {xpHistory.reduce((s, h) => s + h.xp, 0)} XP</span>
-                            <span>Avg: {Math.round(xpHistory.reduce((s, h) => s + h.xp, 0) / Math.max(1, xpHistory.filter(h => h.xp > 0).length))}/day</span>
+                        <div className="flex justify-between text-[12px] mt-2 num" style={{ color: "var(--text-dim)" }}>
+                            <span>Total {totalHistXP} XP</span>
+                            <span>Avg {avgHistXP}/day</span>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Achievement Tiers */}
-                    <div className="gs" style={{ padding: 14 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 10 }}>🏅 Achievement Tiers</div>
-                        {Object.entries(tierData).map(([key, data]) => {
-                            if (!data) return null;
-                            const labels = { workout_count: "Workouts", streak: "Streak", xp_total: "Total XP", food_days: "Nutrition Days", focus_sessions: "Focus Sessions" };
-                            return (
-                                <div key={key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
-                                    <span style={{ fontSize: 18 }}>{data.current?.icon || "🔒"}</span>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: 12, fontWeight: 600, color: data.current ? "#f3f4f6" : "#4b5563" }}>{labels[key]}: {data.current?.name || "Locked"}</div>
-                                        {data.next && <div style={{ fontSize: 11, color: "#6b7280" }}>Next: {data.next.name} ({data.value}/{data.next.threshold})</div>}
-                                    </div>
-                                    {data.next && (
-                                        <div style={{ width: 50, height: 4, background: "rgba(255,255,255,.06)", borderRadius: 2, overflow: "hidden" }}>
-                                            <div style={{ height: "100%", width: `${Math.min(100, (data.value / data.next.threshold) * 100)}%`, background: "#38bdf8", borderRadius: 2 }} />
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
+                    <Card title="Achievement tiers">
+                        <div>
+                            {Object.entries(tierData).map(([key, data]) => {
+                                if (!data) return null;
+                                const unlockedTier = !!data.current;
+                                return (
+                                    <ListRow key={key}
+                                        icon={unlockedTier ? (data.current.tier === "diamond" ? Gem : TIER_ICON[key] || Medal) : Lock}
+                                        tone={unlockedTier ? TIER_TONE[data.current.tier] || "amber" : "sky"}
+                                        className={unlockedTier ? "" : "opacity-70"}
+                                        title={`${TIER_LABELS[key]} · ${data.current?.name || "Locked"}`}
+                                        sub={data.next ? `Next: ${data.next.name} (${data.value}/${data.next.threshold})` : "Top tier reached"}
+                                        right={data.next ? <div className="w-14 shrink-0"><Bar value={data.value / data.next.threshold} /></div> : <Pill tone="violet" icon={Award}>Max</Pill>} />
+                                );
+                            })}
+                        </div>
+                    </Card>
+                </>
             )}
 
             {/* ══ CHALLENGES ══ */}
             {tab === "challenges" && (
-                <div>
-                    <div style={{ textAlign: "center", marginBottom: 16 }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>🏆 Weekly Challenges</div>
-                        <div style={{ fontSize: 12, color: "#6b7280" }}>Resets every Monday · Complete for bonus XP</div>
+                <Card title="Weekly challenges" sub="Resets every Monday">
+                    <div>
+                        {challenges.map(ch => {
+                            const progress = getChallengeProgress(ch, st, workoutLog, weekStart);
+                            const pct = Math.min(100, Math.round((progress / ch.target) * 100));
+                            const done = progress >= ch.target;
+                            const claimed = weeklyClaimed.includes(ch.id);
+                            const [Icon, tone] = CHALLENGE_ICON[ch.type] || [Trophy, "amber"];
+                            return (
+                                <ListRow key={ch.id} icon={done ? CheckIcon : Icon} tone={done ? "teal" : tone} title={ch.title} sub={ch.desc}
+                                    right={<div className="text-right shrink-0 self-start">
+                                        <div className="text-[13px] font-bold num" style={{ color: done ? "var(--ok)" : "var(--text-primary)" }}>{done ? "Done" : `${progress}/${ch.target}`}</div>
+                                        <div className="text-[11.5px] num" style={{ color: "var(--warn)" }}>+{ch.reward} XP</div>
+                                    </div>}>
+                                    <Bar value={pct / 100} color={done ? "var(--ok)" : undefined} className="mt-2" />
+                                    {done && !claimed && (
+                                        <button type="button" className="bp w-full mt-2.5 !py-2.5 !text-[13px]" onClick={() => claimChallenge(ch)}><Gift size={15} />Claim +{ch.reward} XP</button>
+                                    )}
+                                    {done && claimed && <div className="text-[12px] font-semibold mt-1.5" style={{ color: "var(--ok)" }}>Reward claimed</div>}
+                                </ListRow>
+                            );
+                        })}
                     </div>
-                    {challenges.map(ch => {
-                        const progress = getChallengeProgress(ch, st, workoutLog, weekStart);
-                        const pct = Math.min(100, Math.round((progress / ch.target) * 100));
-                        const done = progress >= ch.target;
-                        const claimed = weeklyClaimed.includes(ch.id);
-                        return (
-                            <div key={ch.id} className="gs" style={{ marginBottom: 10, padding: 14, border: done ? "1px solid rgba(34,197,94,.2)" : "1px solid rgba(255,255,255,.04)", background: done ? "rgba(34,197,94,.04)" : undefined }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                    <div>
-                                        <div style={{ fontSize: 15, fontWeight: 700, color: done ? "#22c55e" : "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{ch.icon} {ch.title}</div>
-                                        <div style={{ fontSize: 12, color: "#6b7280" }}>{ch.desc}</div>
-                                    </div>
-                                    <div style={{ textAlign: "right" }}>
-                                        <div style={{ fontSize: 14, fontWeight: 700, color: done ? "#22c55e" : "#f59e0b" }}>{done ? "✅" : `${progress}/${ch.target}`}</div>
-                                        <div style={{ fontSize: 11, color: "#6b7280" }}>+{ch.reward} XP</div>
-                                    </div>
-                                </div>
-                                <div style={{ height: 6, background: "rgba(255,255,255,.04)", borderRadius: 3, marginTop: 8, overflow: "hidden" }}>
-                                    <div style={{ height: "100%", width: `${pct}%`, background: done ? "#22c55e" : "linear-gradient(90deg,#38bdf8,#06b6d4)", borderRadius: 3, transition: "width .5s" }} />
-                                </div>
-                                {done && !claimed && (
-                                    <button className="bp" onClick={() => claimChallenge(ch)} style={{ width: "100%", marginTop: 10, padding: 10, fontSize: 13 }}>🎁 Claim +{ch.reward} XP</button>
-                                )}
-                                {done && claimed && <div style={{ textAlign: "center", marginTop: 8, fontSize: 12, color: "#22c55e", fontWeight: 600 }}>Reward claimed</div>}
-                            </div>
-                        );
-                    })}
-                </div>
+                </Card>
             )}
 
             {/* ══ QUEST CHAINS ══ */}
             {tab === "chains" && (
-                <div>
-                    <div style={{ textAlign: "center", marginBottom: 16 }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>⛓️ Quest Chains</div>
-                        <div style={{ fontSize: 12, color: "#6b7280" }}>Multi-day quests for mega rewards</div>
+                <Card title="Quest chains" sub="Multi-day quests">
+                    <div>
+                        {QUEST_CHAINS.map(chain => {
+                            const chainState = questChainData?.[chain.id];
+                            const progress = chainState?.startDate ? getQuestChainProgress(chain, workoutLog, st, chainState.startDate) : null;
+                            const isActive = progress?.active;
+                            const isComplete = progress?.complete;
+                            const isFailed = progress?.failed;
+                            const [Icon, tone] = CHAIN_ICON[chain.id] || [Link2, "sky"];
+                            return (
+                                <ListRow key={chain.id} icon={Icon} tone={isComplete ? "teal" : tone} title={chain.name} sub={chain.desc}
+                                    right={<div className="text-right shrink-0 self-start">
+                                        {progress && <div className="text-[13px] font-bold num" style={{ color: isComplete ? "var(--ok)" : isFailed ? "var(--danger)" : isActive ? "var(--accent)" : "var(--text-primary)" }}>{progress.daysCompleted}/{chain.totalDays}</div>}
+                                        <div className="text-[11.5px] num" style={{ color: "var(--warn)" }}>+{chain.rewards.completion} XP</div>
+                                    </div>}>
+                                    <div className="text-[12px] mt-1" style={{ color: "var(--text-dim)" }}>Daily: {chain.dailyTask}</div>
+                                    {progress && (
+                                        <div className="flex gap-1 mt-2" aria-hidden="true">
+                                            {Array.from({ length: chain.totalDays }, (_, i) => (
+                                                <div key={i} className="flex-1 h-1.5 rounded-full" style={{ background: i < progress.daysCompleted ? "var(--ok)" : isFailed && i === progress.daysCompleted ? "var(--danger)" : "var(--track)" }} />
+                                            ))}
+                                        </div>
+                                    )}
+                                    {!chainState?.startDate && (
+                                        <button type="button" className="bp w-full mt-2.5 !py-2.5 !text-[13px]" onClick={() => setQuestChainData(p => ({ ...p, [chain.id]: { startDate: d } }))}><Play size={15} />Start quest</button>
+                                    )}
+                                    {isFailed && (
+                                        <button type="button" className="bg w-full mt-2.5 !py-2 !text-[13px]" onClick={() => setQuestChainData(p => ({ ...p, [chain.id]: { startDate: d } }))}><RotateCcw size={14} />Restart</button>
+                                    )}
+                                    {isComplete && !chainState?.claimed && (
+                                        <button type="button" className="bp w-full mt-2.5 !py-2.5 !text-[13px]" onClick={() => claimChain(chain)}><Gift size={15} />Claim +{chain.rewards.completion} XP</button>
+                                    )}
+                                    {isComplete && chainState?.claimed && (
+                                        <div className="flex items-center gap-2 mt-2.5">
+                                            <Pill tone="teal" icon={Trophy}>Quest complete</Pill>
+                                            <button type="button" className="bg flex-1 !py-2 !text-[13px]" onClick={() => setQuestChainData(p => ({ ...(p || {}), [chain.id]: { startDate: d } }))}><RotateCcw size={14} />Start again</button>
+                                        </div>
+                                    )}
+                                </ListRow>
+                            );
+                        })}
                     </div>
-                    {QUEST_CHAINS.map(chain => {
-                        const chainState = questChainData?.[chain.id];
-                        const progress = chainState?.startDate ? getQuestChainProgress(chain, workoutLog, st, chainState.startDate) : null;
-                        const isActive = progress?.active;
-                        const isComplete = progress?.complete;
-                        const isFailed = progress?.failed;
-                        return (
-                            <div key={chain.id} className="gs" style={{ marginBottom: 10, padding: 14, border: isComplete ? "1px solid rgba(34,197,94,.2)" : isActive ? "1px solid rgba(56,189,248,.15)" : "1px solid rgba(255,255,255,.04)" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                    <div>
-                                        <div style={{ fontSize: 16, fontWeight: 700, color: isComplete ? "#22c55e" : "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{chain.icon} {chain.name}</div>
-                                        <div style={{ fontSize: 12, color: "#6b7280" }}>{chain.desc}</div>
-                                        <div style={{ fontSize: 11, color: "#4b5563", marginTop: 4 }}>Daily: {chain.dailyTask}</div>
-                                    </div>
-                                    <div style={{ textAlign: "right" }}>
-                                        {progress && <div style={{ fontSize: 13, fontWeight: 700, color: isComplete ? "#22c55e" : isFailed ? "#ef4444" : "#38bdf8" }}>{progress.daysCompleted}/{chain.totalDays}</div>}
-                                        <div style={{ fontSize: 11, color: "#f59e0b" }}>+{chain.rewards.completion} XP</div>
-                                    </div>
-                                </div>
-                                {progress && (
-                                    <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
-                                        {Array.from({ length: chain.totalDays }, (_, i) => (
-                                            <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: i < progress.daysCompleted ? "#22c55e" : isFailed && i === progress.daysCompleted ? "#ef4444" : "rgba(255,255,255,.06)" }} />
-                                        ))}
-                                    </div>
-                                )}
-                                {!chainState?.startDate && (
-                                    <button className="bp" onClick={() => setQuestChainData(p => ({ ...p, [chain.id]: { startDate: d } }))} style={{ width: "100%", marginTop: 10, padding: 10, fontSize: 13 }}>🚀 Start Quest</button>
-                                )}
-                                {isFailed && (
-                                    <button className="bg" onClick={() => setQuestChainData(p => ({ ...p, [chain.id]: { startDate: d } }))} style={{ width: "100%", marginTop: 8, padding: 8, fontSize: 12 }}>🔄 Restart</button>
-                                )}
-                                {isComplete && !chainState?.claimed && (
-                                    <button className="bp" onClick={() => claimChain(chain)} style={{ width: "100%", marginTop: 10, padding: 10, fontSize: 13 }}>🎁 Claim +{chain.rewards.completion} XP</button>
-                                )}
-                                {isComplete && chainState?.claimed && (
-                                    <>
-                                        <div style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: "#22c55e", fontWeight: 700 }}>🏆 Quest Complete!</div>
-                                        <button className="bg" onClick={() => setQuestChainData(p => ({ ...(p || {}), [chain.id]: { startDate: d } }))} style={{ width: "100%", marginTop: 8, padding: 8, fontSize: 12 }}>🔄 Start Again</button>
-                                    </>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
+                </Card>
             )}
 
             {/* ══ TITLES ══ */}
             {tab === "titles" && (
-                <div>
-                    <div style={{ textAlign: "center", marginBottom: 16 }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>👑 Titles</div>
-                        <div style={{ fontSize: 12, color: "#6b7280" }}>Earn and equip display titles</div>
-                        {activeTitle && <div style={{ fontSize: 14, color: "#f59e0b", marginTop: 6 }}>Active: &ldquo;{activeTitle}&rdquo;</div>}
-                    </div>
-                    {unlockedTitles.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: 30, color: "#6b7280", fontSize: 13 }}>Reach Level 15 to unlock your first title!</div>
-                    ) : (
-                        unlockedTitles.map(t => (
-                            <div key={t.level} className="gs" onClick={() => setActiveTitle(t.title)} style={{ marginBottom: 8, padding: 14, cursor: "pointer", border: activeTitle === t.title ? "1px solid rgba(245,158,11,.2)" : "1px solid rgba(255,255,255,.04)", background: activeTitle === t.title ? "rgba(245,158,11,.04)" : undefined }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                    <div>
-                                        <div style={{ fontSize: 15, fontWeight: 700, color: activeTitle === t.title ? "#f59e0b" : "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>&ldquo;{t.title}&rdquo;</div>
-                                        <div style={{ fontSize: 11, color: "#6b7280" }}>{t.reward} · Unlocked at Lv.{t.level}</div>
-                                    </div>
-                                    {activeTitle === t.title ? <span style={{ fontSize: 12, color: "#f59e0b" }}>✓ Active</span> : <span style={{ fontSize: 11, color: "#4b5563" }}>Tap to equip</span>}
-                                </div>
+                <>
+                    <Card title="Titles" sub="Earn and equip display titles">
+                        {activeTitle && <div className="mb-2"><Pill tone="amber" icon={Crown}>Active: &ldquo;{activeTitle}&rdquo;</Pill></div>}
+                        {unlockedTitles.length === 0 ? (
+                            <EmptyState icon={Crown} title="No titles yet">Reach Level 15 to unlock your first title!</EmptyState>
+                        ) : (
+                            <div>
+                                {unlockedTitles.map(t => {
+                                    const isActive = activeTitle === t.title;
+                                    return (
+                                        <ListRow key={t.level} icon={Crown} tone={isActive ? "amber" : "sky"} onClick={() => setActiveTitle(t.title)}
+                                            title={<>&ldquo;{t.title}&rdquo;</>} sub={`${t.reward} · Unlocked at Lv.${t.level}`}
+                                            right={isActive ? <Pill tone="amber" icon={CheckIcon}>Active</Pill> : <span className="text-[12px] font-semibold shrink-0" style={{ color: "var(--accent)" }}>Equip</span>} />
+                                    );
+                                })}
                             </div>
-                        ))
-                    )}
-                    {/* Locked titles preview */}
-                    <div className="sl" style={{ marginTop: 16 }}>Locked Titles</div>
-                    {Object.entries(LEVEL_REWARDS).filter(([lvl]) => parseInt(lvl) > lv).slice(0, 5).map(([lvl, data]) => (
-                        <div key={lvl} style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.03)", opacity: 0.4 }}>
-                            <span style={{ fontSize: 13, color: "#4b5563" }}>🔒 &ldquo;{data.title}&rdquo; — Level {lvl}</span>
+                        )}
+                    </Card>
+                    <Card title="Locked titles">
+                        <div>
+                            {Object.entries(LEVEL_REWARDS).filter(([lvl]) => parseInt(lvl) > lv).slice(0, 5).map(([lvl, data]) => (
+                                <ListRow key={lvl} icon={Lock} tone="sky" className="opacity-60" title={<>&ldquo;{data.title}&rdquo;</>} sub={`Level ${lvl}`} />
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </Card>
+                </>
             )}
 
             {/* ══ SKILL TREE ══ */}
             {tab === "tree" && (
-                <div>
-                    <div style={{ textAlign: "center", marginBottom: 16 }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>🌳 Skill Tree</div>
-                        <div style={{ fontSize: 12, color: "#6b7280" }}>Your progression across all pillars</div>
-                    </div>
+                <>
                     {Object.entries(SKILL_TREE).map(([key, branch]) => {
                         const nodes = getSkillTreeProgress(branch, stats);
                         const unlocked = nodes.filter(n => n.unlocked).length;
+                        const [Icon, tone] = BRANCH_ICON[key] || [Sparkles, "sky"];
+                        const toneVar = `var(--tone-${tone})`;
                         return (
-                            <div key={key} className="gs" style={{ marginBottom: 12, padding: 14 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                                    <span style={{ fontSize: 20 }}>{branch.icon}</span>
-                                    <div>
-                                        <div style={{ fontSize: 15, fontWeight: 700, color: branch.color, fontFamily: "Rajdhani,sans-serif" }}>{branch.name}</div>
-                                        <div style={{ fontSize: 11, color: "#6b7280" }}>{unlocked}/{nodes.length} unlocked</div>
+                            <Card key={key}>
+                                <div className="flex items-center gap-3 mb-3">
+                                    <IconBadge icon={Icon} tone={tone} size={38} />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="card-title">{branch.name}</div>
+                                        <div className="text-[12px] num" style={{ color: "var(--text-dim)" }}>{unlocked}/{nodes.length} unlocked</div>
                                     </div>
                                 </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                <div className="flex items-center">
                                     {nodes.map((node, i) => (
-                                        <div key={node.id} style={{ flex: 1, display: "flex", alignItems: "center" }}>
-                                            <div style={{ width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: node.unlocked ? `${branch.color}20` : "rgba(255,255,255,.03)", border: node.unlocked ? `2px solid ${branch.color}` : "2px solid rgba(255,255,255,.06)", position: "relative" }}>
-                                                <span style={{ fontSize: node.unlocked ? 14 : 10, color: node.unlocked ? branch.color : "#4b5563" }}>{node.unlocked ? "✓" : "🔒"}</span>
-                                                {!node.unlocked && node.progress > 0 && (
-                                                    <div style={{ position: "absolute", bottom: -8, fontSize: 11, color: branch.color }}>{node.progress}%</div>
-                                                )}
+                                        <div key={node.id} className={`flex items-center ${i < nodes.length - 1 ? "flex-1" : ""}`}>
+                                            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                                                style={node.unlocked ? { background: toneVar, color: "var(--accent-ink)" } : { background: "var(--ghost-bg)", color: "var(--text-dim)" }}
+                                                title={node.name}>
+                                                {node.unlocked ? <CheckIcon size={15} strokeWidth={3} /> : node.progress > 0 ? <span className="text-[10px] font-bold num" style={{ color: toneVar }}>{node.progress}%</span> : <Lock size={12} />}
                                             </div>
-                                            {i < nodes.length - 1 && <div style={{ flex: 1, height: 2, background: node.unlocked ? branch.color : "rgba(255,255,255,.06)", margin: "0 2px" }} />}
+                                            {i < nodes.length - 1 && <div className="flex-1 h-0.5 mx-0.5 rounded-full" style={{ background: node.unlocked ? toneVar : "var(--track)" }} />}
                                         </div>
                                     ))}
                                 </div>
-                                <div style={{ display: "flex", gap: 4, marginTop: 10 }}>
+                                <div className="grid gap-1 mt-2" style={{ gridTemplateColumns: `repeat(${nodes.length}, minmax(0, 1fr))` }}>
                                     {nodes.map(node => (
-                                        <div key={node.id} style={{ flex: 1, textAlign: "center" }}>
-                                            <div style={{ fontSize: 11, color: node.unlocked ? branch.color : "#4b5563" }}>{node.name}</div>
-                                        </div>
+                                        <div key={node.id} className="text-[10.5px] text-center leading-tight" style={{ color: node.unlocked ? "var(--text-secondary)" : "var(--text-dim)" }}>{node.name}</div>
                                     ))}
                                 </div>
-                            </div>
+                            </Card>
                         );
                     })}
-                </div>
+                </>
             )}
         </div>
     );
@@ -378,15 +368,15 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
 export function MilestoneOverlay({ milestone, onClose }) {
     if (!milestone) return null;
     return (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.85)" }} onClick={onClose}>
-            <div className="slide-up" style={{ textAlign: "center", padding: 40, maxWidth: 320 }}>
-                <div style={{ fontSize: 64, marginBottom: 12 }}>{milestone.emoji}</div>
-                <div style={{ fontSize: 28, fontWeight: 900, fontFamily: "Rajdhani,sans-serif", background: "linear-gradient(135deg,#f59e0b,#ef4444)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>MILESTONE!</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginTop: 8 }}>{milestone.title}</div>
-                <div style={{ fontSize: 14, color: "#6b7280", marginTop: 6 }}>{milestone.msg}</div>
-                <div style={{ fontSize: 24, fontWeight: 900, color: "#f59e0b", marginTop: 12 }}>{Number(milestone.xp || 0).toLocaleString()} XP</div>
-                <button className="bp" onClick={onClose} style={{ marginTop: 20, padding: "12px 32px" }}>Continue</button>
-            </div>
+        <div className="fade-in fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.6)" }} onClick={onClose} role="dialog" aria-modal="true" aria-label="Milestone reached">
+            <Card className="slide-up w-full max-w-[340px] text-center !p-6" style={{ boxShadow: "var(--shadow)" }}>
+                <div className="flex justify-center mb-3"><IconBadge icon={Trophy} tone="amber" size={64} round /></div>
+                <div className="text-[12px] font-bold tracking-wide uppercase" style={{ color: "var(--tone-amber)" }}>Milestone reached</div>
+                <div className="text-[21px] font-extrabold mt-1.5 leading-tight" style={{ color: "var(--text-primary)" }}>{milestone.title}</div>
+                {milestone.msg && <div className="text-[14px] mt-1.5" style={{ color: "var(--text-secondary)" }}>{milestone.msg}</div>}
+                <div className="mt-4 flex justify-center"><Pill tone="amber" icon={Zap} className="!text-[15px] !px-3.5 !py-1.5 num">{Number(milestone.xp || 0).toLocaleString()} XP</Pill></div>
+                <button type="button" className="bp w-full mt-5" onClick={onClose}>Continue</button>
+            </Card>
         </div>
     );
 }

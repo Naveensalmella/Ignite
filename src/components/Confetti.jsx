@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from 'react';
+import { Zap, Shield } from 'lucide-react';
 
 // Lightweight confetti — drops 80 particles, auto-cleans
 export function ConfettiBlast({ trigger }) {
@@ -15,7 +16,8 @@ export function ConfettiBlast({ trigger }) {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const colors = ["#38bdf8", "#06b6d4", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#22c55e", "#fbbf24"];
+    // B6 tone palette (canvas can't read CSS variables, so these are literal hex)
+    const colors = ["#38bdf8", "#2dd4bf", "#a78bfa", "#fbbf24", "#fb7185", "#60a5fa", "#fb923c", "#2563eb"];
     const particles = Array.from({ length: 80 }, () => ({
       x: Math.random() * canvas.width,
       y: -20 - Math.random() * 100,
@@ -67,21 +69,20 @@ export function ConfettiBlast({ trigger }) {
   );
 }
 
-// XP Popup Toast — shows "+25 XP Training complete" with animation
+// XP Popup Toast — shows "+25 XP Training complete"
 export function XPPopup({ events }) {
   if (!events || events.length === 0) return null;
   return (
-    <div style={{ position: "fixed", top: 80, left: "50%", transform: "translateX(-50%)", zIndex: 99997, display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
+    <div className="fixed flex flex-col items-center gap-1.5" style={{ top: 80, left: "50%", transform: "translateX(-50%)", zIndex: 99997 }} aria-live="polite">
       {events.slice(-3).map((ev, i) => (
-        <div key={ev.id || i} style={{
-          padding: "10px 20px", borderRadius: 12,
-          background: "rgba(56,189,248,.15)", backdropFilter: "blur(10px)",
-          border: "1px solid rgba(56,189,248,.25)",
-          color: "#38bdf8", fontSize: 14, fontWeight: 700,
-          fontFamily: "Rajdhani,sans-serif", letterSpacing: 1,
-          animation: "fadeUp .4s ease both",
+        <div key={ev.id || i} className="fade-in inline-flex items-center gap-1.5 text-[14px] font-bold" style={{
+          padding: "9px 16px", borderRadius: 999,
+          background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow)",
+          color: "var(--text-primary)",
         }}>
-          +{ev.xp ?? ev.amount ?? 0} XP · {ev.reason}
+          <Zap size={15} style={{ color: "var(--accent)" }} aria-hidden="true" />
+          <span style={{ color: "var(--accent)" }}>+{ev.xp ?? ev.amount ?? 0} XP</span>
+          <span className="font-medium" style={{ color: "var(--text-secondary)" }}>· {ev.reason}</span>
         </div>
       ))}
     </div>
@@ -92,33 +93,21 @@ export function XPPopup({ events }) {
 export function LevelUpCelebration({ level, rank, onClose }) {
   if (!level) return null;
   return (
-    <div onClick={onClose} style={{
-      position: "fixed", inset: 0, zIndex: 99999,
-      background: "rgba(3,4,7,.92)", backdropFilter: "blur(12px)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      cursor: "pointer",
-    }}>
-      <div style={{ textAlign: "center", animation: "fadeUp .5s ease both" }}>
-        <div style={{ fontSize: 72, marginBottom: 16 }}>⚡</div>
-        <div style={{
-          fontSize: 16, color: "#6b7280", fontFamily: "Rajdhani,sans-serif",
-          letterSpacing: 4, marginBottom: 8,
-        }}>LEVEL UP</div>
-        <div style={{
-          fontSize: 64, fontWeight: 900, fontFamily: "Rajdhani,sans-serif",
-          background: "linear-gradient(135deg,#38bdf8,#06b6d4)",
-          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          lineHeight: 1,
-        }}>Level {level}</div>
+    <div onClick={onClose} role="dialog" aria-modal="true" aria-label={`Level up: level ${level}`}
+      className="fixed inset-0 flex items-center justify-center px-4 cursor-pointer"
+      style={{ zIndex: 99999, background: "color-mix(in srgb, var(--bg) 92%, transparent)", backdropFilter: "blur(12px)" }}>
+      <div className="card hero fade-in text-center w-full" style={{ maxWidth: 340, padding: "28px 22px" }}>
+        <div className="flex justify-center mb-3">
+          <span className="flex items-center justify-center" style={{ width: 64, height: 64, borderRadius: 22, background: "rgba(255, 255, 255, .2)", color: "#fff" }} aria-hidden="true">
+            <Zap size={32} strokeWidth={2.2} />
+          </span>
+        </div>
+        <div className="text-[13px] font-bold" style={{ color: "var(--text-secondary)", letterSpacing: 3 }}>LEVEL UP</div>
+        <div className="text-[52px] font-extrabold num leading-none mt-1" style={{ color: "var(--text-primary)" }}>Level {level}</div>
         {rank && (
-          <div style={{
-            marginTop: 12, padding: "6px 20px", borderRadius: 100,
-            background: `${rank.color}15`, border: `1px solid ${rank.color}30`,
-            color: rank.color, fontSize: 16, fontWeight: 700,
-            fontFamily: "Rajdhani,sans-serif", display: "inline-block",
-          }}>{rank.emoji} {rank.name}</div>
+          <div className="mt-4"><span className="pill" style={{ fontSize: 14, padding: "6px 14px" }}><Shield size={14} aria-hidden="true" /> {rank.name}</span></div>
         )}
-        <div style={{ color: "#4b5563", fontSize: 13, marginTop: 20 }}>Tap anywhere to continue</div>
+        <div className="text-[12.5px] mt-5" style={{ color: "var(--text-dim)" }}>Tap anywhere to continue</div>
       </div>
     </div>
   );

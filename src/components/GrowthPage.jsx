@@ -1,11 +1,13 @@
 "use client";
 import { useState, useMemo } from 'react';
+import { Card, Ring, Bar, IconBadge, Pill, Check } from '@/components/ui/kit';
+import { Brain, Heart, Sparkles, Gem, Lock } from 'lucide-react';
 
 const PILLARS = [
-  { id: "mind", label: "Mind", icon: "⚡", color: "#06b6d4", desc: "Knowledge, learning, intellectual growth" },
-  { id: "heart", label: "Heart", icon: "💛", color: "#f59e0b", desc: "Relationships, empathy, emotional intelligence" },
-  { id: "spirit", label: "Spirit", icon: "🌟", color: "#8b5cf6", desc: "Mindfulness, discipline, inner peace" },
-  { id: "fortune", label: "Fortune", icon: "💎", color: "#38bdf8", desc: "Financial literacy, wealth building, career" },
+  { id: "mind", label: "Mind", Icon: Brain, tone: "sky", desc: "Knowledge, learning, intellectual growth" },
+  { id: "heart", label: "Heart", Icon: Heart, tone: "amber", desc: "Relationships, empathy, emotional intelligence" },
+  { id: "spirit", label: "Spirit", Icon: Sparkles, tone: "violet", desc: "Mindfulness, discipline, inner peace" },
+  { id: "fortune", label: "Fortune", Icon: Gem, tone: "teal", desc: "Financial literacy, wealth building, career" },
 ];
 
 const GROWTH_DATA = {
@@ -221,8 +223,6 @@ const GROWTH_DATA = {
   ],
 };
 
-function Ring({ pct, color, size = 60, stroke = 5, children }) { const p = Number.isFinite(pct) ? pct : 0; const r = (size - stroke) / 2, c = 2 * Math.PI * r; return (<div style={{ position: "relative", width: size, height: size }}><svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={stroke} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, p / 100))} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} /></svg><div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div></div>) }
-
 export default function GrowthPage({ pillarProg = {}, setPillarProg = () => { } }) {
   const [selPillar, setSelPillar] = useState("mind");
   const pp = useMemo(() => (pillarProg && typeof pillarProg === "object" ? pillarProg : {}), [pillarProg]);
@@ -246,49 +246,55 @@ export default function GrowthPage({ pillarProg = {}, setPillarProg = () => { } 
   const tiers = GROWTH_DATA[selPillar] || [];
   const stats = pillarStats[selPillar];
 
-  return (<div>
-    {/* Overall */}
-    <div className="gs" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-      <Ring pct={overallPct} color="#38bdf8" size={70} stroke={6}>
-        <div style={{ textAlign: "center" }}><div style={{ fontSize: 20, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", lineHeight: 1 }}>{overallPct}%</div><div style={{ fontSize: 11, color: "#6b7280" }}>Growth</div></div>
-      </Ring>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Life Growth</div>
-        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>Complete missions across all 4 pillars. Each tier unlocks the next.</div>
+  const toneVar = `var(--tone-${pillar.tone})`;
+
+  return (<div className="flex flex-col gap-3">
+    {/* Overall — the one hero card */}
+    <Card hero>
+      <div className="flex items-center gap-4">
+        <Ring value={overallPct / 100} size={76} stroke={7} color="#fff">
+          <b className="text-[19px] font-extrabold leading-none num" style={{ color: "var(--text-primary)" }}>{overallPct}%</b>
+          <small className="text-[11px]" style={{ color: "var(--text-dim)" }}>growth</small>
+        </Ring>
+        <div className="flex-1 min-w-0">
+          <div className="text-[19px] font-extrabold" style={{ color: "var(--text-primary)" }}>Life growth</div>
+          <div className="text-[13px] mt-0.5 leading-snug" style={{ color: "var(--text-secondary)" }}>Complete missions across all 4 pillars. Each tier unlocks the next.</div>
+        </div>
       </div>
-    </div>
+    </Card>
 
     {/* Pillar selector */}
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5" role="tablist" aria-label="Pillar">
       {PILLARS.map(p => {
-        const s = pillarStats[p.id];
-        return (<div key={p.id} onClick={() => setSelPillar(p.id)}
-          style={{
-            textAlign: "center", padding: "10px 4px", borderRadius: 10, cursor: "pointer",
-            background: selPillar === p.id ? `${p.color}10` : "rgba(255,255,255,.02)",
-            border: selPillar === p.id ? `1px solid ${p.color}30` : "1px solid rgba(255,255,255,.04)"
-          }}>
-          <div style={{ fontSize: 22 }}>{p.icon}</div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: selPillar === p.id ? p.color : "#e5e7eb", marginTop: 4 }}>{p.label}</div>
-          <div style={{ fontSize: 11, color: "#4b5563" }}>{s.pct}%</div>
-        </div>);
+        const st = pillarStats[p.id];
+        const active = selPillar === p.id;
+        return (<button type="button" key={p.id} role="tab" aria-selected={active} onClick={() => setSelPillar(p.id)}
+          className="tile" style={active ? { background: `color-mix(in srgb, var(--tone-${p.tone}) 10%, var(--card-bg))`, borderColor: `color-mix(in srgb, var(--tone-${p.tone}) 45%, transparent)` } : undefined}>
+          <div className="flex items-center justify-between w-full">
+            <IconBadge icon={p.Icon} tone={p.tone} size={34} />
+            <span className="text-[12.5px] font-bold num" style={{ color: active ? `var(--tone-${p.tone})` : "var(--text-secondary)" }}>{st.pct}%</span>
+          </div>
+          <span className="tile-label">{p.label}</span>
+          <Bar value={st.pct / 100} color={`var(--tone-${p.tone})`} className="w-full !h-1" />
+        </button>);
       })}
     </div>
 
-    {/* Selected pillar header */}
-    <div className="gs" style={{ marginBottom: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-        <span style={{ fontSize: 28 }}>{pillar.icon}</span>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: pillar.color, fontFamily: "Rajdhani,sans-serif" }}>{pillar.label}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>{pillar.desc}</div>
+    {/* Selected pillar */}
+    <Card>
+      <div className="flex items-center gap-3 mb-3">
+        <IconBadge icon={pillar.Icon} tone={pillar.tone} size={44} />
+        <div className="min-w-0">
+          <div className="text-[18px] font-extrabold" style={{ color: "var(--text-primary)" }}>{pillar.label}</div>
+          <div className="text-[12.5px]" style={{ color: "var(--text-dim)" }}>{pillar.desc}</div>
         </div>
       </div>
-      <div style={{ height: 6, background: "rgba(255,255,255,.04)", borderRadius: 3, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${stats.pct}%`, background: pillar.color, borderRadius: 3, transition: "width .5s" }} />
+      <Bar value={stats.pct / 100} color={toneVar} label={`${pillar.label} progress`} />
+      <div className="flex justify-between text-[12px] mt-1.5 num" style={{ color: "var(--text-dim)" }}>
+        <span>{stats.done}/{stats.total} missions</span>
+        <span>Tier {Math.min(stats.currentTier + 1, tiers.length)} of {tiers.length}</span>
       </div>
-      <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>{stats.done}/{stats.total} missions · Tier {Math.min(stats.currentTier + 1, tiers.length)}/{tiers.length}</div>
-    </div>
+    </Card>
 
     {/* Tiers */}
     {tiers.map((tier, ti) => {
@@ -297,39 +303,30 @@ export default function GrowthPage({ pillarProg = {}, setPillarProg = () => { } 
       const tierDone = tier.missions.filter(m => pp[m.id]).length;
       const tierComplete = tierDone === tier.missions.length;
 
-      return (<div key={tier.tier} className="gs" style={{
-        marginBottom: 10, opacity: unlocked ? 1 : 0.3,
-        border: tierComplete ? `1px solid ${pillar.color}25` : unlocked ? "1px solid rgba(255,255,255,.06)" : "1px solid rgba(255,255,255,.03)",
-        background: tierComplete ? `${pillar.color}04` : undefined,
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Rajdhani,sans-serif", fontWeight: 800, fontSize: 14, background: tierComplete ? `${pillar.color}15` : "rgba(255,255,255,.03)", color: tierComplete ? pillar.color : unlocked ? "#e5e7eb" : "#4b5563", border: `1px solid ${tierComplete ? pillar.color + "30" : "rgba(255,255,255,.06)"}` }}>
-              {tierComplete ? "✓" : tier.tier}
-            </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: tierComplete ? pillar.color : unlocked ? "#e5e7eb" : "#4b5563" }}>Tier {tier.tier} — {tier.name}</div>
-              <div style={{ fontSize: 11, color: "#4b5563" }}>{tierDone}/{tier.missions.length} complete</div>
-            </div>
+      return (<Card key={tier.tier} className={unlocked ? "" : "opacity-60"}>
+        <div className={`flex items-center gap-3 ${unlocked ? "mb-2" : ""}`}>
+          <span className="w-9 h-9 rounded-xl flex items-center justify-center text-[14px] font-extrabold shrink-0 num"
+            style={{ background: tierComplete ? `color-mix(in srgb, ${toneVar} 16%, transparent)` : "var(--ghost-bg)", color: tierComplete ? toneVar : unlocked ? "var(--text-primary)" : "var(--text-dim)" }}>
+            {unlocked ? tier.tier : <Lock size={15} />}
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="text-[14.5px] font-bold truncate" style={{ color: unlocked ? "var(--text-primary)" : "var(--text-dim)" }}>Tier {tier.tier} · {tier.name}</div>
+            <div className="text-[12px] num" style={{ color: "var(--text-dim)" }}>{unlocked ? `${tierDone}/${tier.missions.length} complete` : `Complete Tier ${tier.tier - 1} first`}</div>
           </div>
-          {!unlocked && <span style={{ fontSize: 11, color: "#4b5563" }}>🔒 Complete Tier {tier.tier - 1} first</span>}
-          {tierComplete && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: `${pillar.color}12`, color: pillar.color, fontWeight: 600 }}>Mastered ✓</span>}
+          {tierComplete && <Pill tone={pillar.tone}>Mastered</Pill>}
         </div>
+        {unlocked && !tierComplete && tierDone > 0 && <Bar value={tierDone / tier.missions.length} color={toneVar} className="!h-1 mb-1" />}
 
-        {unlocked && tier.missions.map(m => {
-          const done = pp[m.id];
-          return (<div key={m.id} onClick={() => unlocked && toggle(m.id)}
-            style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderTop: "1px solid rgba(255,255,255,.03)", cursor: unlocked ? "pointer" : "default" }}>
-            <div style={{
-              width: 22, height: 22, borderRadius: 6, flexShrink: 0, marginTop: 1,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 12, fontWeight: 700, transition: "all .2s",
-              ...(done ? { background: `linear-gradient(135deg, ${pillar.color}, ${pillar.color}cc)`, color: "#060a0c" } : { border: "2px solid #374151" }),
-            }}>{done ? "✓" : ""}</div>
-            <span style={{ fontSize: 13, color: done ? "#6b7280" : "#d1d5db", textDecoration: done ? "line-through" : "none", lineHeight: 1.5 }}>{m.text}</span>
-          </div>);
-        })}
-      </div>);
+        {unlocked && <div>
+          {tier.missions.map(m => {
+            const done = !!pp[m.id];
+            return (<button type="button" key={m.id} onClick={() => unlocked && toggle(m.id)} aria-pressed={done} className="list-row !items-start">
+              <Check on={done} />
+              <span className={`text-[13.5px] leading-normal flex-1 ${done ? "is-done-text" : ""}`} style={done ? undefined : { color: "var(--text-secondary)" }}>{m.text}</span>
+            </button>);
+          })}
+        </div>}
+      </Card>);
     })}
   </div>);
 }

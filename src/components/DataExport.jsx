@@ -1,5 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
+import { Download, FileImage, Database, Check } from 'lucide-react';
+import { Card, IconBadge } from '@/components/ui/kit';
 import { getLevel, toArr, today, parseDateKey } from '@/utils';
 import useAppStore from '@/stores/useAppStore';
 import { playerRank } from '@/lib/system/ranks';
@@ -251,22 +253,22 @@ export default function DataExport({ appState: rawAppState = {}, totalXP = 0, st
     };
 
     return (
-        <div className="gs" style={{ padding: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                <span style={{ fontSize: 24 }}>📊</span>
-                <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Export Progress</div>
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>Download your IGNITE journey</div>
+        <Card>
+            <div className="flex items-center gap-3 mb-3">
+                <IconBadge icon={Download} tone="teal" size={38} />
+                <div className="flex-1 min-w-0">
+                    <div className="card-title">Export progress</div>
+                    <div className="row-sub">Download your IGNITE journey</div>
                 </div>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-                <button className="bp" onClick={exportPDF} disabled={exporting} style={{ flex: 1, padding: "12px 16px", fontSize: 13 }}>
-                    {exporting ? "Generating..." : done ? "✓ Downloaded!" : "📄 Report (Image)"}
+            <div className="flex gap-2">
+                <button type="button" className="bp flex-1" onClick={exportPDF} disabled={exporting} style={{ fontSize: 13 }}>
+                    {exporting ? "Generating…" : done ? <><Check size={15} /> Downloaded</> : <><FileImage size={15} /> Report (image)</>}
                 </button>
-                <button className="bg" onClick={exportJSON} style={{ padding: "12px 16px", fontSize: 13 }}>
-                    💾 Raw Data
+                <button type="button" className="bg" onClick={exportJSON} style={{ fontSize: 13 }}>
+                    <Database size={15} /> Raw data
                 </button>
             </div>
-        </div>
+        </Card>
     );
 }

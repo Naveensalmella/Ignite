@@ -1,34 +1,39 @@
 "use client";
 import { useState } from 'react';
+import {
+  Flame, Dumbbell, HeartPulse, Swords, Flower2, Sprout, Zap, PersonStanding, Footprints, Shuffle,
+  HandFist, Wind, Medal, Ban, Mars, Venus, VenusAndMars, UserRound, Check, ArrowLeft, ArrowRight, CircleAlert,
+} from 'lucide-react';
+import { IconBadge } from '@/components/ui/kit';
 import { getRank, today } from '@/utils';
 
 const GOALS = [
-  { id: "lose", icon: "🔥", label: "Lose Fat", desc: "Burn fat, get lean and defined" },
-  { id: "muscle", icon: "💪", label: "Build Muscle", desc: "Gain strength and muscle mass" },
-  { id: "fit", icon: "🏃", label: "Get Fit", desc: "Overall health and endurance" },
-  { id: "fight", icon: "⚔️", label: "Learn Fighting", desc: "Master combat techniques" },
-  { id: "flex", icon: "🧘", label: "Flexibility & Balance", desc: "Mobility, recovery, and body control" },
+  { id: "lose", icon: Flame, tone: "orange", label: "Lose Fat", desc: "Burn fat, get lean and defined" },
+  { id: "muscle", icon: Dumbbell, tone: "sky", label: "Build Muscle", desc: "Gain strength and muscle mass" },
+  { id: "fit", icon: HeartPulse, tone: "rose", label: "Get Fit", desc: "Overall health and endurance" },
+  { id: "fight", icon: Swords, tone: "violet", label: "Learn Fighting", desc: "Master combat techniques" },
+  { id: "flex", icon: Flower2, tone: "teal", label: "Flexibility & Balance", desc: "Mobility, recovery, and body control" },
 ];
 
 const FITNESS_LEVELS = [
-  { id: "beginner", icon: "🌱", label: "Beginner", desc: "New to fitness or returning after a long break", multiplier: 0.6 },
-  { id: "intermediate", icon: "⚡", label: "Intermediate", desc: "Been training for 3-12 months consistently", multiplier: 1.0 },
-  { id: "advanced", icon: "🔥", label: "Advanced", desc: "2+ years of serious training", multiplier: 1.4 },
+  { id: "beginner", icon: Sprout, tone: "lime", label: "Beginner", desc: "New to fitness or returning after a long break", multiplier: 0.6 },
+  { id: "intermediate", icon: Zap, tone: "sky", label: "Intermediate", desc: "Been training for 3-12 months consistently", multiplier: 1.0 },
+  { id: "advanced", icon: Flame, tone: "orange", label: "Advanced", desc: "2+ years of serious training", multiplier: 1.4 },
 ];
 
 const TRAINING_TYPES = [
-  { id: "bodyweight", icon: "🤸", label: "Bodyweight", desc: "No equipment needed — train anywhere" },
-  { id: "gym", icon: "🏋️", label: "Gym", desc: "Weights, machines, and barbells" },
-  { id: "cardio", icon: "🏃", label: "Cardio Focus", desc: "Running, HIIT, endurance training" },
-  { id: "mixed", icon: "🔄", label: "Mixed", desc: "Combine everything for maximum results" },
+  { id: "bodyweight", icon: PersonStanding, tone: "teal", label: "Bodyweight", desc: "No equipment needed — train anywhere" },
+  { id: "gym", icon: Dumbbell, tone: "sky", label: "Gym", desc: "Weights, machines, and barbells" },
+  { id: "cardio", icon: Footprints, tone: "rose", label: "Cardio Focus", desc: "Running, HIIT, endurance training" },
+  { id: "mixed", icon: Shuffle, tone: "violet", label: "Mixed", desc: "Combine everything for maximum results" },
 ];
 
 const FIGHTING_STYLES = [
-  { id: "boxing", icon: "🥊", label: "Boxing", desc: "Jabs, crosses, hooks, footwork" },
-  { id: "kickboxing", icon: "🦵", label: "Kickboxing", desc: "Punches + powerful kicks" },
-  { id: "mma", icon: "⚔️", label: "MMA", desc: "Strikes, clinch, ground basics" },
-  { id: "martial_arts", icon: "🥋", label: "Martial Arts", desc: "Traditional techniques and forms" },
-  { id: "none", icon: "❌", label: "Not Interested", desc: "Skip combat training" },
+  { id: "boxing", icon: HandFist, tone: "rose", label: "Boxing", desc: "Jabs, crosses, hooks, footwork" },
+  { id: "kickboxing", icon: Wind, tone: "orange", label: "Kickboxing", desc: "Punches + powerful kicks" },
+  { id: "mma", icon: Swords, tone: "violet", label: "MMA", desc: "Strikes, clinch, ground basics" },
+  { id: "martial_arts", icon: Medal, tone: "amber", label: "Martial Arts", desc: "Traditional techniques and forms" },
+  { id: "none", icon: Ban, tone: "sky", label: "Not Interested", desc: "Skip combat training" },
 ];
 
 const TIME_OPTIONS = [
@@ -40,20 +45,20 @@ const TIME_OPTIONS = [
 ];
 
 const BODY_PARTS = [
-  { id: "chest", icon: "🫁", label: "Chest" },
-  { id: "back", icon: "🔙", label: "Back" },
-  { id: "shoulders", icon: "💪", label: "Shoulders" },
-  { id: "arms", icon: "🦾", label: "Arms" },
-  { id: "core", icon: "🔥", label: "Core / Abs" },
-  { id: "legs", icon: "🦵", label: "Legs" },
-  { id: "glutes", icon: "🍑", label: "Glutes" },
-  { id: "full", icon: "⚡", label: "Full Body" },
+  { id: "chest", label: "Chest" },
+  { id: "back", label: "Back" },
+  { id: "shoulders", label: "Shoulders" },
+  { id: "arms", label: "Arms" },
+  { id: "core", label: "Core / Abs" },
+  { id: "legs", label: "Legs" },
+  { id: "glutes", label: "Glutes" },
+  { id: "full", label: "Full Body" },
 ];
 
 const GENDERS = [
-  { id: "male", icon: "♂", label: "Male" },
-  { id: "female", icon: "♀", label: "Female" },
-  { id: "other", icon: "⚧", label: "Other" },
+  { id: "male", icon: Mars, label: "Male" },
+  { id: "female", icon: Venus, label: "Female" },
+  { id: "other", icon: VenusAndMars, label: "Other" },
 ];
 
 // Sane bounds so typos like "0", "-5" or "1750" can't produce a broken BMI/calorie target
@@ -122,111 +127,79 @@ export default function OnboardingPage({ onComplete = () => { } }) {
     }
   };
 
-  const cardStyle = (selected) => ({
-    padding: "14px 16px", borderRadius: 10, cursor: "pointer",
-    background: selected ? "rgba(56,189,248,.08)" : "rgba(255,255,255,.02)",
-    border: selected ? "1px solid rgba(56,189,248,.3)" : "1px solid rgba(255,255,255,.04)",
-    transition: "all .2s",
-  });
+  const stepTitles = ["Your name", "Body & stats", "Goal & level", "Training style", "Time & focus", "Summary"];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060a0c", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ maxWidth: 520, width: "100%" }}>
+    <div className="min-h-dvh flex items-center justify-center px-4 py-8" style={{ background: "var(--bg)" }}>
+      <div className="w-full flex flex-col gap-4" style={{ maxWidth: 520 }}>
 
-        {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 12, margin: "0 auto 12px", background: "linear-gradient(135deg,#38bdf8,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 900, color: "#fff", fontFamily: "Rajdhani,sans-serif" }}>I</div>
-          <h1 style={{ fontSize: 28, fontWeight: 900, fontFamily: "Rajdhani,sans-serif", background: "linear-gradient(135deg,#38bdf8,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: 6 }}>IGNITE</h1>
+        {/* Brand + progress */}
+        <div className="text-center">
+          <div className="text-accent-grad text-[24px] font-extrabold" style={{ letterSpacing: 4 }}>IGNITE</div>
+          <div className="text-[12.5px] mt-0.5" style={{ color: "var(--text-dim)" }}>Step {step + 1} of {totalSteps} · {stepTitles[step]}</div>
         </div>
-
-        {/* Progress Bar */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
+        <div className="flex gap-1" aria-hidden="true">
           {Array.from({ length: totalSteps }, (_, i) => (
-            <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= step ? "linear-gradient(90deg,#38bdf8,#06b6d4)" : "rgba(255,255,255,.06)", transition: "background .3s" }} />
+            <div key={i} className="flex-1" style={{ height: 4, borderRadius: 999, background: i <= step ? "var(--accent)" : "var(--track)", transition: "background .3s" }} />
           ))}
         </div>
 
         {/* ═══ STEP 0: Welcome + Name ═══ */}
         {step === 0 && (
-          <div className="fade-in" style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>⚔️</div>
-            <h2 style={{ fontSize: 24, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>Build Your Warrior Profile</h2>
-            <p style={{ color: "#6b7280", fontSize: 14, marginTop: 8, marginBottom: 28 }}>Let&apos;s set up your training based on your body, goals, and style. This takes 2 minutes.</p>
-            <div style={{ textAlign: "left" }}>
-              <label style={{ fontSize: 12, color: "#6b7280", display: "block", marginBottom: 6 }}>What should we call you?</label>
-              <input className="inp" placeholder="Your name" value={data.name} onChange={e => update("name", e.target.value)}
-                style={{ fontSize: 18, textAlign: "center", padding: 16 }} autoFocus />
+          <div className="card fade-in text-center" style={{ padding: 22 }}>
+            <div className="flex justify-center mb-3"><IconBadge icon={UserRound} tone="sky" size={56} /></div>
+            <StepHead title="Build your Hunter profile" sub="We'll set up your training from your body, goals and style. This takes 2 minutes." center />
+            <div className="text-left mt-5">
+              <label htmlFor="ob-name" className="block text-[12.5px] font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>What should we call you?</label>
+              <input id="ob-name" className="inp" placeholder="Your name" value={data.name} onChange={e => update("name", e.target.value)}
+                style={{ fontSize: 17, textAlign: "center", padding: 14 }} autoFocus />
             </div>
           </div>
         )}
 
         {/* ═══ STEP 1: Body Stats ═══ */}
         {step === 1 && (
-          <div className="fade-in">
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1, marginBottom: 4 }}>Body & Stats</h2>
-            <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 20 }}>This helps calculate your BMI, calorie needs, and training intensity.</p>
+          <div className="card fade-in" style={{ padding: 22 }}>
+            <StepHead title="Body & stats" sub="This helps calculate your BMI, calorie needs and training intensity." />
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-              <div>
-                <label style={{ fontSize: 11, color: "#6b7280", display: "block", marginBottom: 4 }}>Age</label>
-                <input className="inp" type="number" placeholder="e.g. 22" value={data.age} onChange={e => update("age", e.target.value)} style={{ textAlign: "center", fontSize: 18, fontWeight: 700 }} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, color: "#6b7280", display: "block", marginBottom: 4 }}>Weight (kg)</label>
-                <input className="inp" type="number" placeholder="e.g. 70" value={data.weight} onChange={e => update("weight", e.target.value)} style={{ textAlign: "center", fontSize: 18, fontWeight: 700 }} />
-              </div>
+            <div className="grid grid-cols-2 gap-3 mt-4 mb-3">
+              <NumField id="ob-age" label="Age" placeholder="e.g. 22" value={data.age} onChange={v => update("age", v)} />
+              <NumField id="ob-weight" label="Weight (kg)" placeholder="e.g. 70" value={data.weight} onChange={v => update("weight", v)} />
+            </div>
+            <div className="mb-4">
+              <NumField id="ob-height" label="Height (cm)" placeholder="e.g. 175" value={data.height} onChange={v => update("height", v)} />
             </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 11, color: "#6b7280", display: "block", marginBottom: 4 }}>Height (cm)</label>
-              <input className="inp" type="number" placeholder="e.g. 175" value={data.height} onChange={e => update("height", e.target.value)} style={{ textAlign: "center", fontSize: 18, fontWeight: 700 }} />
+            <SectionLabel>Gender</SectionLabel>
+            <div className="grid grid-cols-3 gap-2">
+              {GENDERS.map(g => (
+                <OptionTile key={g.id} selected={data.gender === g.id} onClick={() => update("gender", g.id)} icon={g.icon} label={g.label} />
+              ))}
             </div>
 
-            <div>
-              <label style={{ fontSize: 11, color: "#6b7280", display: "block", marginBottom: 8 }}>Gender</label>
-              <div style={{ display: "flex", gap: 8 }}>
-                {GENDERS.map(g => (
-                  <div key={g.id} onClick={() => update("gender", g.id)}
-                    style={{ ...cardStyle(data.gender === g.id), flex: 1, textAlign: "center", padding: 14 }}>
-                    <div style={{ fontSize: 24 }}>{g.icon}</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: data.gender === g.id ? "#38bdf8" : "#e5e7eb", marginTop: 4 }}>{g.label}</div>
-                  </div>
-                ))}
+            {/* Step 1 validation hint */}
+            {!canNext() && (data.age || data.weight || data.height) && (
+              <div className="text-[12.5px] mt-4 px-3 py-2.5 rounded-xl" style={{ color: "var(--warn)", background: "color-mix(in srgb, var(--warn) 10%, transparent)" }}>
+                Enter age {BOUNDS.age[0]}–{BOUNDS.age[1]}, weight {BOUNDS.weight[0]}–{BOUNDS.weight[1]} kg, height {BOUNDS.height[0]}–{BOUNDS.height[1]} cm and pick a gender.
               </div>
-            </div>
+            )}
           </div>
         )}
 
         {/* ═══ STEP 2: Goal + Fitness Level ═══ */}
         {step === 2 && (
-          <div className="fade-in">
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1, marginBottom: 4 }}>Your Goal</h2>
-            <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 16 }}>What are you training for?</p>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+          <div className="card fade-in" style={{ padding: 22 }}>
+            <StepHead title="Your goal" sub="What are you training for?" />
+            <div className="flex flex-col gap-2 mt-4 mb-5">
               {GOALS.map(g => (
-                <div key={g.id} onClick={() => update("goal", g.id)} style={cardStyle(data.goal === g.id)}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 28 }}>{g.icon}</span>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: data.goal === g.id ? "#38bdf8" : "#e5e7eb" }}>{g.label}</div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>{g.desc}</div>
-                    </div>
-                    {data.goal === g.id && <span style={{ marginLeft: "auto", color: "#38bdf8" }}>✓</span>}
-                  </div>
-                </div>
+                <OptionRow key={g.id} selected={data.goal === g.id} onClick={() => update("goal", g.id)} icon={g.icon} tone={g.tone} label={g.label} desc={g.desc} />
               ))}
             </div>
 
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>Current Fitness Level</h3>
-            <div style={{ display: "flex", gap: 8 }}>
+            <SectionLabel>Current fitness level</SectionLabel>
+            <div className="grid grid-cols-3 gap-2">
               {FITNESS_LEVELS.map(fl => (
-                <div key={fl.id} onClick={() => update("fitnessLevel", fl.id)}
-                  style={{ ...cardStyle(data.fitnessLevel === fl.id), flex: 1, textAlign: "center", padding: 14 }}>
-                  <div style={{ fontSize: 24 }}>{fl.icon}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: data.fitnessLevel === fl.id ? "#38bdf8" : "#e5e7eb", marginTop: 4 }}>{fl.label}</div>
-                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{fl.desc}</div>
-                </div>
+                <OptionTile key={fl.id} selected={data.fitnessLevel === fl.id} onClick={() => update("fitnessLevel", fl.id)} icon={fl.icon} label={fl.label} desc={fl.desc} />
               ))}
             </div>
           </div>
@@ -234,34 +207,18 @@ export default function OnboardingPage({ onComplete = () => { } }) {
 
         {/* ═══ STEP 3: Training Type + Fighting Style ═══ */}
         {step === 3 && (
-          <div className="fade-in">
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1, marginBottom: 4 }}>Training Style</h2>
-            <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 16 }}>How do you prefer to train?</p>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
+          <div className="card fade-in" style={{ padding: 22 }}>
+            <StepHead title="Training style" sub="How do you prefer to train?" />
+            <div className="grid grid-cols-2 gap-2 mt-4 mb-5">
               {TRAINING_TYPES.map(t => (
-                <div key={t.id} onClick={() => update("trainingType", t.id)}
-                  style={{ ...cardStyle(data.trainingType === t.id), textAlign: "center", padding: 16 }}>
-                  <div style={{ fontSize: 28 }}>{t.icon}</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: data.trainingType === t.id ? "#38bdf8" : "#e5e7eb", marginTop: 4 }}>{t.label}</div>
-                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{t.desc}</div>
-                </div>
+                <OptionTile key={t.id} selected={data.trainingType === t.id} onClick={() => update("trainingType", t.id)} icon={t.icon} label={t.label} desc={t.desc} />
               ))}
             </div>
 
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>Fighting Interest</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <SectionLabel>Fighting interest</SectionLabel>
+            <div className="flex flex-col gap-2">
               {FIGHTING_STYLES.map(f => (
-                <div key={f.id} onClick={() => update("fightingStyle", f.id)} style={cardStyle(data.fightingStyle === f.id)}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 24 }}>{f.icon}</span>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: data.fightingStyle === f.id ? "#38bdf8" : "#e5e7eb" }}>{f.label}</div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>{f.desc}</div>
-                    </div>
-                    {data.fightingStyle === f.id && <span style={{ marginLeft: "auto", color: "#38bdf8" }}>✓</span>}
-                  </div>
-                </div>
+                <OptionRow key={f.id} selected={data.fightingStyle === f.id} onClick={() => update("fightingStyle", f.id)} icon={f.icon} tone={f.tone} label={f.label} desc={f.desc} />
               ))}
             </div>
           </div>
@@ -269,56 +226,57 @@ export default function OnboardingPage({ onComplete = () => { } }) {
 
         {/* ═══ STEP 4: Time + Focus Areas ═══ */}
         {step === 4 && (
-          <div className="fade-in">
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1, marginBottom: 4 }}>Daily Training Time</h2>
-            <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 16 }}>How much time can you train per day?</p>
-
-            <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-              {TIME_OPTIONS.map(t => (
-                <div key={t.id} onClick={() => update("dailyTime", t.id)}
-                  style={{ ...cardStyle(data.dailyTime === t.id), flex: 1, textAlign: "center", padding: 12 }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: data.dailyTime === t.id ? "#38bdf8" : "#e5e7eb", fontFamily: "Rajdhani,sans-serif" }}>{t.label}</div>
-                  <div style={{ fontSize: 11, color: "#6b7280" }}>{t.desc}</div>
-                </div>
-              ))}
+          <div className="card fade-in" style={{ padding: 22 }}>
+            <StepHead title="Daily training time" sub="How much time can you train per day?" />
+            <div className="grid grid-cols-5 gap-1.5 mt-4 mb-5">
+              {TIME_OPTIONS.map(t => {
+                const on = data.dailyTime === t.id;
+                return (
+                  <button key={t.id} type="button" aria-pressed={on} onClick={() => update("dailyTime", t.id)}
+                    className="rounded-2xl text-center px-1 py-2.5" style={optionStyle(on)}>
+                    <div className="text-[14px] font-extrabold num" style={{ color: on ? "var(--accent)" : "var(--text-primary)" }}>{t.label}</div>
+                    <div className="text-[10.5px] mt-0.5 leading-tight" style={{ color: "var(--text-dim)" }}>{t.desc}</div>
+                  </button>
+                );
+              })}
             </div>
 
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", marginBottom: 8 }}>Focus Areas</h3>
-            <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 12 }}>Select body parts you want to focus on (or choose Full Body)</p>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-              {BODY_PARTS.map(bp => (
-                <div key={bp.id} onClick={() => toggleFocus(bp.id)}
-                  style={{ ...cardStyle(data.focusAreas.includes(bp.id)), textAlign: "center", padding: 12 }}>
-                  <div style={{ fontSize: 22 }}>{bp.icon}</div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: data.focusAreas.includes(bp.id) ? "#38bdf8" : "#e5e7eb", marginTop: 4 }}>{bp.label}</div>
-                </div>
-              ))}
+            <SectionLabel>Focus areas</SectionLabel>
+            <p className="text-[12.5px] -mt-1 mb-3" style={{ color: "var(--text-dim)" }}>Pick the body parts you want to focus on, or Full Body.</p>
+            <div className="flex flex-wrap gap-2">
+              {BODY_PARTS.map(bp => {
+                const on = data.focusAreas.includes(bp.id);
+                return (
+                  <button key={bp.id} type="button" aria-pressed={on} onClick={() => toggleFocus(bp.id)}
+                    className={`chip ${on ? "chip-a" : "chip-i"}`} style={{ minHeight: 36 }}>
+                    {on && <Check size={14} strokeWidth={2.6} />}{bp.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
         {/* ═══ STEP 5: Summary ═══ */}
         {step === 5 && (
-          <div className="fade-in" style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 52, marginBottom: 12 }}>🔥</div>
-            <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: "Rajdhani,sans-serif", background: "linear-gradient(135deg,#38bdf8,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: 2 }}>WARRIOR PROFILE READY</h2>
-            <p style={{ color: "#6b7280", fontSize: 14, marginTop: 8, marginBottom: 24 }}>Your personalized training has been configured</p>
-
-            <div style={{ background: "rgba(10,16,18,.9)", border: "1px solid rgba(56,189,248,.15)", borderRadius: 14, padding: 24, textAlign: "left" }}>
-              {/* Avatar + Name */}
-              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
-                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg,#38bdf8,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 800, color: "#fff", fontFamily: "Rajdhani,sans-serif" }}>
+          <div className="fade-in flex flex-col gap-3">
+            <div className="card hero" style={{ padding: 22 }}>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center shrink-0 text-[26px] font-extrabold"
+                  style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(255, 255, 255, .2)", color: "#fff" }}>
                   {data.name[0]?.toUpperCase() || "I"}
                 </div>
-                <div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{data.name}</div>
-                  <div style={{ fontSize: 12, color: "#38bdf8" }}>Level 1 · {getRank(1).name}</div>
+                <div className="min-w-0">
+                  <div className="text-[12.5px] font-semibold" style={{ color: "var(--text-secondary)" }}>Hunter profile ready</div>
+                  <div className="text-[22px] font-extrabold truncate" style={{ color: "var(--text-primary)" }}>{data.name}</div>
+                  <div className="mt-1"><span className="pill">Level 1 · {getRank(1).name}</span></div>
                 </div>
               </div>
+            </div>
 
-              {/* Stats Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div className="card" style={{ padding: 18 }}>
+              <div className="card-head"><div className="card-title">Your setup</div></div>
+              <div className="grid grid-cols-2 gap-x-4">
                 {[
                   ["Age", `${data.age} years`],
                   ["Gender", GENDERS.find(g => g.id === data.gender)?.label],
@@ -331,9 +289,9 @@ export default function OnboardingPage({ onComplete = () => { } }) {
                   ["Daily Time", TIME_OPTIONS.find(t => t.id === data.dailyTime)?.label],
                   ["Focus", data.focusAreas.map(a => BODY_PARTS.find(b => b.id === a)?.label).join(", ")],
                 ].map(([l, v]) => (
-                  <div key={l} style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.03)" }}>
-                    <div style={{ fontSize: 11, color: "#6b7280", fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>{l}</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#e5e7eb" }}>{v}</div>
+                  <div key={l} className="py-2" style={{ borderBottom: "1px solid var(--line)" }}>
+                    <div className="text-[11.5px]" style={{ color: "var(--text-dim)" }}>{l}</div>
+                    <div className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>{v}</div>
                   </div>
                 ))}
               </div>
@@ -341,29 +299,82 @@ export default function OnboardingPage({ onComplete = () => { } }) {
           </div>
         )}
 
-        {/* Step 1 validation hint */}
-        {step === 1 && !canNext() && (data.age || data.weight || data.height) && (
-          <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 12 }}>
-            Enter age {BOUNDS.age[0]}–{BOUNDS.age[1]}, weight {BOUNDS.weight[0]}–{BOUNDS.weight[1]} kg, height {BOUNDS.height[0]}–{BOUNDS.height[1]} cm and pick a gender.
+        {error && (
+          <div role="alert" className="flex items-center justify-center gap-2 text-[12.5px] px-3 py-2.5 rounded-xl"
+            style={{ color: "var(--danger)", background: "color-mix(in srgb, var(--danger) 10%, transparent)" }}>
+            <CircleAlert size={15} aria-hidden="true" /> {error}
           </div>
         )}
-        {error && <div style={{ fontSize: 12, color: "#ef4444", marginTop: 12, textAlign: "center" }}>{error}</div>}
 
         {/* Navigation Buttons */}
-        <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
+        <div className="flex gap-2.5">
           {step > 0 && (
-            <button onClick={() => setStep(s => s - 1)} disabled={submitting}
-              style={{ flex: "0 0 auto", padding: "14px 24px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", color: "#e5e7eb", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-              ← Back
+            <button type="button" className="bg" onClick={() => setStep(s => s - 1)} disabled={submitting} style={{ padding: "13px 20px" }}>
+              <ArrowLeft size={16} /> Back
             </button>
           )}
-          <button onClick={() => { if (step < totalSteps - 1) setStep(s => s + 1); else finish(); }}
-            disabled={!canNext()}
-            style={{ flex: 1, padding: 14, background: canNext() ? "linear-gradient(135deg,#38bdf8,#0284c7)" : "rgba(255,255,255,.03)", color: canNext() ? "#fff" : "#4b5563", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: canNext() ? "pointer" : "not-allowed", fontFamily: "inherit", letterSpacing: 1, boxShadow: canNext() ? "0 4px 16px rgba(56,189,248,.25)" : "none", transition: "all .25s" }}>
-            {step === totalSteps - 1 ? (submitting ? "SAVING..." : "BEGIN YOUR JOURNEY →") : "NEXT →"}
+          <button type="button" className="bp flex-1" onClick={() => { if (step < totalSteps - 1) setStep(s => s + 1); else finish(); }}
+            disabled={!canNext()} style={{ padding: "13px 20px", fontSize: 15, cursor: canNext() ? "pointer" : "not-allowed" }}>
+            {step === totalSteps - 1 ? (submitting ? "Saving..." : "Begin your journey") : "Next"} {!submitting && <ArrowRight size={17} />}
           </button>
         </div>
       </div>
     </div>
+  );
+}
+
+const optionStyle = (selected) => ({
+  background: selected ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "var(--ghost-bg)",
+  border: `1px solid ${selected ? "color-mix(in srgb, var(--accent) 45%, transparent)" : "transparent"}`,
+  transition: "background .2s, border-color .2s",
+});
+
+function StepHead({ title, sub, center = false }) {
+  return (
+    <div className={center ? "text-center" : ""}>
+      <h2 className="text-[20px] font-extrabold" style={{ color: "var(--text-primary)", letterSpacing: "-.01em" }}>{title}</h2>
+      {sub && <p className="text-[13.5px] mt-1" style={{ color: "var(--text-secondary)" }}>{sub}</p>}
+    </div>
+  );
+}
+
+function SectionLabel({ children }) {
+  return <div className="text-[14px] font-bold mb-2" style={{ color: "var(--text-primary)" }}>{children}</div>;
+}
+
+function NumField({ id, label, placeholder, value, onChange }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-[12px] font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>{label}</label>
+      <input id={id} className="inp num" type="number" inputMode="decimal" placeholder={placeholder} value={value}
+        onChange={e => onChange(e.target.value)} style={{ textAlign: "center", fontSize: 17, fontWeight: 700 }} />
+    </div>
+  );
+}
+
+/** Selectable list row: icon badge · label/desc · tick. */
+function OptionRow({ selected, onClick, icon, tone, label, desc }) {
+  return (
+    <button type="button" aria-pressed={selected} onClick={onClick}
+      className="w-full flex items-center gap-3 text-left rounded-2xl px-3 py-2.5" style={optionStyle(selected)}>
+      <IconBadge icon={icon} tone={tone} size={38} />
+      <div className="flex-1 min-w-0">
+        <div className="text-[14.5px] font-semibold" style={{ color: selected ? "var(--accent)" : "var(--text-primary)" }}>{label}</div>
+        <div className="text-[12.5px]" style={{ color: "var(--text-dim)" }}>{desc}</div>
+      </div>
+      {selected && <span className="flex items-center justify-center shrink-0" style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--accent)", color: "var(--accent-ink)" }}><Check size={13} strokeWidth={3} /></span>}
+    </button>
+  );
+}
+
+/** Selectable square tile: icon · label · optional desc. */
+function OptionTile({ selected, onClick, icon: Icon, label, desc }) {
+  return (
+    <button type="button" aria-pressed={selected} onClick={onClick}
+      className="flex flex-col items-center text-center rounded-2xl px-2 py-3" style={optionStyle(selected)}>
+      <Icon size={22} strokeWidth={2} style={{ color: selected ? "var(--accent)" : "var(--text-secondary)" }} aria-hidden="true" />
+      <div className="text-[13px] font-semibold mt-1.5" style={{ color: selected ? "var(--accent)" : "var(--text-primary)" }}>{label}</div>
+      {desc && <div className="text-[11px] mt-0.5 leading-snug" style={{ color: "var(--text-dim)" }}>{desc}</div>}
+    </button>
   );
 }

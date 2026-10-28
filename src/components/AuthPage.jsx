@@ -9,6 +9,8 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { Flame, Mail, Lock, User, ArrowLeft, MailCheck, CircleAlert } from 'lucide-react';
+import { IconBadge } from '@/components/ui/kit';
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -92,89 +94,72 @@ export default function AuthPage({ onAuth }) {
 
   const switchMode = (m) => { setMode(m); clearError(); setResetSent(false); };
 
-  const inputStyle = {
-    width: "100%", padding: "14px 16px", borderRadius: 10, fontSize: 14,
-    background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)",
-    color: "#f3f4f6", outline: "none", marginBottom: 10,
-    transition: "border .2s",
-  };
+  const linkStyle = { color: "var(--accent)" };
 
   return (
-    <div style={{
-      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-      background: "#07090d", padding: 20,
-    }}>
-      <div style={{ width: "100%", maxWidth: 400 }}>
-        {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontSize: 48, marginBottom: 8 }}>🔥</div>
-          <h1 style={{
-            fontSize: 36, fontWeight: 900, fontFamily: "Rajdhani,sans-serif",
-            background: "linear-gradient(135deg, #38bdf8, #06b6d4)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            letterSpacing: 3,
-          }}>IGNITE</h1>
-          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
-            {mode === "forgot" ? "Reset your password" : mode === "signup" ? "Create your warrior account" : "Welcome back, warrior"}
+    <div className="min-h-dvh flex items-center justify-center px-4 py-8" style={{ background: "var(--bg)" }}>
+      <div className="w-full fade-in" style={{ maxWidth: 400 }}>
+        {/* Brand */}
+        <div className="text-center mb-6">
+          <div className="mx-auto mb-3 flex items-center justify-center"
+            style={{ width: 60, height: 60, borderRadius: 20, background: "var(--hero-gradient)", color: "#fff", boxShadow: "0 12px 28px rgba(37, 99, 235, .28)" }}
+            aria-hidden="true">
+            <Flame size={30} strokeWidth={2.2} />
+          </div>
+          <h1 className="text-accent-grad text-[30px] font-extrabold" style={{ letterSpacing: 4 }}>IGNITE</h1>
+          <p className="text-[13.5px] mt-1" style={{ color: "var(--text-secondary)" }}>
+            {mode === "forgot" ? "Reset your password" : mode === "signup" ? "Create your Hunter account" : "Welcome back, Hunter"}
           </p>
         </div>
 
         {/* ── FORGOT PASSWORD ── */}
         {mode === "forgot" && (
-          <div className="gs" style={{ padding: 24 }}>
+          <div className="card" style={{ padding: 22 }}>
             {resetSent ? (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>📧</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: "#22c55e", fontFamily: "Rajdhani,sans-serif" }}>Reset Email Sent!</div>
-                <p style={{ fontSize: 13, color: "#6b7280", marginTop: 8 }}>
-                  Check your inbox at <span style={{ color: "#38bdf8" }}>{email}</span>. Click the link in the email to set a new password.
+              <div className="text-center">
+                <div className="flex justify-center mb-3"><IconBadge icon={MailCheck} tone="teal" size={52} /></div>
+                <div className="text-[18px] font-bold" style={{ color: "var(--text-primary)" }}>Reset email sent</div>
+                <p className="text-[13px] mt-2" style={{ color: "var(--text-secondary)" }}>
+                  Check your inbox at <span className="font-semibold" style={linkStyle}>{email}</span>. Click the link in the email to set a new password.
                 </p>
-                <p style={{ fontSize: 12, color: "#4b5563", marginTop: 8 }}>Don't see it? Check spam folder.</p>
-                <button onClick={() => switchMode("login")}
-                  className="bp" style={{ marginTop: 16, padding: "12px 32px" }}>
-                  ← Back to Login
+                <p className="text-[12px] mt-2" style={{ color: "var(--text-dim)" }}>Don&apos;t see it? Check your spam folder.</p>
+                <button type="button" onClick={() => switchMode("login")} className="bp w-full mt-5">
+                  <ArrowLeft size={16} /> Back to login
                 </button>
               </div>
             ) : (
-              <>
-                <div style={{ fontSize: 14, color: "#d1d5db", marginBottom: 16 }}>
-                  Enter your email and we'll send you a link to reset your password.
+              <div className="flex flex-col gap-3">
+                <div className="text-[13.5px]" style={{ color: "var(--text-secondary)" }}>
+                  Enter your email and we&apos;ll send you a link to reset your password.
                 </div>
-                <input
-                  type="email" placeholder="Your email address" value={email}
-                  onChange={e => { setEmail(e.target.value); clearError(); }}
-                  onKeyDown={e => e.key === "Enter" && handleReset()}
-                  style={inputStyle}
-                />
-                {error && <div style={{ fontSize: 12, color: "#ef4444", marginBottom: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(239,68,68,.06)" }}>{error}</div>}
-                <button onClick={handleReset} disabled={loading}
-                  className="bp" style={{ width: "100%", padding: 14, fontSize: 15, marginBottom: 12 }}>
-                  {loading ? "Sending..." : "Send Reset Link"}
+                <Field icon={Mail}>
+                  <input
+                    type="email" placeholder="Your email address" value={email} aria-label="Email address" autoComplete="email"
+                    onChange={e => { setEmail(e.target.value); clearError(); }}
+                    onKeyDown={e => e.key === "Enter" && handleReset()}
+                    className="inp" style={{ paddingLeft: 42 }}
+                  />
+                </Field>
+                {error && <ErrorNote>{error}</ErrorNote>}
+                <button type="button" onClick={handleReset} disabled={loading} className="bp w-full" style={{ padding: "13px 18px", fontSize: 15 }}>
+                  {loading ? "Sending..." : "Send reset link"}
                 </button>
-                <div style={{ textAlign: "center" }}>
-                  <span onClick={() => switchMode("login")}
-                    style={{ fontSize: 13, color: "#38bdf8", cursor: "pointer" }}>
-                    ← Back to Login
-                  </span>
+                <div className="text-center">
+                  <button type="button" onClick={() => switchMode("login")} className="link-btn" style={{ minHeight: 36 }}>
+                    <ArrowLeft size={14} /> Back to login
+                  </button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         )}
 
         {/* ── LOGIN / SIGNUP ── */}
         {mode !== "forgot" && (
-          <div className="gs" style={{ padding: 24 }}>
+          <div className="card flex flex-col gap-3" style={{ padding: 22 }}>
             {/* Google Sign-In */}
-            <button onClick={handleGoogle} disabled={loading}
-              style={{
-                width: "100%", padding: "13px 16px", borderRadius: 10, fontSize: 14,
-                fontWeight: 600, cursor: "pointer", border: "1px solid rgba(255,255,255,.1)",
-                background: "rgba(255,255,255,.04)", color: "#f3f4f6",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                marginBottom: 16, transition: "all .2s",
-              }}>
-              <svg width="18" height="18" viewBox="0 0 48 48">
+            <button type="button" onClick={handleGoogle} disabled={loading} className="bg w-full" style={{ padding: "12px 18px" }}>
+              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
                 <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
                 <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
                 <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
@@ -184,81 +169,102 @@ export default function AuthPage({ onAuth }) {
             </button>
 
             {/* Divider */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.06)" }} />
-              <span style={{ fontSize: 11, color: "#4b5563" }}>or with email</span>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.06)" }} />
+            <div className="flex items-center gap-3 my-1">
+              <div className="flex-1 h-px" style={{ background: "var(--line)" }} />
+              <span className="text-[11.5px]" style={{ color: "var(--text-dim)" }}>or with email</span>
+              <div className="flex-1 h-px" style={{ background: "var(--line)" }} />
             </div>
 
             {/* Name (signup only) */}
             {mode === "signup" && (
-              <input
-                type="text" placeholder="Your name" value={name}
-                onChange={e => { setName(e.target.value); clearError(); }}
-                style={inputStyle}
-              />
+              <Field icon={User}>
+                <input
+                  type="text" placeholder="Your name" value={name} aria-label="Your name" autoComplete="name"
+                  onChange={e => { setName(e.target.value); clearError(); }}
+                  className="inp" style={{ paddingLeft: 42 }}
+                />
+              </Field>
             )}
 
             {/* Email */}
-            <input
-              type="email" placeholder="Email address" value={email}
-              onChange={e => { setEmail(e.target.value); clearError(); }}
-              style={inputStyle}
-            />
+            <Field icon={Mail}>
+              <input
+                type="email" placeholder="Email address" value={email} aria-label="Email address" autoComplete="email"
+                onChange={e => { setEmail(e.target.value); clearError(); }}
+                className="inp" style={{ paddingLeft: 42 }}
+              />
+            </Field>
 
             {/* Password */}
-            <input
-              type="password" placeholder={mode === "signup" ? "Create password (6+ chars)" : "Password"}
-              value={pass}
-              onChange={e => { setPass(e.target.value); clearError(); }}
-              onKeyDown={e => e.key === "Enter" && (mode === "login" ? handleLogin() : handleSignup())}
-              style={inputStyle}
-            />
+            <Field icon={Lock}>
+              <input
+                type="password" placeholder={mode === "signup" ? "Create password (6+ chars)" : "Password"}
+                aria-label="Password" autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                value={pass}
+                onChange={e => { setPass(e.target.value); clearError(); }}
+                onKeyDown={e => e.key === "Enter" && (mode === "login" ? handleLogin() : handleSignup())}
+                className="inp" style={{ paddingLeft: 42 }}
+              />
+            </Field>
 
             {/* Forgot Password (login only) */}
             {mode === "login" && (
-              <div style={{ textAlign: "right", marginBottom: 12 }}>
-                <span onClick={() => switchMode("forgot")}
-                  style={{ fontSize: 12, color: "#38bdf8", cursor: "pointer" }}>
+              <div className="text-right -mt-1">
+                <button type="button" onClick={() => switchMode("forgot")} className="link-btn text-[12.5px]" style={{ minHeight: 28 }}>
                   Forgot password?
-                </span>
+                </button>
               </div>
             )}
 
             {/* Error */}
-            {error && (
-              <div style={{
-                fontSize: 12, color: "#ef4444", marginBottom: 10,
-                padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,.06)",
-                border: "1px solid rgba(239,68,68,.1)",
-              }}>{error}</div>
-            )}
+            {error && <ErrorNote>{error}</ErrorNote>}
 
             {/* Submit */}
             <button
+              type="button"
               onClick={mode === "login" ? handleLogin : handleSignup}
               disabled={loading}
-              className="bp"
-              style={{ width: "100%", padding: 14, fontSize: 15, letterSpacing: 1, marginBottom: 14 }}>
-              {loading ? "Please wait..." : mode === "login" ? "Login" : "Create Account"}
+              className="bp w-full"
+              style={{ padding: "13px 18px", fontSize: 15 }}>
+              {loading ? "Please wait..." : mode === "login" ? "Log in" : "Create account"}
             </button>
 
             {/* Switch mode */}
-            <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>
+            <div className="text-center text-[13px]" style={{ color: "var(--text-secondary)" }}>
               {mode === "login" ? (
-                <>Don't have an account? <span onClick={() => switchMode("signup")} style={{ color: "#38bdf8", cursor: "pointer", fontWeight: 600 }}>Sign Up</span></>
+                <>Don&apos;t have an account? <button type="button" onClick={() => switchMode("signup")} className="link-btn" style={{ minHeight: 36 }}>Sign up</button></>
               ) : (
-                <>Already have an account? <span onClick={() => switchMode("login")} style={{ color: "#38bdf8", cursor: "pointer", fontWeight: 600 }}>Login</span></>
+                <>Already have an account? <button type="button" onClick={() => switchMode("login")} className="link-btn" style={{ minHeight: 36 }}>Log in</button></>
               )}
             </div>
           </div>
         )}
 
         {/* Footer */}
-        <div style={{ textAlign: "center", marginTop: 20, fontSize: 11, color: "#4b5563" }}>
-          By continuing, you agree to IGNITE's terms of service.
+        <div className="text-center mt-5 text-[11.5px]" style={{ color: "var(--text-dim)" }}>
+          By continuing, you agree to IGNITE&apos;s terms of service.
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Input with a leading line icon. */
+function Field({ icon: Icon, children }) {
+  return (
+    <div className="relative">
+      <Icon size={17} aria-hidden="true" className="absolute pointer-events-none" style={{ left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)" }} />
+      {children}
+    </div>
+  );
+}
+
+function ErrorNote({ children }) {
+  return (
+    <div role="alert" className="flex items-start gap-2 text-[12.5px] px-3 py-2.5 rounded-xl"
+      style={{ color: "var(--danger)", background: "color-mix(in srgb, var(--danger) 10%, transparent)" }}>
+      <CircleAlert size={15} className="shrink-0 mt-px" aria-hidden="true" />
+      <span>{children}</span>
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { auth, isFirebaseConfigured } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import store from '@/store';
 import { registerSW, startNotifScheduler, stopNotifScheduler } from '@/notifications';
-import { applyAccent, ACCENT_KEY } from './AccentPicker';
+import { applyAccent } from './AccentPicker';
 
 // ── Lazy-loaded page components (code splitting) ──
 const AuthPage = lazy(() => import('./AuthPage'));
@@ -40,6 +40,8 @@ import { ConfettiBlast } from './Confetti';
 import { MilestoneOverlay } from './GamingHub';
 import BottomNav, { SideNav, resolvePage, pageTitle } from './BottomNav';
 import SystemNotices from './system/SystemNotices';
+import { IconBadge } from './ui/kit';
+import { Settings, WifiOff } from 'lucide-react';
 import PageTransition from './PageTransition';
 import ErrorBoundary from './ErrorBoundary';
 import SplashScreen from './SplashScreen';
@@ -63,9 +65,9 @@ const hashPage = () => {
 function FullScreenMessage({ icon, title, children }) {
     return (
         <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg)" }}>
-            <div className="gs max-w-[380px] w-full text-center p-7">
-                <div className="text-[44px] mb-3">{icon}</div>
-                <div className="text-xl font-extrabold font-heading tracking-wide mb-2" style={{ color: "var(--text-primary)" }}>{title}</div>
+            <div className="card max-w-[380px] w-full text-center !p-7">
+                <div className="flex justify-center mb-4"><IconBadge icon={icon} tone="sky" size={56} /></div>
+                <div className="text-xl font-extrabold mb-2" style={{ color: "var(--text-primary)" }}>{title}</div>
                 {children}
             </div>
         </div>
@@ -113,7 +115,8 @@ export default function App() {
 
     // ── One-time browser setup ──
     useEffect(() => {
-        try { applyAccent(localStorage.getItem(ACCENT_KEY) || 'system'); } catch { /* ignore */ }
+        // Colours are locked to the B6 palette (globals.css); clear any old custom accent.
+        applyAccent('system');
         registerSW();
     }, []);
 
@@ -234,7 +237,7 @@ export default function App() {
     // ════════════════ Gates ════════════════
     if (!isFirebaseConfigured) {
         return (
-            <FullScreenMessage icon="⚙️" title="Setup needed">
+            <FullScreenMessage icon={Settings} title="Setup needed">
                 <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                     Firebase isn&apos;t configured for this deployment. Add the <code>NEXT_PUBLIC_FIREBASE_*</code> environment variables (see README) and redeploy.
                 </p>
@@ -257,7 +260,7 @@ export default function App() {
 
     if (loadError) {
         return (
-            <FullScreenMessage icon="📡" title="Couldn't load your data">
+            <FullScreenMessage icon={WifiOff} title="Couldn't load your data">
                 <p className="text-sm mb-5" style={{ color: "var(--text-secondary)" }}>{loadError}</p>
                 <div className="flex gap-[10px]">
                     <button type="button" className="bp flex-1" onClick={() => loadUserData(user.uid)}>Try again</button>
@@ -328,7 +331,7 @@ export default function App() {
 
             <header className="app-header">
                 <div className="app-header-inner">
-                    <h1 className="page-title">{pageTitle(current)}</h1>
+                    <h1 className="page-title">{current === 'status' ? <span className="text-accent-grad tracking-[2px]">IGNITE</span> : pageTitle(current)}</h1>
                     <SyncBadge status={syncStatus} />
                     <div className="app-header-xp">
                         <HeaderXPBar totalXP={totalXP} streak={streak} system={system} />

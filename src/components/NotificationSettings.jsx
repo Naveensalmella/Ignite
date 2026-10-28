@@ -1,26 +1,35 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { Bell, BellOff, BellRing, Dumbbell, Apple, Flame, Timer, NotebookPen, Send } from 'lucide-react';
 import { requestNotifPermission, getNotifPermission, sendNotification } from '@/notifications';
+import { Card, IconBadge } from '@/components/ui/kit';
 
-function Toggle({ on, onToggle, label, desc }) {
+// One settings row with a switch on the right
+function Toggle({ on, onToggle, label, desc, icon, tone = "sky" }) {
     return (
-        <div onClick={onToggle} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
-            <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#f3f4f6" }}>{label}</div>
-                {desc && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{desc}</div>}
+        <button type="button" role="switch" aria-checked={!!on} onClick={onToggle} className="list-row cursor-pointer">
+            {icon && <IconBadge icon={icon} tone={tone} size={38} />}
+            <div className="flex-1 min-w-0">
+                <div className="row-title">{label}</div>
+                {desc && <div className="row-sub">{desc}</div>}
             </div>
-            <div style={{
-                width: 44, height: 24, borderRadius: 12, padding: 2,
-                background: on ? "rgba(56,189,248,.4)" : "rgba(255,255,255,.1)",
-                transition: "background .3s",
-            }}>
-                <div style={{
-                    width: 20, height: 20, borderRadius: "50%",
-                    background: on ? "#38bdf8" : "#6b7280",
-                    transition: "all .3s",
-                    transform: on ? "translateX(20px)" : "translateX(0)",
-                }} />
-            </div>
+            <span className="relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors duration-200"
+                style={{ background: on ? "var(--accent)" : "var(--track)" }} aria-hidden="true">
+                <span className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full transition-transform duration-200"
+                    style={{ background: on ? "var(--accent-ink)" : "var(--text-dim)", transform: on ? "translateX(20px)" : "translateX(0)" }} />
+            </span>
+        </button>
+    );
+}
+
+// Hour picker shown under a reminder row
+function HourChips({ hours, value, onPick, label }) {
+    return (
+        <div className="flex flex-wrap gap-1.5 pb-3 pl-[50px]" role="group" aria-label={label}>
+            {hours.map(h => (
+                <button key={h} type="button" className={`chip ${value === h ? "chip-a" : "chip-i"}`} aria-pressed={value === h}
+                    onClick={() => onPick(h)} style={{ minHeight: 36 }}>{h}:00</button>
+            ))}
         </div>
     );
 }
@@ -77,87 +86,77 @@ export default function NotificationSettings() {
         setRequesting(false);
     };
 
-    if (permission === "unsupported") {
-        return (
-            <div className="gs" style={{ padding: 16 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>🔔 Notifications</div>
-                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Not supported in this browser.</div>
+    const header = (sub, action) => (
+        <div className="flex items-center gap-3 mb-2">
+            <IconBadge icon={permission === "unsupported" || permission === "denied" ? BellOff : Bell} tone="sky" size={38} />
+            <div className="flex-1 min-w-0">
+                <div className="card-title">Notifications</div>
+                <div className="row-sub">{sub}</div>
             </div>
-        );
+            {action}
+        </div>
+    );
+
+    if (permission === "unsupported") {
+        return <Card>{header("Not supported in this browser.")}</Card>;
     }
 
     return (
-        <div className="gs" style={{ padding: 16, maxWidth: "100%", overflowX: "hidden" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>🔔 Notifications</div>
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>Stay on track with reminders</div>
-                </div>
-                {permission !== "granted" && (
-                    <button className="bp" onClick={enableNotifs} disabled={requesting || permission === "denied"} style={{ padding: "8px 16px", fontSize: 12 }}>{requesting ? "..." : "Enable"}</button>
-                )}
-            </div>
+        <Card className="max-w-full overflow-hidden">
+            {header("Stay on track with reminders", permission !== "granted" && (
+                <button type="button" className="bp shrink-0" onClick={enableNotifs} disabled={requesting || permission === "denied"} style={{ padding: "9px 16px", fontSize: 13 }}>{requesting ? "…" : "Enable"}</button>
+            ))}
 
             {permission === "denied" && (
-                <div style={{ fontSize: 12, color: "#ef4444", padding: "8px 12px", borderRadius: 8, background: "rgba(239,68,68,.06)", marginBottom: 12 }}>
+                <div className="mt-2 rounded-xl px-3 py-2 text-[12.5px]" style={{ color: "var(--danger)", background: "color-mix(in srgb, var(--danger) 10%, transparent)" }}>
                     Notifications blocked. Enable them in your browser settings for this site.
                 </div>
             )}
 
             {permission === "granted" && (
-                <div>
-                    <Toggle on={settings.enabled} onToggle={() => toggle("enabled")} label="Master Switch" desc="Turn all notifications on/off" />
+                <div className="mt-1">
+                    <Toggle on={settings.enabled} onToggle={() => toggle("enabled")} icon={BellRing} tone="sky" label="All notifications" desc="Turn all notifications on/off" />
 
                     {settings.enabled && (
                         <div className="fade-in">
-                            <Toggle on={settings.trainingReminder} onToggle={() => toggle("trainingReminder")}
-                                label={`⚔️ Training Reminder (${settings.trainingTime}:00)`}
+                            <Toggle on={settings.trainingReminder} onToggle={() => toggle("trainingReminder")} icon={Dumbbell} tone="orange"
+                                label={`Training reminder (${settings.trainingTime}:00)`}
                                 desc="Daily reminder to start your workout" />
 
                             {settings.trainingReminder && (
-                                <div style={{ display: "flex", gap: 6, padding: "6px 0 10px", flexWrap: "wrap" }}>
-                                    {[6, 7, 8, 9, 10].map(h => (
-                                        <span key={h} className={`chip ${settings.trainingTime === h ? "chip-a" : "chip-i"}`}
-                                            onClick={() => setSettings(s => ({ ...s, trainingTime: h }))}
-                                            style={{ padding: "4px 10px", fontSize: 11 }}>{h}:00</span>
-                                    ))}
-                                </div>
+                                <HourChips hours={[6, 7, 8, 9, 10]} value={settings.trainingTime} label="Training reminder time"
+                                    onPick={h => setSettings(s => ({ ...s, trainingTime: h }))} />
                             )}
 
-                            <Toggle on={settings.mealReminder} onToggle={() => toggle("mealReminder")}
-                                label="🍎 Meal Reminders"
+                            <Toggle on={settings.mealReminder} onToggle={() => toggle("mealReminder")} icon={Apple} tone="lime"
+                                label="Meal reminders"
                                 desc="Breakfast (9am), Lunch (1pm), Dinner (7pm)" />
 
-                            <Toggle on={settings.streakWarning} onToggle={() => toggle("streakWarning")}
-                                label={`🔥 Streak Warning (${settings.warningTime}:00)`}
+                            <Toggle on={settings.streakWarning} onToggle={() => toggle("streakWarning")} icon={Flame} tone="orange"
+                                label={`Streak warning (${settings.warningTime}:00)`}
                                 desc="Alert if you haven't trained yet today" />
 
                             {settings.streakWarning && (
-                                <div style={{ display: "flex", gap: 6, padding: "6px 0 10px", flexWrap: "wrap" }}>
-                                    {[19, 20, 21, 22].map(h => (
-                                        <span key={h} className={`chip ${settings.warningTime === h ? "chip-a" : "chip-i"}`}
-                                            onClick={() => setSettings(s => ({ ...s, warningTime: h }))}
-                                            style={{ padding: "4px 10px", fontSize: 11 }}>{h}:00</span>
-                                    ))}
-                                </div>
+                                <HourChips hours={[19, 20, 21, 22]} value={settings.warningTime} label="Streak warning time"
+                                    onPick={h => setSettings(s => ({ ...s, warningTime: h }))} />
                             )}
 
-                            <Toggle on={settings.focusReminder} onToggle={() => toggle("focusReminder")}
-                                label="⏱ Focus Reminder (10:00)"
+                            <Toggle on={settings.focusReminder} onToggle={() => toggle("focusReminder")} icon={Timer} tone="violet"
+                                label="Focus reminder (10:00)"
                                 desc="Start a focus session in the morning" />
 
-                            <Toggle on={settings.journalReminder} onToggle={() => toggle("journalReminder")}
-                                label="📝 Journal Reminder (21:30)"
+                            <Toggle on={settings.journalReminder} onToggle={() => toggle("journalReminder")} icon={NotebookPen} tone="rose"
+                                label="Journal reminder (21:30)"
                                 desc="Reflect on your day before bed" />
 
-                            <button className="bg" onClick={() => sendNotification("🔥 Test Notification", "If you see this, notifications are working!", "test")}
-                                style={{ width: "100%", marginTop: 12, padding: 10, fontSize: 12 }}>
-                                Send Test Notification
+                            <button type="button" className="bg w-full mt-3" onClick={() => sendNotification("🔥 Test Notification", "If you see this, notifications are working!", "test")}
+                                style={{ fontSize: 13 }}>
+                                <Send size={15} /> Send test notification
                             </button>
                         </div>
                     )}
                 </div>
             )}
-        </div>
+        </Card>
     );
 }

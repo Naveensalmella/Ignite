@@ -8,6 +8,8 @@ import ExerciseDemo from "./ExerciseDemo";
 import { GYM_PROGRAMS, COMBAT_PROGRAMS, getTodayWorkout } from "@/data/trainingPrograms";
 import { FITNESS_PROGRAMS, PROGRAM_TAGS, getRecommendedPrograms } from "@/data/fitnessPrograms";
 import { getExerciseInfo, toWorkoutExercise } from "@/lib/exerciseVisuals";
+import { Dumbbell, Flame, Swords, Footprints, Flower2, Brain } from "lucide-react";
+import { IconBadge } from "../ui/kit";
 import { today, parseDateKey, toArr } from "@/utils";
 
 const CATEGORY = {
@@ -22,7 +24,12 @@ export const ALL_PROGRAMS = { ...GYM_PROGRAMS, ...COMBAT_PROGRAMS, ...FITNESS_PR
 const categoryOf = (id) => Object.entries(CATEGORY).find(([, c]) => c.ids.includes(id))?.[0] || "strength";
 const levelOf = (p) => p.level || PROGRAM_TAGS[p.id]?.tags.find(t => ["beginner", "intermediate", "advanced"].includes(t)) || "all levels";
 const weeksOf = (p) => p.curriculum?.length || parseInt(p.duration, 10) || 12;
-const iconOf = (p) => p.icon || PROGRAM_TAGS[p.id]?.icon || (categoryOf(p.id) === "combat" ? "🥊" : "🏋️");
+const CAT_ICON = { strength: Dumbbell, fatloss: Flame, combat: Swords, running: Footprints, mobility: Flower2, mind: Brain };
+const CAT_TONE = { strength: "orange", fatloss: "rose", combat: "amber", running: "sky", mobility: "teal", mind: "violet" };
+function ProgIcon({ p, size = 40 }) {
+    const c = categoryOf(p.id);
+    return <IconBadge icon={CAT_ICON[c] || Dumbbell} tone={CAT_TONE[c] || "sky"} size={size} />;
+}
 
 /** Program position for the active user: week index, session index, progress. */
 export function programProgress(program, programState = {}) {
@@ -61,7 +68,7 @@ export function programSession(program, weekIdx, sessionIdx) {
 function ProgramCard({ p, active, onOpen }) {
     return (
         <button type="button" className={`prog-card ${active ? "is-active" : ""}`} onClick={() => onOpen(p)}>
-            <div className="prog-icon">{iconOf(p)}</div>
+            <div className="prog-icon"><ProgIcon p={p} size={38} /></div>
             <div className="prog-name">{p.name}</div>
             <div className="prog-desc">{p.desc}</div>
             <div className="prog-meta">
@@ -83,9 +90,9 @@ export function ProgramSheet({ program, programState, onClose, onActivate, onLea
             footer={prog.active
                 ? <button type="button" className="bp w-full" disabled={!next} onClick={() => onPreview(next)}><Play size={16} /> {prog.doneToday ? "Train again" : "Start next session"}</button>
                 : <button type="button" className="bp w-full" onClick={() => onActivate(program.id)}>Start this program</button>}>
-            <div className="gs hero-card mb-3">
+            <div className="card mb-3">
                 <div className="flex gap-3 items-start">
-                    <div className="text-[40px] leading-none">{iconOf(program)}</div>
+                    <ProgIcon p={program} size={44} />
                     <div className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>{program.desc}</div>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-3">

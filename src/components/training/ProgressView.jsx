@@ -1,7 +1,8 @@
 "use client";
 // Progress tab: totals, weekly trend, muscle balance, personal records, history.
 import { useMemo, useState } from "react";
-import { ChevronDown, Trophy } from "lucide-react";
+import { ChevronDown, Trophy, Swords, Footprints, Dumbbell } from "lucide-react";
+import { IconBadge } from "../ui/kit";
 import { totals, weeklyTrend, groupDistribution, sessionVolume, sessionSets, fmtDuration, fmtDate } from "@/lib/trainingStats";
 
 const compact = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(n >= 1e4 ? 0 : 1)}K` : String(n));
@@ -73,7 +74,7 @@ function SessionCard({ s }) {
     return (
         <div className="gs !p-0 overflow-hidden">
             <button type="button" className="w-full flex items-center gap-3 p-3 text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
-                <div className="hist-icon">{s.trainingType === "combat" ? "🥊" : s.trainingType === "fitness" ? "🏃" : "🏋️"}</div>
+                <IconBadge icon={s.trainingType === "combat" ? Swords : s.trainingType === "fitness" ? Footprints : Dumbbell} tone={s.trainingType === "combat" ? "amber" : s.trainingType === "fitness" ? "sky" : "orange"} size={40} />
                 <div className="min-w-0 flex-1">
                     <div className="text-[14px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>{s.splitName || "Workout"}</div>
                     <div className="text-[12px]" style={{ color: "var(--text-dim)" }}>{fmtDate(s.date)} · {fmtDuration(s.duration)}{sets ? ` · ${sets} sets` : ""}{vol ? ` · ${compact(vol)} kg` : ""}</div>

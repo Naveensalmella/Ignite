@@ -41,7 +41,7 @@ export default function Awakening({ onAccept, onClose }) {
                 <div className="flex items-center justify-center gap-3 mb-3">
                     <RankEmblem rank={rank} size={44} />
                     <div className="text-left">
-                        <div className="font-heading text-[22px] font-bold leading-none">Level {lv}</div>
+                        <div className="text-[22px] font-bold leading-none">Level {lv}</div>
                         <div className="text-[13px]" style={{ color: rank.color }}>{rank.name} · {rank.title}</div>
                     </div>
                 </div>
@@ -56,10 +56,10 @@ export default function Awakening({ onAccept, onClose }) {
                 <div className="sys-divider" />
                 <div className="sys-notice-lines">
                     <p>+{s.system?.abilityPoints || 0} Ability Points · <GoldAmount value={s.system?.gold} /></p>
-                    <p style={{ color: "var(--text-secondary)" }}>🎁 Random Box · 🛡️ Streak Shield ×{s.system?.inventory?.shield || 1}</p>
+                    <p style={{ color: "var(--text-secondary)" }}>Random Box · Streak Shield ×{s.system?.inventory?.shield || 1}</p>
                     <p style={{ color: "var(--text-dim)", fontSize: 13 }}>Complete the Daily Quest every day. Failure will result in an appropriate penalty.</p>
                 </div>
-                <button type="button" className="sys-btn w-full mt-5" onClick={() => { s.setPage("status"); onClose(); }}>Open Status Window</button>
+                <button type="button" className="sys-btn w-full mt-5" onClick={() => { s.setPage("status"); onClose(); }}>Go to Home</button>
             </SysWin>
         </div>
     );

@@ -1,17 +1,17 @@
 "use client";
 import { useState, useEffect } from 'react';
 import {
-    IdCard, Swords, Apple, Sparkles, User, LayoutGrid, X, Timer, Heart, Users,
-    Calendar, Wallet, Camera, ListChecks, Share2, ScrollText, Backpack, Ghost,
+    House, Dumbbell, Apple, MessageCircle, User, LayoutGrid, X, Timer, Heart, Users,
+    CalendarDays, Wallet, Camera, ListChecks, Share2, Backpack, Ghost,
 } from 'lucide-react';
 
 // Single source of truth for every page the app can show.
 export const MAIN_TABS = [
-    { key: "status", label: "Status", title: "Status", Icon: IdCard },
-    { key: "quests", label: "Quests", title: "Quests", Icon: ScrollText },
-    { key: "training", label: "Gates", title: "Gates & Training", Icon: Swords },
-    { key: "oracle", label: "System", title: "The System", Icon: Sparkles },
-    { key: "inventory", label: "Inventory", title: "Inventory", Icon: Backpack },
+    { key: "status", label: "Home", title: "Home", Icon: House },
+    { key: "quests", label: "Quests", title: "Quests", Icon: ListChecks },
+    { key: "training", label: "Train", title: "Train", Icon: Dumbbell },
+    { key: "oracle", label: "Coach", title: "AI Coach", Icon: MessageCircle },
+    { key: "inventory", label: "Items", title: "Items", Icon: Backpack },
 ];
 
 export const MORE_PAGES = [
@@ -19,7 +19,7 @@ export const MORE_PAGES = [
     { key: "nutrition", label: "Nutrition", title: "Nutrition", Icon: Apple, desc: "Food & water" },
     { key: "focus", label: "Focus", title: "Focus Timer", Icon: Timer, desc: "Pomodoro timer" },
     { key: "wellness", label: "Wellness", title: "Wellness", Icon: Heart, desc: "Mood & journal" },
-    { key: "routine", label: "My Day", title: "My Day", Icon: Calendar, desc: "Daily routine" },
+    { key: "routine", label: "My Day", title: "My Day", Icon: CalendarDays, desc: "Daily routine" },
     { key: "missions", label: "Missions", title: "Missions", Icon: ListChecks, desc: "Your to-dos" },
     { key: "finance", label: "Finance", title: "Finance", Icon: Wallet, desc: "Money tracker" },
     { key: "social", label: "Social", title: "Social", Icon: Users, desc: "Friends" },
@@ -47,7 +47,7 @@ export function SideNav({ active, setPage }) {
         return (
             <button key={p.key} type="button" onClick={() => setPage(p.key)} aria-current={isActive ? "page" : undefined}
                 className={`nav-side-item ${isActive ? "is-active" : ""}`}>
-                <p.Icon size={18} strokeWidth={isActive ? 2.3 : 1.8} />
+                <p.Icon size={19} strokeWidth={isActive ? 2.3 : 1.9} />
                 <span>{p.title}</span>
             </button>
         );
@@ -55,8 +55,8 @@ export function SideNav({ active, setPage }) {
     return (
         <aside className="side-nav" aria-label="Main navigation">
             <div className="side-nav-brand">
-                <span className="text-2xl">🔥</span>
-                <span className="font-heading text-xl font-bold tracking-[3px] text-accent-grad sys-glow">IGNITE</span>
+                <span className="avatar !w-8 !h-8 !text-[13px]" aria-hidden="true">I</span>
+                <span className="font-heading text-[19px] font-extrabold tracking-[2px] text-accent-grad">IGNITE</span>
             </div>
             <div className="side-nav-section">{MAIN_TABS.map(item)}</div>
             <div className="side-nav-label">More</div>
@@ -87,7 +87,7 @@ export default function BottomNav({ active, setPage }) {
                 <div className="more-sheet-backdrop" onClick={() => setShowMore(false)}>
                     <div className="more-sheet slide-up" role="dialog" aria-label="All pages" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-4">
-                            <span className="text-base font-bold font-heading tracking-wide" style={{ color: "var(--text-primary)" }}>All Pages</span>
+                            <span className="card-title">More</span>
                             <button type="button" onClick={() => setShowMore(false)} className="icon-btn" aria-label="Close menu"><X size={20} /></button>
                         </div>
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-[10px]">
@@ -95,7 +95,7 @@ export default function BottomNav({ active, setPage }) {
                                 const isActive = active === p.key;
                                 return (
                                     <button key={p.key} type="button" onClick={() => go(p.key)} className={`more-tile ${isActive ? "is-active" : ""}`}>
-                                        <p.Icon size={22} strokeWidth={isActive ? 2.2 : 1.6} />
+                                        <span className="icon-badge" style={{ width: 40, height: 40, borderRadius: 13, "--tone": "var(--accent)" }}><p.Icon size={20} strokeWidth={2} /></span>
                                         <span className="more-tile-label">{p.label}</span>
                                         <span className="more-tile-desc">{p.desc}</span>
                                     </button>
@@ -113,14 +113,14 @@ export default function BottomNav({ active, setPage }) {
                         return (
                             <button key={tab.key} type="button" onClick={() => go(tab.key)} aria-current={isActive ? "page" : undefined}
                                 className={`bottom-nav-item ${isActive ? "is-active" : ""}`}>
-                                <tab.Icon size={22} strokeWidth={isActive ? 2.3 : 1.6} />
+                                <span className="nav-ico"><tab.Icon size={21} strokeWidth={isActive ? 2.3 : 1.9} /></span>
                                 <span>{tab.label}</span>
                             </button>
                         );
                     })}
                     <button type="button" onClick={() => setShowMore(!showMore)} aria-expanded={showMore}
                         className={`bottom-nav-item ${moreActive ? "is-active" : ""}`}>
-                        <LayoutGrid size={22} strokeWidth={moreActive ? 2.3 : 1.6} />
+                        <span className="nav-ico"><LayoutGrid size={21} strokeWidth={moreActive ? 2.3 : 1.9} /></span>
                         <span>More</span>
                     </button>
                 </div>

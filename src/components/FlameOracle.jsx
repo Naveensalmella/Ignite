@@ -1,5 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { Sparkles, History, SquarePen, X, ChevronRight, Volume2, VolumeX, Mic, ArrowUp, Dumbbell, Apple, Flower2, Zap } from 'lucide-react';
+import { Tabs } from './ui/kit';
 import { hasDayWorkout, getDaySplit, countWorkoutDays } from '@/lib/workoutHelpers';
 import { getLevel, today, toArr } from '../utils';
 import useAppStore from '@/stores/useAppStore';
@@ -79,12 +81,17 @@ function stopSpeaking() {
 
 const MODES = [
   { id: "coach", name: "Trainer", icon: "⚔️", color: "#38bdf8", desc: "Fitness & training advice", personality: "You are an intense, motivating fitness coach. Push the user to their limits. Be direct, use short powerful sentences." },
-  { id: "nutritionist", name: "Nutritionist", icon: "🍎", color: "#f59e0b", desc: "Diet & nutrition guidance", personality: "You are a knowledgeable sports nutritionist specializing in Indian diets. Give specific meal suggestions with macros." },
+  { id: "nutritionist", name: "Nutrition", icon: "🍎", color: "#f59e0b", desc: "Diet & nutrition guidance", personality: "You are a knowledgeable sports nutritionist specializing in Indian diets. Give specific meal suggestions with macros." },
   { id: "wellness", name: "Recovery", icon: "🧘", color: "#8b5cf6", desc: "Mental health & recovery", personality: "You are a calm, empathetic wellness guide. Focus on sleep, stress, recovery, mindfulness. Speak gently." },
   { id: "motivator", name: "Commander", icon: "⚡", color: "#ef4444", desc: "Pure motivation & hype", personality: "You are an EXPLOSIVE motivational speaker. Use CAPS for emphasis. Fire up the user. Short, punchy sentences." },
 ];
 
-const PAGE_NAMES = { status: "🪪 Status", quests: "📜 Quests", inventory: "🎒 Inventory", training: "⚔️ Training", nutrition: "🍎 Nutrition", dailyquest: "📜 Quests", focus: "⏱ Focus", wellness: "💛 Wellness", routine: "📅 My Day", growth: "📜 Quests", profile: "👤 Profile", social: "👥 Social" };
+const PAGE_NAMES = { status: "Home", quests: "Quests", inventory: "Items", training: "Train", nutrition: "Nutrition", dailyquest: "Habits", focus: "Focus", wellness: "Wellness", routine: "My Day", growth: "Goals", profile: "Profile", social: "Social", army: "Shadow Army" };
+const MODE_ICON = { coach: Dumbbell, nutritionist: Apple, wellness: Flower2, motivator: Zap };
+
+function CoachAvatar() {
+  return <span className="avatar !w-8 !h-8 shrink-0 mt-0.5" aria-hidden="true"><Sparkles size={15} /></span>;
+}
 
 const MAX_CHATS = 30;
 const newChatObj = (mode = "coach") => ({ id: Date.now(), title: "New Chat", messages: [], mode });
@@ -117,7 +124,6 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
   const [mode, setMode] = useState("coach");
   const [displayText, setDisplayText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [showModes, setShowModes] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const bottomRef = useRef(null);
@@ -247,95 +253,83 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
     const todayWorked = hasDayWorkout(workoutLog, d);
     const todayCal = toArr(appState?.foodLog?.[d]).reduce((s, f) => s + (f.cal || 0), 0);
     const a = [];
-    if (!todayWorked) a.push({ label: "Plan today's workout", icon: "⚔️" });
-    else a.push({ label: "Review my workout", icon: "📊" });
-    if (todayCal === 0) a.push({ label: "What should I eat for breakfast?", icon: "🍳" });
-    else a.push({ label: "Am I on track with calories?", icon: "📊" });
-    a.push({ label: "Motivate me", icon: "🔥" }, { label: "I ate chicken biryani", icon: "🍗" }, { label: "Tips for better sleep", icon: "😴" }, { label: "Quick 10-min workout", icon: "⚡" }, { label: "Check my progress", icon: "📈" }, { label: "How to increase protein?", icon: "💪" });
+    a.push({ label: todayWorked ? "Review my workout" : "Plan today's workout" });
+    a.push({ label: todayCal === 0 ? "What should I eat for breakfast?" : "Am I on track with calories?" });
+    a.push({ label: "Motivate me" }, { label: "I ate chicken biryani" }, { label: "Tips for better sleep" }, { label: "Quick 10-min workout" }, { label: "Check my progress" }, { label: "How to increase protein?" });
     return a;
   }, [workoutLog, appState, d]);
 
   const lv = getLevel(totalXP || 0);
   const rank = playerRank(system, lv);
+  const firstName = String(profile?.name || "").split(" ")[0];
+  const ModeIcon = MODE_ICON[curMode.id] || Sparkles;
 
   // ── Render a single message ──
   const renderMessage = (m, i) => (
-    <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", marginBottom: 12, gap: 8 }}>
-      {m.role === "assistant" && <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg,${(MODES.find(md => md.id === m.mode) || curMode).color},#06b6d4)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, marginTop: 4 }}>🔮</div>}
-      <div style={{ maxWidth: "80%", padding: "10px 14px", borderRadius: 16, ...(m.role === "user" ? { background: "linear-gradient(135deg,#38bdf8,#06b6d4)", borderBottomRightRadius: 4, color: "#fff" } : { background: "rgba(255,255,255,.04)", borderBottomLeftRadius: 4, color: "#d1d5db", border: "1px solid rgba(255,255,255,.06)" }) }}>
-        <div style={{ fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{m.text}</div>
+    <div key={i} className={`flex gap-2 mb-3 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+      {m.role === "assistant" && <CoachAvatar />}
+      <div className="max-w-[82%] px-3.5 py-2.5" style={m.role === "user"
+        ? { background: "var(--accent)", color: "var(--accent-ink)", borderRadius: "18px 18px 6px 18px" }
+        : { background: "var(--card-bg)", color: "var(--text-primary)", border: "1px solid var(--card-border)", boxShadow: "var(--card-shadow)", borderRadius: "18px 18px 18px 6px" }}>
+        <div className="text-[14px] leading-relaxed whitespace-pre-wrap">{m.text}</div>
         {/* Navigation buttons — user taps to navigate, never auto */}
         {m.navPages && m.navPages.length > 0 && (
-          <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div className="flex gap-1.5 flex-wrap mt-2">
             {m.navPages.map((page, pi) => (
-              <button key={pi} onClick={() => setPage(page)} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(56,189,248,.1)", border: "1px solid rgba(56,189,248,.2)", color: "#38bdf8", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>→ {PAGE_NAMES[page] || page}</button>
+              <button key={pi} type="button" className="chip chip-a" onClick={() => setPage(page)}>Open {PAGE_NAMES[page] || page} <ChevronRight size={13} /></button>
             ))}
           </div>
         )}
-        <div style={{ fontSize: 11, color: m.role === "user" ? "rgba(255,255,255,.5)" : "#4b5563", marginTop: 4, textAlign: "right" }}>{m.time}</div>
+        <div className="text-[11px] mt-1 text-right" style={{ color: m.role === "user" ? "color-mix(in srgb, var(--accent-ink) 60%, transparent)" : "var(--text-dim)" }}>{m.time}</div>
       </div>
     </div>
   );
 
   return (
-    <div className="oracle-shell" style={{ display: "flex", flexDirection: "column", position: "relative", maxWidth: "100%", overflowX: "hidden" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 0 12px", borderBottom: "1px solid rgba(255,255,255,.04)", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span onClick={() => setShowSidebar(!showSidebar)} style={{ fontSize: 18, cursor: "pointer", padding: "4px 8px", borderRadius: 6, background: "rgba(255,255,255,.03)" }}>☰</span>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }} className="sys-glow">◈ The System</div>
-            <div style={{ fontSize: 10, color: curMode.color }}>{curMode.icon} {curMode.name} Mode</div>
-          </div>
+    <div className="oracle-shell flex flex-col relative max-w-[760px] mx-auto w-full overflow-x-hidden">
+      {/* Top bar */}
+      <div className="flex items-center gap-2 pb-3 shrink-0">
+        <button type="button" className="icon-btn" onClick={() => setShowSidebar(!showSidebar)} aria-label="Chat history" aria-expanded={showSidebar}><History size={18} /></button>
+        <div className="flex-1 min-w-0">
+          <div className="row-title truncate">{activeChat.title && activeChat.messages?.length ? activeChat.title : "New chat"}</div>
+          <div className="text-[12px] dim truncate inline-flex items-center gap-1"><ModeIcon size={12} /> {curMode.name} · speaks as the System</div>
         </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          <span onClick={() => setShowModes(!showModes)} style={{ padding: "6px 10px", borderRadius: 8, background: `${curMode.color}10`, border: `1px solid ${curMode.color}20`, cursor: "pointer", fontSize: 16 }}>{curMode.icon}</span>
-          <span onClick={newChat} style={{ fontSize: 12, color: "#38bdf8", cursor: "pointer", padding: "6px 12px", borderRadius: 8, background: "rgba(56,189,248,.06)" }}>+ New</span>
-        </div>
+        <button type="button" className="icon-btn" onClick={newChat} aria-label="New chat"><SquarePen size={18} /></button>
       </div>
 
-      {/* Mode selector */}
-      {showModes && (
-        <div className="fade-in" style={{ display: "flex", gap: 6, padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,.04)", flexWrap: "wrap" }}>
-          {MODES.map(m => (
-            <div key={m.id} onClick={() => { setMode(m.id); setShowModes(false); }} style={{ flex: 1, minWidth: 70, textAlign: "center", padding: "8px 6px", borderRadius: 10, cursor: "pointer", background: mode === m.id ? `${m.color}10` : "rgba(255,255,255,.02)", border: mode === m.id ? `1px solid ${m.color}25` : "1px solid rgba(255,255,255,.04)" }}>
-              <div style={{ fontSize: 20 }}>{m.icon}</div>
-              <div style={{ fontSize: 10, fontWeight: 600, color: mode === m.id ? m.color : "#6b7280", marginTop: 2 }}>{m.name}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Modes */}
+      <Tabs tabs={MODES.map(m => [m.id, m.name])} value={mode} onChange={setMode} label="Coach mode" className="shrink-0 mb-1" />
 
-      {/* Sidebar */}
+      {/* Chat history */}
       {showSidebar && (
-        <div className="fade-in" style={{ position: "absolute", top: 50, left: 0, right: 0, zIndex: 10, background: "#0d1117", border: "1px solid rgba(255,255,255,.06)", borderRadius: 12, padding: 12, maxHeight: 350, overflowY: "auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>CHATS ({chats.length})</span>
-            <span onClick={clearAllChats} style={{ fontSize: 10, color: "#ef4444", cursor: "pointer" }}>Clear All</span>
+        <div className="card fade-in absolute left-0 right-0 top-[52px] z-10 max-h-[360px] overflow-y-auto" style={{ boxShadow: "var(--shadow)" }}>
+          <div className="card-head">
+            <span className="card-title">Chats ({chats.length})</span>
+            <button type="button" className="link-btn" style={{ color: "var(--danger)" }} onClick={clearAllChats}>Clear all</button>
           </div>
           {chats.map(c => (
-            <div key={c.id} onClick={() => switchChat(c.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: 8, marginBottom: 4, cursor: "pointer", background: c.id === activeId ? "rgba(56,189,248,.06)" : "rgba(255,255,255,.02)", border: c.id === activeId ? "1px solid rgba(56,189,248,.15)" : "1px solid transparent" }}>
-              <div>
-                <div style={{ fontSize: 13, color: c.id === activeId ? "#38bdf8" : "#d1d5db", fontWeight: c.id === activeId ? 600 : 400 }}>{c.title || "New Chat"}</div>
-                <div style={{ fontSize: 10, color: "#4b5563" }}>{c.messages?.length || 0} messages</div>
-              </div>
-              <span onClick={(e) => { e.stopPropagation(); deleteChat(c.id); }} style={{ fontSize: 14, color: "#4b5563", padding: "0 4px" }}>×</span>
+            <div key={c.id} className="list-row">
+              <button type="button" className="flex-1 min-w-0 text-left bg-transparent border-0 p-0" onClick={() => switchChat(c.id)}>
+                <div className="row-title truncate" style={c.id === activeId ? { color: "var(--accent)" } : undefined}>{c.title || "New Chat"}</div>
+                <div className="row-sub">{c.messages?.length || 0} messages</div>
+              </button>
+              <button type="button" className="icon-btn !w-8 !h-8" onClick={() => deleteChat(c.id)} aria-label={`Delete chat ${c.title || ""}`}><X size={15} /></button>
             </div>
           ))}
         </div>
       )}
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 0" }}>
+      <div className="flex-1 overflow-y-auto py-4">
         {messages.length === 0 && !isTyping && (
-          <div style={{ textAlign: "center", padding: "30px 0" }}>
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg,${curMode.color},#06b6d4)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 12px", boxShadow: `0 0 30px ${curMode.color}30` }}>◈</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Player {profile?.name || "Hunter"}.</div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Lv.{lv} {rank.name} · 🔥 {streak || 0}d streak · {totalXP || 0} XP</div>
-            <p style={{ fontSize: 13, color: "#6b7280", marginTop: 8, marginBottom: 20 }}>[SYSTEM] {curMode.desc}. State your query.</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
+          <div className="text-center py-6">
+            <div className="flex justify-center mb-3"><span className="avatar !w-16 !h-16"><Sparkles size={28} /></span></div>
+            <div className="text-[20px] font-extrabold">Hi{firstName ? ` ${firstName}` : ""}, how can I help?</div>
+            <div className="text-[12.5px] dim mt-1">Level {lv} · {rank.name} · {streak || 0}-day streak</div>
+            <p className="text-[13px] muted mt-2 mb-5 px-4">{curMode.desc}. I can also log food — just tell me what you ate.</p>
+            <div className="flex flex-wrap gap-2 justify-center">
               {quickActions.slice(0, 6).map((qa, i) => (
-                <span key={i} onClick={() => { setInput(qa.label); setTimeout(() => inputRef.current?.focus(), 100); }} style={{ padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", cursor: "pointer", fontSize: 11, color: "#d1d5db" }}>{qa.icon} {qa.label}</span>
+                <button key={i} type="button" className="chip chip-i" onClick={() => { setInput(qa.label); setTimeout(() => inputRef.current?.focus(), 100); }}>{qa.label}</button>
               ))}
             </div>
           </div>
@@ -344,19 +338,19 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
         {messages.map(renderMessage)}
 
         {isTyping && (
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg,${curMode.color},#06b6d4)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, marginTop: 4 }}>🔮</div>
-            <div style={{ maxWidth: "80%", padding: "10px 14px", borderRadius: 16, borderBottomLeftRadius: 4, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.06)" }}>
-              <div style={{ fontSize: 13, lineHeight: 1.7, color: "#d1d5db", whiteSpace: "pre-wrap" }}>{displayText}<span style={{ animation: "blink 1s infinite" }}>▎</span></div>
+          <div className="flex gap-2 mb-3">
+            <CoachAvatar />
+            <div className="max-w-[82%] px-3.5 py-2.5" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "18px 18px 18px 6px" }}>
+              <div className="text-[14px] leading-relaxed whitespace-pre-wrap">{displayText}<span style={{ animation: "blink 1s infinite" }}>▎</span></div>
             </div>
           </div>
         )}
 
         {loading && !isTyping && (
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg,${curMode.color},#06b6d4)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🔮</div>
-            <div style={{ padding: "14px 20px", borderRadius: 16, borderBottomLeftRadius: 4, background: "rgba(255,255,255,.04)", display: "flex", gap: 6 }}>
-              {[0, 1, 2].map(i => <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: curMode.color, animation: `dotPulse 1.2s ${i * .2}s infinite` }} />)}
+          <div className="flex gap-2 mb-3">
+            <CoachAvatar />
+            <div className="flex gap-1.5 px-4 py-3.5" style={{ background: "var(--card-bg)", borderRadius: "18px 18px 18px 6px" }}>
+              {[0, 1, 2].map(i => <div key={i} className="w-2 h-2 rounded-full" style={{ background: "var(--accent)", animation: `dotPulse 1.2s ${i * .2}s infinite` }} />)}
             </div>
           </div>
         )}
@@ -364,26 +358,27 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
       </div>
 
       {/* Input */}
-      <div style={{ flexShrink: 0, padding: "10px 0 0", borderTop: "1px solid rgba(255,255,255,.04)" }}>
+      <div className="shrink-0 pt-2">
         {messages.length > 0 && messages.length < 6 && (
-          <div style={{ display: "flex", gap: 6, marginBottom: 8, overflowX: "auto", paddingBottom: 4 }}>
+          <div className="chip-row mb-2">
             {quickActions.slice(0, 4).map((qa, i) => (
-              <span key={i} onClick={() => setInput(qa.label)} style={{ flexShrink: 0, padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.05)", cursor: "pointer", fontSize: 10, color: "#9ca3af" }}>{qa.icon} {qa.label}</span>
+              <button key={i} type="button" className="chip chip-i shrink-0" onClick={() => setInput(qa.label)}>{qa.label}</button>
             ))}
           </div>
         )}
-        <div style={{ display: "flex", gap: 6 }}>
-          {/* Voice output toggle */}
-          <button onClick={() => { setVoiceOn(!voiceOn); if (voiceOn) stopSpeaking(); }} style={{ background: voiceOn ? "rgba(56,189,248,.15)" : "rgba(255,255,255,.03)", border: voiceOn ? "1px solid rgba(56,189,248,.3)" : "1px solid rgba(255,255,255,.06)", borderRadius: 12, padding: "10px 12px", cursor: "pointer", fontSize: 16, color: voiceOn ? "#38bdf8" : "#6b7280", flexShrink: 0 }}>
-            {voiceOn ? "🔊" : "🔇"}
+        <div className="flex items-center gap-1.5 p-1.5 rounded-full" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "var(--card-shadow)" }}>
+          <button type="button" className="icon-btn !w-9 !h-9 shrink-0" onClick={() => { setVoiceOn(!voiceOn); if (voiceOn) stopSpeaking(); }}
+            aria-label={voiceOn ? "Turn off spoken replies" : "Read replies aloud"} aria-pressed={voiceOn} style={voiceOn ? { color: "var(--accent)" } : undefined}>
+            {voiceOn ? <Volume2 size={17} /> : <VolumeX size={17} />}
           </button>
           {speechSupported && (
-            <button onClick={startVoice} style={{ background: isListening ? "rgba(239,68,68,.15)" : "rgba(255,255,255,.03)", border: isListening ? "1px solid rgba(239,68,68,.3)" : "1px solid rgba(255,255,255,.06)", borderRadius: 12, padding: "10px 12px", cursor: "pointer", fontSize: 16, color: isListening ? "#ef4444" : "#6b7280", flexShrink: 0 }}>
-              {isListening ? "🔴" : "🎤"}
+            <button type="button" className="icon-btn !w-9 !h-9 shrink-0" onClick={startVoice} aria-label="Speak your message" style={isListening ? { color: "var(--danger)" } : undefined}>
+              <Mic size={17} />
             </button>
           )}
-          <input ref={inputRef} className="inp" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder={`Ask ${curMode.name}...`} style={{ flex: 1 }} />
-          <button className="bp" onClick={send} disabled={!input.trim() || loading || isTyping} style={{ padding: "10px 16px", fontSize: 16, flexShrink: 0, borderRadius: 12 }}>→</button>
+          <input ref={inputRef} className="flex-1 min-w-0 bg-transparent border-0 outline-none px-2 text-[14px]" style={{ color: "var(--text-primary)" }}
+            value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder={`Ask your ${curMode.name.toLowerCase()} coach…`} aria-label="Message" />
+          <button type="button" className="bp !w-10 !h-10 !p-0 shrink-0" onClick={send} disabled={!input.trim() || loading || isTyping} aria-label="Send"><ArrowUp size={18} strokeWidth={2.6} /></button>
         </div>
       </div>
       <style>{`@keyframes blink { 0%,50% { opacity: 1 } 51%,100% { opacity: 0 } }`}</style>
