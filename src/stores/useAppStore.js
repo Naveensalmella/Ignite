@@ -1,18 +1,21 @@
 "use client";
 import { create } from 'zustand';
-import { DEFAULT_HABITS, DAILY_PENALTY } from '@/data/index';
-import { getLevel, getRank, getStreakMult, today, addDays, parseDateKey, normalizeDayLog, toArr } from '@/utils';
+import { DEFAULT_HABITS } from '@/data/index';
+import { getLevel, getStreakMult, today, addDays, normalizeDayLog, toArr } from '@/utils';
 import { checkMilestone } from '@/data/gamingSystem';
 import { hasDayWorkout } from '@/lib/workoutHelpers';
 import storeV2, { DAY_COLLECTIONS, encodeDayDoc } from '@/store-v2';
 import { play, hapticTap } from '@/components/soundEngine';
 import { playLevelUp } from '@/sounds';
+import { playerRank, availableTrial } from '@/lib/system/ranks';
+import { AP_PER_LEVEL } from '@/lib/system/stats';
+import { pruneQuestLog } from '@/lib/system/quests';
 
 // Fields stored on the main users/{uid} document.
 const PROFILE_FIELDS = [
   'profile', 'habits', 'tasks', 'totalXP', 'streak', 'lastCheck', 'pillarProg',
   'routineData', 'masteryData', 'bodyData', 'challengeData', 'programData',
-  'freezeData', 'programState', 'loginData', 'activeTitle', 'questChainData',
+  'freezeData', 'programState', 'loginData', 'activeTitle', 'questChainData', 'system',
 ];
 
 // Caps that keep single documents well under Firestore's 1 MB limit.
@@ -42,6 +45,7 @@ const EMPTY_DATA = {
   challengeData: null, programData: null, freezeData: null, programState: {},
   xpLog: {}, loginData: {}, questChainData: {}, bodyPhotos: {},
   totalXP: 0, streak: 0, lastCheck: '', activeTitle: null,
+  system: null, // Solo Leveling "System": rank, ability points, gold, inventory, quests (see lib/system)
 };
 
 // Every document the app would write for the current state: path key → { path, data }.
@@ -101,7 +105,7 @@ const useAppStore = create((set, get) => ({
   dataReady: false,      // true once the user's data loaded successfully
   loadError: null,       // message when loading failed (saving stays disabled)
   syncStatus: 'idle',    // idle | saving | saved | error | offline
-  page: 'dashboard',
+  page: 'status',
   showTutorial: false,
 
   ...EMPTY_DATA,
@@ -111,6 +115,7 @@ const useAppStore = create((set, get) => ({
   confetti: 0,
   levelUp: null,
   milestone: null,
+  notices: [],           // queue of [SYSTEM] windows
 
   // ── Setters ──
   setUser: (user) => set({ user }),
@@ -157,6 +162,15 @@ const useAppStore = create((set, get) => ({
   setXpEvents: (v) => set(s => ({ xpEvents: typeof v === 'function' ? v(s.xpEvents) : v })),
   setLevelUp: (levelUp) => set({ levelUp }),
   setMilestone: (milestone) => set({ milestone }),
+  setSystem: (v) => set(s => ({ system: typeof v === 'function' ? v(s.system) : v })),
+
+  // ── [SYSTEM] notification windows (shown one at a time) ──
+  notify: (notice) => {
+    const id = Date.now() + Math.random();
+    set(s => ({ notices: [...s.notices, { kind: 'info', ...notice, id }] }));
+    play(notice?.kind === 'warning' ? 'warning' : notice?.kind === 'rank' ? 'rankUp' : notice?.kind === 'quest' ? 'questComplete' : 'system');
+  },
+  dismissNotice: () => set(s => ({ notices: s.notices.slice(1) })),
 
   // Short-lived toast in the XP feed (also used for info like penalties).
   pushXpEvent: (amount, reason, ms = 1800) => {
@@ -171,11 +185,13 @@ const useAppStore = create((set, get) => ({
     set(s => ({ activityLog: [entry, ...toArr(s.activityLog)].slice(0, MAX_ACTIVITY) }));
   },
 
-  // ── Add XP (with streak multiplier, confetti, level-up) ──
+  // ── Add XP (streak multiplier, XP Potion, Penalty halving, gold, ability points, level-up) ──
   addXP: (amount, reason = "") => {
-    const { streak, logActivity, pushXpEvent } = get();
+    const { streak, logActivity, pushXpEvent, system } = get();
     const mult = getStreakMult(streak);
-    const actual = Math.floor((Number(amount) || 0) * mult);
+    const boosted = (Number(system?.buffs?.xpBoostUntil) || 0) > Date.now();
+    const penalized = !!system?.penalty?.active;
+    const actual = Math.floor((Number(amount) || 0) * mult * (boosted ? 2 : 1) * (penalized ? 0.5 : 1));
     if (actual <= 0) return;
 
     const prevXP = get().totalXP || 0;
@@ -184,19 +200,43 @@ const useAppStore = create((set, get) => ({
     const newLv = getLevel(nextXP);
     set(s => ({ totalXP: nextXP, confetti: s.confetti + 1 }));
 
+    // System rewards: gold for every XP gain, Ability Points for every new level.
+    let gainedAP = 0;
+    if (system?.awakened) {
+      const apLevel = Number(system.apLevel) || oldLv;
+      gainedAP = newLv > apLevel ? (newLv - apLevel) * AP_PER_LEVEL : 0;
+      const gold = Math.max(1, Math.round(actual / 5));
+      set(s => ({
+        system: {
+          ...s.system,
+          gold: (Number(s.system?.gold) || 0) + gold,
+          abilityPoints: (Number(s.system?.abilityPoints) || 0) + gainedAP,
+          apLevel: Math.max(apLevel, newLv),
+        },
+      }));
+    }
+
     if (newLv > oldLv) {
+      const trialBefore = availableTrial(system, oldLv);
+      const trialNow = availableTrial(system, newLv);
       setTimeout(() => {
-        const info = { level: newLv, rank: getRank(newLv) };
-        set({ levelUp: info });
+        set({ levelUp: { level: newLv, rank: playerRank(get().system, newLv), ap: gainedAP } });
         playLevelUp();
       }, 300);
+      if (trialNow && !trialBefore) {
+        setTimeout(() => get().notify({
+          kind: 'rank', title: 'RANK ASSESSMENT UNLOCKED',
+          lines: [`You have reached the level required for ${trialNow.name}.`, 'Pass the Rank Assessment to be promoted.'],
+          cta: { label: 'View assessment', page: 'quests' },
+        }), 5200);
+      }
     }
     try {
       const ms = checkMilestone(prevXP, nextXP);
       if (ms) setTimeout(() => set({ milestone: ms }), 800);
     } catch { /* milestone data is optional */ }
-
-    pushXpEvent(actual, reason + (mult > 1 ? ` (×${mult})` : ""), 1600);
+    const tags = `${mult > 1 ? ` ×${mult}` : ''}${boosted ? ' 🧪×2' : ''}${penalized ? ' (penalty ½)' : ''}`;
+    pushXpEvent(actual, reason + tags, 1600);
     logActivity("xp", `+${actual} XP: ${reason}`);
     play('xpGain');
     hapticTap();
@@ -215,27 +255,33 @@ const useAppStore = create((set, get) => ({
     set(s => ({ xpLog: { ...(s.xpLog || {}), [d]: [...toArr((s.xpLog || {})[d]), { amount: actual, category: cat, reason: r, time: Date.now() }] } }));
   },
 
-  // ── Daily check: missed-day penalty + streak (runs once per day, only after data loaded) ──
+  // ── Daily check: streak + Penalty Quest for a missed Daily Quest (only after data loaded) ──
+  // No permanent XP loss: a missed Daily Quest opens the Penalty Zone instead.
   runDailyCheck: () => {
     const s = get();
     if (!s.dataReady) return;
     const d = today();
     const updates = { streak: computeStreak(s.workoutLog, s.freezeData) };
-    if (s.lastCheck !== d) {
-      if (s.lastCheck && /^\d{4}-\d{2}-\d{2}$/.test(s.lastCheck) && parseDateKey(s.lastCheck) < parseDateKey(d)) {
-        const frozen = new Set(toArr(s.freezeData?.freezesUsed));
-        let missed = 0;
-        // Days strictly between the last check and today (capped at a year).
-        for (let k = addDays(1, s.lastCheck), i = 0; k < d && i < 365; k = addDays(1, k), i++) {
-          if (!hasDayWorkout(s.workoutLog, k) && !frozen.has(k)) missed++;
-        }
-        const penalty = missed * DAILY_PENALTY;
-        if (penalty > 0) {
-          updates.totalXP = Math.max(0, (s.totalXP || 0) - penalty);
-          setTimeout(() => get().pushXpEvent(-penalty, `${missed} day${missed > 1 ? "s" : ""} missed`, 3000), 600);
-        }
+    if (s.lastCheck !== d) updates.lastCheck = d;
+
+    const sys = s.system;
+    if (sys?.awakened && sys.penaltyChecked !== d) {
+      const y = addDays(-1, d);
+      const shielded = toArr(s.freezeData?.freezesUsed).includes(y);
+      const missed = !!sys.awakenedOn && y >= sys.awakenedOn && !sys.questLog?.[y]?.claimed && !shielded && !sys.penalty?.active;
+      updates.system = {
+        ...sys,
+        ...pruneQuestLog(sys, d),
+        penaltyChecked: d,
+        ...(missed ? { penalty: { active: true, date: d, missed: y } } : {}),
+      };
+      if (missed) {
+        setTimeout(() => get().notify({
+          kind: 'warning', title: 'PENALTY QUEST',
+          lines: ["Yesterday's Daily Quest was not completed.", 'You have been sent to the Penalty Zone. Until you survive it, XP gains are halved and the Daily Quest is locked.'],
+          cta: { label: 'Enter the Penalty Zone', page: 'quests' },
+        }), 1200);
       }
-      updates.lastCheck = d;
     }
     set(updates);
   },
@@ -286,6 +332,7 @@ const useAppStore = create((set, get) => ({
         loginData: main.loginData || {},
         activeTitle: main.activeTitle || null,
         questChainData: main.questChainData || {},
+        system: main.system && typeof main.system === 'object' ? main.system : null,
         totalXP: Number(main.totalXP) || 0,
         streak: Number(main.streak) || 0,
         lastCheck: main.lastCheck || '',
@@ -384,7 +431,7 @@ const useAppStore = create((set, get) => ({
       ['ignite-prs', 'ignite-challenge-progress', 'ignite-scan-history', 'ignite-week-muscles', 'ignite-oracle-chats', 'ignite-oracle-active']
         .forEach(k => localStorage.removeItem(k));
     } catch { /* ignore */ }
-    set({ ...EMPTY_DATA, user: null, dataReady: false, loadError: null, syncStatus: 'idle', page: 'dashboard', xpEvents: [] });
+    set({ ...EMPTY_DATA, user: null, dataReady: false, loadError: null, syncStatus: 'idle', page: 'status', xpEvents: [], notices: [] });
   },
 
   // ── Computed: appState (for components that need the bundle) ──
@@ -400,7 +447,7 @@ const useAppStore = create((set, get) => ({
       challengeData: s.challengeData, freezeData: s.freezeData,
       programState: s.programState || {}, xpLog: s.xpLog || {},
       loginData: s.loginData || {}, activeTitle: s.activeTitle,
-      questChainData: s.questChainData || {},
+      questChainData: s.questChainData || {}, system: s.system,
     };
   },
 }));

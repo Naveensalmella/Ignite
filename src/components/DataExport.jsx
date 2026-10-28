@@ -1,6 +1,8 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
-import { getLevel, getRank, toArr, today, parseDateKey } from '@/utils';
+import { getLevel, toArr, today, parseDateKey } from '@/utils';
+import useAppStore from '@/stores/useAppStore';
+import { playerRank } from '@/lib/system/ranks';
 import { countWorkoutDays, getTotalCal, getDayCal, getDayDuration, getDaySplit, hasDayWorkout } from '@/lib/workoutHelpers';
 import { APP_VERSION, VERSION_LABEL } from '@/version';
 
@@ -44,7 +46,7 @@ export default function DataExport({ appState: rawAppState = {}, totalXP = 0, st
 
         try {
             const lv = getLevel(totalXP);
-            const rank = getRank(lv);
+            const rank = playerRank(useAppStore.getState().system, lv);
             const d = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
             // workoutLog[date] may be a legacy single object or an array of entries
             const totalWorkouts = countWorkoutDays(workoutLog);
@@ -91,7 +93,7 @@ export default function DataExport({ appState: rawAppState = {}, totalXP = 0, st
 
             // Header gradient bar
             const grad = ctx.createLinearGradient(0, 0, W, 0);
-            grad.addColorStop(0, "#10b981"); grad.addColorStop(1, "#06b6d4");
+            grad.addColorStop(0, "#38bdf8"); grad.addColorStop(1, "#06b6d4");
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, W, 6);
 
@@ -105,12 +107,12 @@ export default function DataExport({ appState: rawAppState = {}, totalXP = 0, st
             ctx.fillText(`Generated on ${d} for ${profile.name || "Warrior"}`, 30, 72);
 
             // Separator
-            ctx.fillStyle = "#10b981";
+            ctx.fillStyle = "#38bdf8";
             ctx.fillRect(30, 85, W - 60, 1);
 
             // ── PROFILE SECTION ──
             let y = 110;
-            ctx.fillStyle = "#10b981";
+            ctx.fillStyle = "#38bdf8";
             ctx.font = "bold 16px Rajdhani, sans-serif";
             ctx.fillText("👤 PROFILE", 30, y);
             y += 25;
@@ -132,7 +134,7 @@ export default function DataExport({ appState: rawAppState = {}, totalXP = 0, st
 
             // ── STATS SECTION ──
             y += 15;
-            ctx.fillStyle = "#10b981";
+            ctx.fillStyle = "#38bdf8";
             ctx.font = "bold 16px Rajdhani, sans-serif";
             ctx.fillText("📊 LIFETIME STATS", 30, y);
             y += 10;
@@ -160,7 +162,7 @@ export default function DataExport({ appState: rawAppState = {}, totalXP = 0, st
                 roundRectPath(ctx, bx, by, boxW, boxH, 8);
                 ctx.fill();
 
-                ctx.fillStyle = "#10b981";
+                ctx.fillStyle = "#38bdf8";
                 ctx.font = "bold 18px Rajdhani, sans-serif";
                 ctx.fillText(val, bx + 10, by + 25);
 
@@ -172,7 +174,7 @@ export default function DataExport({ appState: rawAppState = {}, totalXP = 0, st
             y += 15 + Math.ceil(stats.length / cols) * (boxH + gap) + 15;
 
             // ── RECENT WORKOUTS ──
-            ctx.fillStyle = "#10b981";
+            ctx.fillStyle = "#38bdf8";
             ctx.font = "bold 16px Rajdhani, sans-serif";
             ctx.fillText("⚔️ RECENT WORKOUTS", 30, y);
             y += 8;
@@ -218,7 +220,7 @@ export default function DataExport({ appState: rawAppState = {}, totalXP = 0, st
             ctx.font = "10px Inter, sans-serif";
             ctx.fillText(`IGNITE ${VERSION_LABEL} · ${profile.name || "Warrior"} · ${rank.emoji} ${rank.name} · Generated ${d}`, 30, H - 25);
 
-            ctx.fillStyle = "#10b981";
+            ctx.fillStyle = "#38bdf8";
             ctx.fillRect(30, H - 35, W - 60, 1);
 
             // Convert to PDF-like download (PNG image of the report)

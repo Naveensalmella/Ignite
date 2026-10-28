@@ -1,6 +1,8 @@
 "use client";
-import { useState, useMemo } from 'react';
-import { getLevel, getLevelProg, getRank, xpToNext, calcBMI, bmiCat, toArr } from '@/utils';
+import { useState } from 'react';
+import { getLevel, getLevelProg, xpToNext, calcBMI, bmiCat, toArr } from '@/utils';
+import useAppStore from '@/stores/useAppStore';
+import { playerRank, rankIndex } from '@/lib/system/ranks';
 import { RANKS } from '@/data/index';
 import { BADGES, checkBadges, getRarityColor } from '@/data/badges';
 import YearHeatmap from './YearHeatmap';
@@ -13,7 +15,8 @@ import { getTotalCal, countWorkoutDays } from '@/lib/workoutHelpers';
 
 export default function ProfilePage({ profile: rawProfile = {}, setProfile = () => { }, user = null, onLogout = null, totalXP = 0, streak = 0, workoutLog = {}, appState = {}, setPage = () => { } }) {
   const profile = rawProfile || {};
-  const lv = getLevel(totalXP), rank = getRank(lv), prog = getLevelProg(totalXP), remain = xpToNext(totalXP);
+  const system = useAppStore(s => s.system);
+  const lv = getLevel(totalXP), rank = playerRank(system, lv), prog = getLevelProg(totalXP), remain = xpToNext(totalXP);
   const bmi = calcBMI(parseFloat(profile.weight), parseFloat(profile.height));
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState("overview");
@@ -30,7 +33,8 @@ export default function ProfilePage({ profile: rawProfile = {}, setProfile = () 
   const totalWorkouts = countWorkoutDays(workoutLog);
   const totalCal = getTotalCal(workoutLog);
 
-  const earnedIds = useMemo(() => checkBadges({ totalXP, level: lv, streak, workoutLog: workoutLog || {}, foodLog: foodLog || {}, journal: journal || {}, focusLog: focusLog || {}, pillarProg: pillarProg || {} }), [totalXP, lv, streak, workoutLog, foodLog, journal, focusLog, pillarProg]);
+  // (The React Compiler memoizes this; a manual useMemo here can't be preserved.)
+  const earnedIds = checkBadges({ totalXP, level: lv, streak, workoutLog: workoutLog || {}, foodLog: foodLog || {}, journal: journal || {}, focusLog: focusLog || {}, pillarProg: pillarProg || {} });
 
   const categories = [...new Set(BADGES.map(b => b.category))];
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
@@ -47,20 +51,20 @@ export default function ProfilePage({ profile: rawProfile = {}, setProfile = () 
     {tab === "overview" && (<div>
       {/* Hero Card */}
       <div className="gs" style={{ textAlign: "center", marginBottom: 16, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${rank.color},#10b981)` }} />
-        <div style={{ width: 80, height: 80, borderRadius: "50%", background: `linear-gradient(135deg,${rank.color},#10b981)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, fontWeight: 800, color: "#fff", fontFamily: "Rajdhani,sans-serif", margin: "0 auto 12px", boxShadow: `0 0 30px ${rank.color}30` }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${rank.color},#38bdf8)` }} />
+        <div style={{ width: 80, height: 80, borderRadius: "50%", background: `linear-gradient(135deg,${rank.color},#38bdf8)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, fontWeight: 800, color: "#fff", fontFamily: "Rajdhani,sans-serif", margin: "0 auto 12px", boxShadow: `0 0 30px ${rank.color}30` }}>
           {(profile.name || "I")[0]?.toUpperCase()}
         </div>
         <div style={{ fontSize: 24, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{profile.name || "Warrior"}</div>
         <span className="rank-badge" style={{ background: `${rank.color}15`, color: rank.color, border: `1px solid ${rank.color}25`, fontSize: 12, marginTop: 6, display: "inline-flex" }}>{rank.emoji} {rank.name} — Lv.{lv}</span>
         {rank.title && <div style={{ fontSize: 13, color: `${rank.color}80`, marginTop: 6, fontStyle: "italic" }}>&ldquo;{rank.title}&rdquo;</div>}
-        <div className="xp-bar-bg" style={{ height: 8, borderRadius: 4, marginTop: 12 }}><div className="xp-bar-fill" style={{ width: `${prog * 100}%`, background: `linear-gradient(90deg,${rank.color},#10b981)`, height: 8, borderRadius: 4 }} /></div>
+        <div className="xp-bar-bg" style={{ height: 8, borderRadius: 4, marginTop: 12 }}><div className="xp-bar-fill" style={{ width: `${prog * 100}%`, background: `linear-gradient(90deg,${rank.color},#38bdf8)`, height: 8, borderRadius: 4 }} /></div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 4, color: "#6b7280" }}><span>{totalXP.toLocaleString()} XP</span><span>{remain.toLocaleString()} to Lv.{lv + 1}</span></div>
       </div>
 
       {/* Quick Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 16 }}>
-        {[["🏋️", totalWorkouts, "Workouts"], ["🔥", `${streak}d`, "Streak"], ["🏅", earnedIds.length, "Badges"], ["💪", totalCal.toLocaleString(), "Cal Burned"], ["📊", bmi || "—", bmiCat(bmi) || "BMI"], ["⚔️", `${RANKS.findIndex(r => r.name === rank.name) + 1}/${RANKS.length}`, "Rank"]].map(([icon, val, label]) => (
+        {[["🏋️", totalWorkouts, "Workouts"], ["🔥", `${streak}d`, "Streak"], ["🏅", earnedIds.length, "Badges"], ["💪", totalCal.toLocaleString(), "Cal Burned"], ["📊", bmi || "—", bmiCat(bmi) || "BMI"], ["⚔️", rank.id === "N" ? "NL" : rank.id, "Rank"]].map(([icon, val, label]) => (
           <div key={label} className="gc" style={{ textAlign: "center", padding: 12 }}>
             <div style={{ fontSize: 16 }}>{icon}</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{val}</div>
@@ -78,7 +82,7 @@ export default function ProfilePage({ profile: rawProfile = {}, setProfile = () 
       <div className="gs" style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div className="sl" style={{ margin: 0 }}>Body Stats</div>
-          <span onClick={() => setEditing(!editing)} style={{ fontSize: 12, color: "#10b981", cursor: "pointer" }}>{editing ? "Save" : "Edit"}</span>
+          <span onClick={() => setEditing(!editing)} style={{ fontSize: 12, color: "#38bdf8", cursor: "pointer" }}>{editing ? "Save" : "Edit"}</span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
           {[["Age", "age", "years"], ["Weight", "weight", "kg"], ["Height", "height", "cm"], ["Gender", "gender", ""]].map(([label, key, unit]) => (
@@ -163,14 +167,15 @@ export default function ProfilePage({ profile: rawProfile = {}, setProfile = () 
       <div style={{ textAlign: "center", marginBottom: 20 }}>
         <div style={{ fontSize: 36 }}>⚔️</div>
         <div style={{ fontSize: 22, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Rank Progression</div>
-        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Your path to the absolute</div>
+        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Reach the level, then pass the Rank Assessment (Quests) to be promoted</div>
       </div>
       {RANKS.map(r => {
-        const isActive = rank.name === r.name;
-        const isPast = lv >= r.min;
+        const isActive = rank.id === r.id;
+        const isPast = rankIndex(r.id) <= rankIndex(rank.id);
+        const unlocked = !isPast && lv >= r.min;
         const isFuture = !isPast;
         return (<div key={r.name} className="gs" style={{ marginBottom: 8, border: isActive ? `1px solid ${r.color}30` : "1px solid rgba(255,255,255,.04)", background: isActive ? `linear-gradient(135deg, ${r.color}08, transparent)` : undefined, opacity: isFuture ? 0.35 : 1, position: "relative", overflow: "hidden" }}>
-          {isActive && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${r.color},#10b981)` }} />}
+          {isActive && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${r.color},#38bdf8)` }} />}
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ fontSize: 22, width: 44, height: 44, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: `${r.color}10`, border: `1px solid ${r.color}20`, fontFamily: "Rajdhani,sans-serif", fontWeight: 800, color: r.color }}>{r.emoji}</div>
             <div style={{ flex: 1 }}>
@@ -178,6 +183,7 @@ export default function ProfilePage({ profile: rawProfile = {}, setProfile = () 
                 <span style={{ fontSize: 16, fontWeight: 700, color: isPast ? r.color : "#4b5563", fontFamily: "Rajdhani,sans-serif" }}>{r.name}</span>
                 {isActive && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: `${r.color}15`, color: r.color, fontWeight: 700 }}>CURRENT</span>}
                 {isPast && !isActive && <span style={{ fontSize: 11, color: "#22c55e" }}>✓</span>}
+                {unlocked && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: "rgba(251,191,36,.12)", color: "#fbbf24", fontWeight: 700 }}>ASSESSMENT READY</span>}
               </div>
               <div style={{ fontSize: 12, color: "#6b7280" }}>Level {r.min}{r.max < 999999 ? `–${r.max}` : "+"}</div>
               {r.title && <div style={{ fontSize: 11, color: `${r.color}70`, fontStyle: "italic" }}>&ldquo;{r.title}&rdquo;</div>}

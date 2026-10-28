@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 
 const ACCENTS = [
+    { id: "system", color: "#38bdf8", label: "System", gradient: "linear-gradient(135deg,#38bdf8,#6366f1)" },
     { id: "emerald", color: "#10b981", label: "Emerald", gradient: "linear-gradient(135deg,#10b981,#06b6d4)" },
     { id: "red", color: "#ef4444", label: "Crimson", gradient: "linear-gradient(135deg,#ef4444,#f97316)" },
     { id: "blue", color: "#3b82f6", label: "Ocean", gradient: "linear-gradient(135deg,#3b82f6,#06b6d4)" },
@@ -12,9 +13,19 @@ const ACCENTS = [
     { id: "gold", color: "#eab308", label: "Gold", gradient: "linear-gradient(135deg,#eab308,#f59e0b)" },
 ];
 
+// v2 key: everyone starts on the System theme after the Solo Leveling makeover.
+const ACCENT_KEY = "ignite-accent-v2";
+
 function applyAccent(accent) {
     if (typeof document === "undefined") return;
     const a = ACCENTS.find(x => x.id === accent) || ACCENTS[0];
+    if (a.id === "system") {
+        // The default palette lives in globals.css (with its own light-mode shade).
+        document.documentElement.style.removeProperty("--accent");
+        document.documentElement.style.removeProperty("--accent-gradient");
+        document.getElementById("accent-override")?.remove();
+        return;
+    }
     document.documentElement.style.setProperty("--accent", a.color);
     document.documentElement.style.setProperty("--accent-gradient", a.gradient);
 
@@ -34,14 +45,14 @@ function applyAccent(accent) {
     }
 }
 
-export { ACCENTS, applyAccent };
+export { ACCENTS, ACCENT_KEY, applyAccent };
 
 export default function AccentPicker() {
     const [accent, setAccent] = useState(() => {
         try {
-            const saved = localStorage.getItem("ignite-accent");
-            return ACCENTS.some(a => a.id === saved) ? saved : "emerald";
-        } catch { return "emerald"; }
+            const saved = localStorage.getItem(ACCENT_KEY);
+            return ACCENTS.some(a => a.id === saved) ? saved : "system";
+        } catch { return "system"; }
     });
 
     useEffect(() => {
@@ -50,7 +61,7 @@ export default function AccentPicker() {
 
     const pick = (id) => {
         setAccent(id);
-        try { localStorage.setItem("ignite-accent", id); } catch { }
+        try { localStorage.setItem(ACCENT_KEY, id); } catch { }
     };
 
     return (

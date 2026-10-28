@@ -6,7 +6,7 @@ const CATEGORIES = {
   income: ["Salary", "Freelance", "Investment", "Gift", "Other Income"],
   expense: ["Food", "Transport", "Shopping", "Bills", "Entertainment", "Health", "Education", "Rent", "Other"],
 };
-const CAT_COLORS = { Food: "#f59e0b", Transport: "#3b82f6", Shopping: "#ec4899", Bills: "#ef4444", Entertainment: "#8b5cf6", Health: "#10b981", Education: "#06b6d4", Rent: "#f97316", Other: "#6b7280", Salary: "#22c55e", Freelance: "#10b981", Investment: "#06b6d4", Gift: "#f59e0b", "Other Income": "#6b7280" };
+const CAT_COLORS = { Food: "#f59e0b", Transport: "#3b82f6", Shopping: "#ec4899", Bills: "#ef4444", Entertainment: "#8b5cf6", Health: "#38bdf8", Education: "#06b6d4", Rent: "#f97316", Other: "#6b7280", Salary: "#22c55e", Freelance: "#38bdf8", Investment: "#06b6d4", Gift: "#f59e0b", "Other Income": "#6b7280" };
 // Firestore data is untrusted: amounts may be strings/missing, dates may be missing, entries may be null
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const monthLabel = (m) => { const [y, mo] = String(m).split("-").map(Number); const dt = new Date(y, (mo || 1) - 1, 1); return isNaN(dt) ? m : dt.toLocaleDateString("en", { month: "short", year: "2-digit" }); };
@@ -98,7 +98,7 @@ export default function FinancePage({ finances = [], setFinances = () => { }, ad
               <div style={{ fontSize: 11, color: "#6b7280" }}>Expense</div>
             </div>
             <div className="gc" style={{ padding: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 18, fontWeight: 900, color: savings >= 0 ? "#10b981" : "#ef4444", fontFamily: "Rajdhani,sans-serif" }}>₹{Math.abs(savings).toLocaleString()}</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: savings >= 0 ? "#38bdf8" : "#ef4444", fontFamily: "Rajdhani,sans-serif" }}>₹{Math.abs(savings).toLocaleString()}</div>
               <div style={{ fontSize: 11, color: "#6b7280" }}>{savings >= 0 ? "Saved" : "Deficit"}</div>
             </div>
           </div>

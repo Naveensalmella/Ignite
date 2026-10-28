@@ -15,7 +15,7 @@ export function ConfettiBlast({ trigger }) {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const colors = ["#10b981", "#06b6d4", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#22c55e", "#fbbf24"];
+    const colors = ["#38bdf8", "#06b6d4", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#22c55e", "#fbbf24"];
     const particles = Array.from({ length: 80 }, () => ({
       x: Math.random() * canvas.width,
       y: -20 - Math.random() * 100,
@@ -75,9 +75,9 @@ export function XPPopup({ events }) {
       {events.slice(-3).map((ev, i) => (
         <div key={ev.id || i} style={{
           padding: "10px 20px", borderRadius: 12,
-          background: "rgba(16,185,129,.15)", backdropFilter: "blur(10px)",
-          border: "1px solid rgba(16,185,129,.25)",
-          color: "#10b981", fontSize: 14, fontWeight: 700,
+          background: "rgba(56,189,248,.15)", backdropFilter: "blur(10px)",
+          border: "1px solid rgba(56,189,248,.25)",
+          color: "#38bdf8", fontSize: 14, fontWeight: 700,
           fontFamily: "Rajdhani,sans-serif", letterSpacing: 1,
           animation: "fadeUp .4s ease both",
         }}>
@@ -106,7 +106,7 @@ export function LevelUpCelebration({ level, rank, onClose }) {
         }}>LEVEL UP</div>
         <div style={{
           fontSize: 64, fontWeight: 900, fontFamily: "Rajdhani,sans-serif",
-          background: "linear-gradient(135deg,#10b981,#06b6d4)",
+          background: "linear-gradient(135deg,#38bdf8,#06b6d4)",
           WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
           lineHeight: 1,
         }}>Level {level}</div>

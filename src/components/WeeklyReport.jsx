@@ -1,6 +1,8 @@
 "use client";
 import { useMemo } from 'react';
-import { getLevel, getRank, today, toArr, addDays, parseDateKey } from '@/utils';
+import { getLevel, today, toArr, addDays, parseDateKey } from '@/utils';
+import useAppStore from '@/stores/useAppStore';
+import { playerRank } from '@/lib/system/ranks';
 import { hasDayWorkout, getDayCal, getDayDuration } from '@/lib/workoutHelpers';
 
 // Props: totalXP, streak, workoutLog, foodLog, habitLog (unused), focusLog
@@ -26,7 +28,7 @@ export default function WeeklyReport({ totalXP = 0, streak = 0, workoutLog = {},
         }, 0);
 
         const level = getLevel(totalXP);
-        const rank = getRank(level);
+        const rank = playerRank(useAppStore.getState().system, level);
 
         return { weekDays, workouts, totalCal, totalDuration, foodDays, totalFoodCal, focusMins, level, rank };
     }, [totalXP, workoutLog, foodLog, focusLog, todayKey]);
@@ -44,7 +46,7 @@ export default function WeeklyReport({ totalXP = 0, streak = 0, workoutLog = {},
             {/* Stats grid */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 16 }}>
                 {[
-                    ["⚔️", report.workouts, "/7 days", "Workouts", "#10b981"],
+                    ["⚔️", report.workouts, "/7 days", "Workouts", "#38bdf8"],
                     ["🔥", Math.round(report.totalCal).toLocaleString(), "cal", "Burned", "#ef4444"],
                     ["⏱", fmt(Math.floor(report.totalDuration / 60)), "", "Train Time", "#06b6d4"],
                     ["🍎", report.foodDays, "/7 days", "Food Logged", "#f59e0b"],
@@ -70,8 +72,8 @@ export default function WeeklyReport({ totalXP = 0, streak = 0, workoutLog = {},
                         return (
                             <div key={d} style={{
                                 flex: 1, textAlign: "center", padding: "8px 4px", borderRadius: 10,
-                                background: worked ? "rgba(16,185,129,.08)" : "rgba(255,255,255,.02)",
-                                border: isToday ? "1px solid rgba(16,185,129,.3)" : "1px solid rgba(255,255,255,.04)",
+                                background: worked ? "rgba(56,189,248,.08)" : "rgba(255,255,255,.02)",
+                                border: isToday ? "1px solid rgba(56,189,248,.3)" : "1px solid rgba(255,255,255,.04)",
                             }}>
                                 <div style={{ fontSize: 11, color: "#4b5563" }}>{dayName}</div>
                                 <div style={{ fontSize: 16, marginTop: 2 }}>{worked ? "✅" : "·"}</div>
@@ -84,8 +86,8 @@ export default function WeeklyReport({ totalXP = 0, streak = 0, workoutLog = {},
 
             {/* Level + Streak */}
             <div style={{ display: "flex", gap: 10 }}>
-                <div style={{ flex: 1, textAlign: "center", padding: 12, background: "rgba(16,185,129,.04)", borderRadius: 10, border: "1px solid rgba(16,185,129,.08)" }}>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: "#10b981", fontFamily: "Rajdhani,sans-serif" }}>Lv.{report.level}</div>
+                <div style={{ flex: 1, textAlign: "center", padding: 12, background: "rgba(56,189,248,.04)", borderRadius: 10, border: "1px solid rgba(56,189,248,.08)" }}>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: "#38bdf8", fontFamily: "Rajdhani,sans-serif" }}>Lv.{report.level}</div>
                     <div style={{ fontSize: 11, color: report.rank.color }}>{report.rank.name}</div>
                 </div>
                 <div style={{ flex: 1, textAlign: "center", padding: 12, background: "rgba(239,68,68,.04)", borderRadius: 10, border: "1px solid rgba(239,68,68,.08)" }}>

@@ -1,6 +1,8 @@
 "use client";
 import { useRef, useState, useMemo } from 'react';
-import { getLevel, getRank, toArr } from '@/utils';
+import { getLevel, toArr } from '@/utils';
+import useAppStore from '@/stores/useAppStore';
+import { playerRank } from '@/lib/system/ranks';
 import { getDayEntries } from '@/lib/workoutHelpers';
 
 // ctx.roundRect is missing in older Safari/Firefox — fall back to a manual path
@@ -29,7 +31,8 @@ export default function ShareCard({ type = "workout", data: rawData = null, prof
   const cardType = isModal || hasData ? type : selType;
 
   const lv = getLevel(totalXP);
-  const rank = getRank(lv);
+  const system = useAppStore(s => s.system);
+  const rank = playerRank(system, lv);
 
   // Page mode: build card data from the user's own stats / latest workout
   const latestWorkout = useMemo(() => {
@@ -55,7 +58,7 @@ export default function ShareCard({ type = "workout", data: rawData = null, prof
         { label: "Calories", value: `${data.calBurned || 0} cal` },
         { label: "Exercises", value: `${toArr(data.exercises).length}` },
       ],
-      color: "#10b981",
+      color: "#38bdf8",
     },
     streak: {
       title: `${streak} Day Streak! 🔥`,
@@ -73,7 +76,7 @@ export default function ShareCard({ type = "workout", data: rawData = null, prof
       stats: [
         { label: "Level", value: `${data.level || 1}` },
         { label: "Total XP", value: `${Number(totalXP || 0).toLocaleString()}` },
-        { label: "Rank", value: data.rank || "Cinder" },
+        { label: "Rank", value: data.rank || "E-Rank" },
       ],
       color: "#8b5cf6",
     },

@@ -11,12 +11,12 @@ function Toggle({ on, onToggle, label, desc }) {
             </div>
             <div style={{
                 width: 44, height: 24, borderRadius: 12, padding: 2,
-                background: on ? "rgba(16,185,129,.4)" : "rgba(255,255,255,.1)",
+                background: on ? "rgba(56,189,248,.4)" : "rgba(255,255,255,.1)",
                 transition: "background .3s",
             }}>
                 <div style={{
                     width: 20, height: 20, borderRadius: "50%",
-                    background: on ? "#10b981" : "#6b7280",
+                    background: on ? "#38bdf8" : "#6b7280",
                     transition: "all .3s",
                     transform: on ? "translateX(20px)" : "translateX(0)",
                 }} />

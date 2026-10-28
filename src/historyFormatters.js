@@ -36,7 +36,7 @@ export function formatTrainingHistory(workoutLog) {
             title: str(w.splitName) || "Training Session",
             subtitle: `${fmt(w.duration)} · ${exerciseCount} exercises`,
             value: `${num(w.calBurned)} cal`,
-            valueColor: "#10b981",
+            valueColor: "#38bdf8",
             badge: w.verified ? { text: "✓ Verified", color: "#22c55e" } : w.photo ? { text: "📸 Photo", color: "#06b6d4" } : null,
             photo: typeof w.photo === "string" ? w.photo : null,
             details: [
@@ -125,7 +125,7 @@ export function formatQuestHistory(habitLog, workoutLog, habits) {
             ],
             items: [
                 ...(trained ? [{ icon: "⚔️", text: "Daily Training", sub: "Compulsory", value: "✓", valueColor: "#22c55e" }] : []),
-                ...questNames.map(name => ({ icon: "✓", text: name, valueColor: "#10b981" })),
+                ...questNames.map(name => ({ icon: "✓", text: name, valueColor: "#38bdf8" })),
             ],
         };
     });
@@ -166,7 +166,7 @@ export function formatFocusHistory(focusLog) {
 export function formatWellnessHistory(journal) {
     const MOOD_MAP = { 1: "😫", 2: "😔", 3: "😐", 4: "🙂", 5: "😄" };
     const MOOD_LABELS = { 1: "Burned Out", 2: "Low Flame", 3: "Steady", 4: "Blazing", 5: "On Fire" };
-    const MOOD_COLORS = { 1: "#ef4444", 2: "#f97316", 3: "#f59e0b", 4: "#22c55e", 5: "#10b981" };
+    const MOOD_COLORS = { 1: "#ef4444", 2: "#f97316", 3: "#f59e0b", 4: "#22c55e", 5: "#38bdf8" };
 
     return Object.entries(journal || {}).filter(([, e]) => e && typeof e === "object" && (e.mood || e.entry)).map(([date, e]) => {
         const mood = e.mood || 0;

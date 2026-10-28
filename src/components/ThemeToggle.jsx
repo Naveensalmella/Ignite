@@ -37,8 +37,8 @@ export default function ThemeToggle() {
                 <div className="text-sm font-semibold text-gray-100">{theme === "dark" ? "Dark Mode" : "Light Mode"}</div>
                 <div className="text-[11px] text-gray-500">Tap to switch theme</div>
             </div>
-            <div className={`w-11 h-6 rounded-xl p-0.5 transition-colors duration-300 ${theme === "light" ? "bg-emerald-500/40" : "bg-white/10"}`}>
-                <div className={`w-5 h-5 rounded-full transition-all duration-300 ${theme === "light" ? "bg-emerald-500 translate-x-5" : "bg-gray-500 translate-x-0"}`} />
+            <div className={`w-11 h-6 rounded-xl p-0.5 transition-colors duration-300 ${theme === "light" ? "bg-sky-400/40" : "bg-white/10"}`}>
+                <div className={`w-5 h-5 rounded-full transition-all duration-300 ${theme === "light" ? "bg-sky-400 translate-x-5" : "bg-gray-500 translate-x-0"}`} />
             </div>
         </div>
     );

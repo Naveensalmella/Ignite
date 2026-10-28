@@ -2,16 +2,16 @@
 import { useState } from 'react';
 
 const STEPS = [
-  { title: "Welcome to IGNITE", icon: "🔥", desc: "Your life is now an RPG. Every action earns XP. Train, eat right, build habits — and level up for real.", bg: "linear-gradient(135deg,#10b981,#06b6d4)" },
-  { title: "Training", icon: "⚔️", desc: "Generate smart workouts for 9 activity types — Gym, Boxing, HIIT, Yoga, MMA and more. Each exercise has step-by-step guides so you know exactly what to do.", bg: "linear-gradient(135deg,#10b981,#22c55e)" },
+  { title: "Welcome to IGNITE", icon: "🔥", desc: "You have been chosen as a Player. Every real action earns XP, Gold and stats. Train, eat right, build habits — and level up for real.", bg: "linear-gradient(135deg,#38bdf8,#06b6d4)" },
+  { title: "Training", icon: "⚔️", desc: "Generate smart workouts for 9 activity types — Gym, Boxing, HIIT, Yoga, MMA and more. Each exercise has step-by-step guides so you know exactly what to do.", bg: "linear-gradient(135deg,#38bdf8,#22c55e)" },
   { title: "Nutrition", icon: "🍎", desc: "Log food from 194 Indian dishes. Scan food with AI camera. Get personalized diet plans. Track macros — protein, carbs, fat, fiber.", bg: "linear-gradient(135deg,#f59e0b,#f97316)" },
-  { title: "Daily Quests", icon: "🎯", desc: "Set personal daily goals — drink water, read, meditate, save money. Complete your training quest every day or lose XP!", bg: "linear-gradient(135deg,#ef4444,#f97316)" },
+  { title: "Daily Quest", icon: "📜", desc: "Push-ups, sit-ups, squats and a run — scaled to your level and fully editable. Clear it before midnight for XP, Gold and Ability Points. Miss it and tomorrow starts in the Penalty Zone.", bg: "linear-gradient(135deg,#ef4444,#f97316)" },
   { title: "My Day", icon: "📅", desc: "Plan your entire day with time blocks. Choose from 3 templates or build your own. Mark done as you go.", bg: "linear-gradient(135deg,#f97316,#f59e0b)" },
   { title: "Focus Timer", icon: "⏱", desc: "Deep focus sessions with tags. Track your productive hours. See weekly stats.", bg: "linear-gradient(135deg,#06b6d4,#3b82f6)" },
   { title: "Wellness", icon: "💛", desc: "Track mood, write gratitude, journal your thoughts. See your 14-day mood trend. Take care of your mind.", bg: "linear-gradient(135deg,#8b5cf6,#a78bfa)" },
-  { title: "Flame Oracle", icon: "🔮", desc: "Your AI assistant. Say 'I ate rice' and it logs nutrition. Say 'plan my workout' and it creates one. It controls the entire app for you.", bg: "linear-gradient(135deg,#ec4899,#8b5cf6)" },
-  { title: "Level Up System", icon: "⚡", desc: "15 ranks from Cinder to Absolute. 40 achievement badges. Infinite leveling. Your only competition is yesterday.", bg: "linear-gradient(135deg,#fbbf24,#f59e0b)" },
-  { title: "You're Ready", icon: "🚀", desc: "Start your journey. One workout. One meal logged. One quest completed. That's all it takes to begin.", bg: "linear-gradient(135deg,#10b981,#06b6d4)" },
+  { title: "The System", icon: "◈", desc: "Your AI guide, speaking as the System. Say 'I ate rice' and it logs nutrition. Ask it to plan a workout. It knows your rank, stats and quests.", bg: "linear-gradient(135deg,#ec4899,#8b5cf6)" },
+  { title: "Hunter Ranks", icon: "⚡", desc: "Rise from E-Rank to National Level. Reach the level, then pass a real Rank Assessment to be promoted. Spend Ability Points on STR, AGI, VIT, INT and PER.", bg: "linear-gradient(135deg,#fbbf24,#f59e0b)" },
+  { title: "You're Ready", icon: "🚀", desc: "Start your journey. One workout. One meal logged. One quest completed. That's all it takes to begin.", bg: "linear-gradient(135deg,#38bdf8,#06b6d4)" },
 ];
 
 export default function OnboardingTutorial({ onComplete }) {
@@ -24,7 +24,7 @@ export default function OnboardingTutorial({ onComplete }) {
       {/* Progress dots */}
       <div style={{ display: "flex", gap: 4, justifyContent: "center", padding: "20px 20px 0", flexShrink: 0 }}>
         {STEPS.map((_, i) => (
-          <div key={i} style={{ width: i === step ? 24 : 8, height: 4, borderRadius: 2, background: i <= step ? "#10b981" : "rgba(255,255,255,.08)", transition: "all .3s" }} />
+          <div key={i} style={{ width: i === step ? 24 : 8, height: 4, borderRadius: 2, background: i <= step ? "#38bdf8" : "rgba(255,255,255,.08)", transition: "all .3s" }} />
         ))}
       </div>
 
@@ -32,7 +32,7 @@ export default function OnboardingTutorial({ onComplete }) {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 30px", textAlign: "center" }}>
         <div className="fade-in" key={step} style={{ maxWidth: 400 }}>
           {/* Icon */}
-          <div style={{ width: 100, height: 100, borderRadius: 28, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, margin: "0 auto 24px", boxShadow: "0 12px 40px rgba(16,185,129,.15)" }}>
+          <div style={{ width: 100, height: 100, borderRadius: 28, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, margin: "0 auto 24px", boxShadow: "0 12px 40px rgba(56,189,248,.15)" }}>
             {s.icon}
           </div>
 

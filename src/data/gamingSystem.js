@@ -42,7 +42,7 @@ export function getXPBreakdown(xpLog) {
 }
 
 export const XP_SOURCES = {
-    Training: { icon: "⚔️", color: "#10b981" },
+    Training: { icon: "⚔️", color: "#38bdf8" },
     Nutrition: { icon: "🍎", color: "#f59e0b" },
     Quest: { icon: "🎯", color: "#ef4444" },
     Focus: { icon: "⏱", color: "#06b6d4" },
@@ -349,7 +349,7 @@ export function checkMilestone(prevXP, newXP) {
 // ── 12. SKILL TREE DATA ──
 export const SKILL_TREE = {
     strength: {
-        name: "Strength", icon: "💪", color: "#10b981",
+        name: "Strength", icon: "💪", color: "#38bdf8",
         nodes: [
             { id: "s1", name: "First Workout", threshold: 1, type: "workouts" },
             { id: "s2", name: "10 Workouts", threshold: 10, type: "workouts" },

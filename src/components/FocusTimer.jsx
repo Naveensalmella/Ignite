@@ -188,9 +188,9 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
                 <div style={{ fontSize: 13, fontWeight: 700, color: mode === "pomodoro" ? "#06b6d4" : "#f3f4f6", marginTop: 4 }}>Pomodoro</div>
                 <div style={{ fontSize: 10, color: "#6b7280" }}>25 min work + 5 break</div>
               </div>
-              <div className="gc" onClick={() => switchMode("freeform")} style={{ flex: 1, padding: 14, textAlign: "center", cursor: "pointer", border: mode === "freeform" ? "1px solid rgba(16,185,129,.2)" : "1px solid rgba(255,255,255,.04)", background: mode === "freeform" ? "rgba(16,185,129,.04)" : undefined }}>
+              <div className="gc" onClick={() => switchMode("freeform")} style={{ flex: 1, padding: 14, textAlign: "center", cursor: "pointer", border: mode === "freeform" ? "1px solid rgba(56,189,248,.2)" : "1px solid rgba(255,255,255,.04)", background: mode === "freeform" ? "rgba(56,189,248,.04)" : undefined }}>
                 <div style={{ fontSize: 20 }}>⏱</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: mode === "freeform" ? "#10b981" : "#f3f4f6", marginTop: 4 }}>Free Focus</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: mode === "freeform" ? "#38bdf8" : "#f3f4f6", marginTop: 4 }}>Free Focus</div>
                 <div style={{ fontSize: 10, color: "#6b7280" }}>Open-ended timer</div>
               </div>
             </div>
@@ -277,7 +277,7 @@ export default function FocusTimer({ focusLog = {}, setFocusLog = () => { }, add
               <div style={{ fontSize: 10, color: "#6b7280" }}>Minutes Today</div>
             </div>
             <div className="gc" style={{ padding: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#10b981", fontFamily: "Rajdhani,sans-serif" }}>{todaySessions.length}</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#38bdf8", fontFamily: "Rajdhani,sans-serif" }}>{todaySessions.length}</div>
               <div style={{ fontSize: 10, color: "#6b7280" }}>Sessions Today</div>
             </div>
             <div className="gc" style={{ padding: 14, textAlign: "center" }}>

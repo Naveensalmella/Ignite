@@ -1,38 +1,41 @@
 "use client";
 import { useState, useEffect } from 'react';
 import {
-    Home, Swords, Apple, Sparkles, User, LayoutGrid, X, Gamepad2, Target, Timer, Heart, Users,
-    Calendar, TrendingUp, Wallet, Camera, Activity, Dumbbell, Trophy, ListChecks, Share2,
+    IdCard, Swords, Apple, Sparkles, User, LayoutGrid, X, Timer, Heart, Users,
+    Calendar, Wallet, Camera, ListChecks, Share2, ScrollText, Backpack,
 } from 'lucide-react';
 
 // Single source of truth for every page the app can show.
 export const MAIN_TABS = [
-    { key: "dashboard", label: "Home", title: "Dashboard", Icon: Home },
+    { key: "status", label: "Status", title: "Status", Icon: IdCard },
+    { key: "quests", label: "Quests", title: "Quests", Icon: ScrollText },
     { key: "training", label: "Train", title: "Training", Icon: Swords },
-    { key: "nutrition", label: "Nutrition", title: "Nutrition", Icon: Apple },
-    { key: "oracle", label: "Oracle", title: "Flame Oracle", Icon: Sparkles },
-    { key: "profile", label: "Profile", title: "Profile", Icon: User },
+    { key: "oracle", label: "System", title: "The System", Icon: Sparkles },
+    { key: "inventory", label: "Inventory", title: "Inventory", Icon: Backpack },
 ];
 
 export const MORE_PAGES = [
-    { key: "dailyquest", label: "Quests", title: "Daily Quests", Icon: Target, desc: "Daily habits" },
-    { key: "missions", label: "Missions", title: "Missions", Icon: ListChecks, desc: "Your to-dos" },
+    { key: "nutrition", label: "Nutrition", title: "Nutrition", Icon: Apple, desc: "Food & water" },
     { key: "focus", label: "Focus", title: "Focus Timer", Icon: Timer, desc: "Pomodoro timer" },
     { key: "wellness", label: "Wellness", title: "Wellness", Icon: Heart, desc: "Mood & journal" },
     { key: "routine", label: "My Day", title: "My Day", Icon: Calendar, desc: "Daily routine" },
-    { key: "gaming", label: "Gaming", title: "Gaming Hub", Icon: Gamepad2, desc: "XP & rewards" },
-    { key: "social", label: "Social", title: "Social", Icon: Users, desc: "Friends" },
-    { key: "growth", label: "Growth", title: "Growth", Icon: TrendingUp, desc: "Life missions" },
+    { key: "missions", label: "Missions", title: "Missions", Icon: ListChecks, desc: "Your to-dos" },
     { key: "finance", label: "Finance", title: "Finance", Icon: Wallet, desc: "Money tracker" },
-    { key: "bodyphotos", label: "Progress", title: "Progress Photos", Icon: Camera, desc: "Body photos" },
-    { key: "body", label: "Body Stats", title: "Body Stats", Icon: Activity, desc: "Measurements" },
-    { key: "programs", label: "Programs", title: "Programs", Icon: Dumbbell, desc: "Browse plans" },
-    { key: "challenges", label: "Challenges", title: "Challenges", Icon: Trophy, desc: "Compete & win" },
+    { key: "social", label: "Social", title: "Social", Icon: Users, desc: "Friends" },
+    { key: "bodyphotos", label: "Progress", title: "Body Progress", Icon: Camera, desc: "Photos & body stats" },
     { key: "share", label: "Share", title: "Share Card", Icon: Share2, desc: "Show progress" },
+    { key: "profile", label: "Profile", title: "Profile", Icon: User, desc: "Account & settings" },
 ];
 
 export const ALL_PAGES = [...MAIN_TABS, ...MORE_PAGES];
 export const PAGE_KEYS = new Set(ALL_PAGES.map(p => p.key));
+
+// Old page links (bookmarks, history, AI navigation) → where that feature lives now.
+export const PAGE_ALIASES = {
+    dashboard: "status", gaming: "inventory", dailyquest: "quests", growth: "quests",
+    programs: "training", challenges: "training", body: "bodyphotos", shop: "inventory",
+};
+export const resolvePage = (key) => (PAGE_KEYS.has(key) ? key : PAGE_ALIASES[key] || null);
 export const pageTitle = (key) => ALL_PAGES.find(p => p.key === key)?.title || "IGNITE";
 
 // ── Desktop sidebar (≥1024px) ──
@@ -51,7 +54,7 @@ export function SideNav({ active, setPage }) {
         <aside className="side-nav" aria-label="Main navigation">
             <div className="side-nav-brand">
                 <span className="text-2xl">🔥</span>
-                <span className="font-heading text-xl font-bold tracking-[3px] text-accent-grad">IGNITE</span>
+                <span className="font-heading text-xl font-bold tracking-[3px] text-accent-grad sys-glow">IGNITE</span>
             </div>
             <div className="side-nav-section">{MAIN_TABS.map(item)}</div>
             <div className="side-nav-label">More</div>

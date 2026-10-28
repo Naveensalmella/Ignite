@@ -1,4 +1,4 @@
-// Streaming AI chat for Flame Oracle (Groq, OpenAI-compatible SSE).
+// Streaming AI chat for The System (formerly Flame Oracle) — Groq, OpenAI-compatible SSE.
 import { NextRequest } from "next/server";
 import { groqRequest, AIError, clip } from "@/lib/ai";
 
@@ -25,7 +25,14 @@ export async function POST(req: NextRequest) {
     .map(m => ({ role: m.role === "assistant" ? "assistant" as const : "user" as const, content: clip(m.text, 4000) }));
   if (history.length === 0) return json({ error: "Message is empty" }, 400);
 
-  const systemPrompt = `You are Flame Oracle (${mode} mode), the AI assistant inside IGNITE, a gamified self-improvement app.\n${MODE_PERSONALITIES[mode]}\n${clip(payload.userContext, 6000)}\nBe concise (2-4 short paragraphs). Use emojis naturally.`;
+  const systemPrompt = [
+    "You are THE SYSTEM — the mysterious interface from Solo Leveling that chose the user as its Player — living inside IGNITE, a gamified self-improvement app.",
+    "Voice: formal, calm, concise and commanding, like the System's blue notification windows. Address the user as \"Player\" (or by name). You may open with a short bracketed notice such as \"[SYSTEM]\" or \"[QUEST]\" and phrase suggestions as quests with rewards.",
+    "Underneath the voice, give genuinely useful, specific and safe advice; never invent data you weren't given, and never push the Player to train through pain or injury.",
+    `Current specialty (${mode}): ${MODE_PERSONALITIES[mode]}`,
+    clip(payload.userContext, 6000),
+    "Be concise (2-4 short paragraphs). Emojis sparingly.",
+  ].join("\n");
 
   let upstream: Response;
   try {

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from 'react';
-import { XP, DAILY_PENALTY } from '@/data/index';
+import { XP } from '@/data/index';
 import { today, toArr, dateKey } from '@/utils';
 import HistoryPanel from './HistoryPanel';
 import { formatQuestHistory } from '@/historyFormatters';
@@ -10,7 +10,7 @@ const QUEST_CATS = [
   { id: "mind", label: "Mental", icon: "⚡", color: "#06b6d4" },
   { id: "heart", label: "Heart", icon: "💛", color: "#f59e0b" },
   { id: "spirit", label: "Spirit", icon: "🌟", color: "#8b5cf6" },
-  { id: "fortune", label: "Fortune", icon: "💎", color: "#10b981" },
+  { id: "fortune", label: "Fortune", icon: "💎", color: "#38bdf8" },
 ];
 
 const SUGGESTED = [
@@ -109,7 +109,7 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
   return (<div>
     {/* Hero */}
     <div className="gs" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-      <Ring pct={progress} color={progress >= 100 ? "#22c55e" : progress >= 50 ? "#10b981" : "#f59e0b"} size={85} stroke={6}><div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", lineHeight: 1 }}>{progress}%</div><div style={{ fontSize: 11, color: "#6b7280" }}>done</div></div></Ring>
+      <Ring pct={progress} color={progress >= 100 ? "#22c55e" : progress >= 50 ? "#38bdf8" : "#f59e0b"} size={85} stroke={6}><div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", lineHeight: 1 }}>{progress}%</div><div style={{ fontSize: 11, color: "#6b7280" }}>done</div></div></Ring>
       <div style={{ flex: 1, minWidth: 160 }}>
         <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{completedCount}/{totalCount} Complete</div>
         <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{progress >= 100 ? "All done! Amazing day! 🎉" : `${totalCount - completedCount} remaining`}</div>
@@ -121,8 +121,8 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
     <div className="gs" style={{ marginBottom: 16, border: todayTrained ? "1px solid rgba(34,197,94,.2)" : "1px solid rgba(239,68,68,.2)", background: todayTrained ? "rgba(34,197,94,.03)" : "rgba(239,68,68,.03)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, ...(todayTrained ? { background: "linear-gradient(135deg,#22c55e,#10b981)", color: "#060a0c" } : { border: "2px solid #ef4444" }) }}>{todayTrained ? "✓" : ""}</div>
-          <div><div style={{ fontSize: 15, fontWeight: 600, color: todayTrained ? "#22c55e" : "#f3f4f6" }}>{todayTrained ? "Training Complete" : "Complete Daily Training"}</div><div style={{ fontSize: 11, color: todayTrained ? "#6b7280" : "#ef4444" }}>{todayTrained ? "Great work today!" : "Required — or lose " + DAILY_PENALTY + " XP"}</div></div>
+          <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, ...(todayTrained ? { background: "linear-gradient(135deg,#22c55e,#38bdf8)", color: "#060a0c" } : { border: "2px solid #ef4444" }) }}>{todayTrained ? "✓" : ""}</div>
+          <div><div style={{ fontSize: 15, fontWeight: 600, color: todayTrained ? "#22c55e" : "#f3f4f6" }}>{todayTrained ? "Training Complete" : "Complete Daily Training"}</div><div style={{ fontSize: 11, color: todayTrained ? "#6b7280" : "#ef4444" }}>{todayTrained ? "Great work today!" : "Keeps your streak alive"}</div></div>
         </div>
         <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 100, background: "rgba(239,68,68,.1)", color: "#ef4444", fontWeight: 700, fontFamily: "Rajdhani,sans-serif", letterSpacing: 1 }}>REQUIRED</span>
       </div>
@@ -131,10 +131,10 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
     {/* User's Quests */}
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
       <div className="sl" style={{ margin: 0 }}>Your Daily Quests</div>
-      <span onClick={() => setShowAdd(!showAdd)} style={{ fontSize: 12, color: "#10b981", cursor: "pointer", fontWeight: 600 }}>{showAdd ? "Cancel" : "+ Add"}</span>
+      <span onClick={() => setShowAdd(!showAdd)} style={{ fontSize: 12, color: "#38bdf8", cursor: "pointer", fontWeight: 600 }}>{showAdd ? "Cancel" : "+ Add"}</span>
     </div>
 
-    {showAdd && <div className="gs fade-in" style={{ marginBottom: 12, border: "1px solid rgba(16,185,129,.15)" }}>
+    {showAdd && <div className="gs fade-in" style={{ marginBottom: 12, border: "1px solid rgba(56,189,248,.15)" }}>
       <input className="inp" placeholder="Quest name..." value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && addQuest(newName, newCat)} autoFocus style={{ marginBottom: 10 }} />
       <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>{QUEST_CATS.map(c => <span key={c.id} className={`chip ${newCat === c.id ? "chip-a" : "chip-i"}`} onClick={() => setNewCat(c.id)}>{c.icon} {c.label}</span>)}</div>
       <div style={{ display: "flex", gap: 8 }}>
@@ -150,10 +150,10 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
       const done = checked.includes(h.id);
       const cat = QUEST_CATS.find(c => c.id === h.pillar);
       const habitStreak = getHabitStreak(h.id);
-      return (<div key={h.id} className="gc" style={{ padding: 14, marginBottom: 8, cursor: "pointer", border: done ? "1px solid rgba(16,185,129,.15)" : "1px solid rgba(255,255,255,.04)", background: done ? "rgba(16,185,129,.03)" : undefined }} onClick={() => toggle(h.id)}>
+      return (<div key={h.id} className="gc" style={{ padding: 14, marginBottom: 8, cursor: "pointer", border: done ? "1px solid rgba(56,189,248,.15)" : "1px solid rgba(255,255,255,.04)", background: done ? "rgba(56,189,248,.03)" : undefined }} onClick={() => toggle(h.id)}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, flexShrink: 0, ...(done ? { background: "linear-gradient(135deg,#10b981,#06b6d4)", color: "#060a0c" } : { border: "2px solid #374151" }) }}>{done ? "✓" : ""}</div>
+            <div style={{ width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, flexShrink: 0, ...(done ? { background: "linear-gradient(135deg,#38bdf8,#06b6d4)", color: "#060a0c" } : { border: "2px solid #374151" }) }}>{done ? "✓" : ""}</div>
             <span style={{ fontSize: 18 }}>{h.icon}</span>
             <div><div style={{ fontSize: 14, fontWeight: 500, color: done ? "#6b7280" : "#e5e7eb", textDecoration: done ? "line-through" : "none" }}>{h.name}</div>
               <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
@@ -182,7 +182,7 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
             return (
               <div key={h.id} style={{ flex: "1 1 80px", padding: "8px 6px", borderRadius: 10, background: s >= 7 ? "rgba(245,158,11,.06)" : s > 0 ? "rgba(255,255,255,.02)" : "rgba(255,255,255,.01)", border: s >= 7 ? "1px solid rgba(245,158,11,.15)" : "1px solid rgba(255,255,255,.04)", textAlign: "center" }}>
                 <div style={{ fontSize: 16 }}>{h.icon}</div>
-                <div style={{ fontSize: 16, fontWeight: 900, color: s >= 7 ? "#f59e0b" : s > 0 ? "#10b981" : "#4b5563", fontFamily: "Rajdhani,sans-serif" }}>{s}d</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: s >= 7 ? "#f59e0b" : s > 0 ? "#38bdf8" : "#4b5563", fontFamily: "Rajdhani,sans-serif" }}>{s}d</div>
                 <div style={{ fontSize: 11, color: "#6b7280", marginTop: 1 }}>{String(h.name || "").length > 12 ? String(h.name).slice(0, 12) + "…" : (h.name || "")}</div>
               </div>
             )

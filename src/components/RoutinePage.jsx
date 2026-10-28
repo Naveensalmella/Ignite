@@ -71,7 +71,7 @@ const TEMPLATES = {
 };
 
 const CATS = {
-  fitness: { color: "#10b981", label: "Fitness" },
+  fitness: { color: "#38bdf8", label: "Fitness" },
   nutrition: { color: "#f59e0b", label: "Nutrition" },
   work: { color: "#3b82f6", label: "Work" },
   health: { color: "#06b6d4", label: "Health" },
@@ -224,7 +224,7 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
           <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>Icon</div>
           <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
             {ICONS.map(icon => (
-              <span key={icon} onClick={() => setCustomIcon(icon)} style={{ fontSize: 18, padding: "4px 6px", borderRadius: 8, cursor: "pointer", background: customIcon === icon ? "rgba(16,185,129,.15)" : "transparent", border: customIcon === icon ? "1px solid rgba(16,185,129,.2)" : "1px solid transparent" }}>{icon}</span>
+              <span key={icon} onClick={() => setCustomIcon(icon)} style={{ fontSize: 18, padding: "4px 6px", borderRadius: 8, cursor: "pointer", background: customIcon === icon ? "rgba(56,189,248,.15)" : "transparent", border: customIcon === icon ? "1px solid rgba(56,189,248,.2)" : "1px solid transparent" }}>{icon}</span>
             ))}
           </div>
 
@@ -292,14 +292,14 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
         <StaggerContainer>
           {/* Custom Plan */}
           <StaggerItem>
-            <div className="gc" onClick={() => { setShowTemplates(false); setCustomMode(true); }} style={{ marginBottom: 10, padding: 16, cursor: "pointer", border: "1px solid rgba(16,185,129,.15)", background: "rgba(16,185,129,.03)" }}>
+            <div className="gc" onClick={() => { setShowTemplates(false); setCustomMode(true); }} style={{ marginBottom: 10, padding: 16, cursor: "pointer", border: "1px solid rgba(56,189,248,.15)", background: "rgba(56,189,248,.03)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ fontSize: 28 }}>✨</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#10b981", fontFamily: "Rajdhani, sans-serif" }}>Custom Plan</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#38bdf8", fontFamily: "Rajdhani, sans-serif" }}>Custom Plan</div>
                   <div style={{ fontSize: 11, color: "#6b7280" }}>Build your own day from scratch</div>
                 </div>
-                <span style={{ fontSize: 11, color: "#10b981" }}>Create →</span>
+                <span style={{ fontSize: 11, color: "#38bdf8" }}>Create →</span>
               </div>
             </div>
           </StaggerItem>
@@ -313,7 +313,7 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
                     <div style={{ fontSize: 15, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>{tmpl.name}</div>
                     <div style={{ fontSize: 11, color: "#6b7280" }}>{tmpl.blocks.length} activities · {tmpl.blocks[0]?.time} — {tmpl.blocks[tmpl.blocks.length - 1]?.time}</div>
                   </div>
-                  <span style={{ fontSize: 11, color: "#10b981" }}>Use →</span>
+                  <span style={{ fontSize: 11, color: "#38bdf8" }}>Use →</span>
                 </div>
               </div>
             </StaggerItem>
@@ -337,7 +337,7 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
               <div style={{ position: "relative", width: 48, height: 48 }}>
                 <svg width={48} height={48} style={{ transform: "rotate(-90deg)" }}>
                   <circle cx={24} cy={24} r={20} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth={4} />
-                  <circle cx={24} cy={24} r={20} fill="none" stroke={pct >= 100 ? "#22c55e" : "#10b981"} strokeWidth={4} strokeDasharray={125.6} strokeDashoffset={125.6 * (1 - pct / 100)} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} />
+                  <circle cx={24} cy={24} r={20} fill="none" stroke={pct >= 100 ? "#22c55e" : "#38bdf8"} strokeWidth={4} strokeDasharray={125.6} strokeDashoffset={125.6 * (1 - pct / 100)} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s" }} />
                 </svg>
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani, sans-serif" }}>{pct}%</div>
               </div>
@@ -390,10 +390,10 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
 
           return (
             <StaggerItem key={block.id}>
-              <div onClick={() => toggleDone(block.id)} style={{ display: "flex", gap: 12, marginBottom: 4, cursor: "pointer", padding: "10px 12px", borderRadius: 12, background: isCurrent ? "rgba(16,185,129,.06)" : isDone ? "rgba(34,197,94,.03)" : "transparent", border: isCurrent ? "1px solid rgba(16,185,129,.15)" : "1px solid transparent", transition: "all .2s" }}>
+              <div onClick={() => toggleDone(block.id)} style={{ display: "flex", gap: 12, marginBottom: 4, cursor: "pointer", padding: "10px 12px", borderRadius: 12, background: isCurrent ? "rgba(56,189,248,.06)" : isDone ? "rgba(34,197,94,.03)" : "transparent", border: isCurrent ? "1px solid rgba(56,189,248,.15)" : "1px solid transparent", transition: "all .2s" }}>
                 {/* Timeline line + dot */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 16, flexShrink: 0 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: isDone ? "#22c55e" : isCurrent ? "#10b981" : "rgba(255,255,255,.08)", border: isCurrent ? "2px solid #10b981" : "none", boxShadow: isCurrent ? "0 0 8px rgba(16,185,129,.3)" : "none", flexShrink: 0 }} />
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: isDone ? "#22c55e" : isCurrent ? "#38bdf8" : "rgba(255,255,255,.08)", border: isCurrent ? "2px solid #38bdf8" : "none", boxShadow: isCurrent ? "0 0 8px rgba(56,189,248,.3)" : "none", flexShrink: 0 }} />
                   {i < routine.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 24, background: isDone ? "rgba(34,197,94,.2)" : "rgba(255,255,255,.04)", marginTop: 4 }} />}
                 </div>
 
@@ -414,7 +414,7 @@ export default function RoutinePage({ routineData = null, setRoutineData = () =>
 
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       {isDone && <span style={{ fontSize: 14, color: "#22c55e" }}>✓</span>}
-                      {isCurrent && !isDone && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: "rgba(16,185,129,.15)", color: "#10b981", fontWeight: 600 }}>NOW</span>}
+                      {isCurrent && !isDone && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: "rgba(56,189,248,.15)", color: "#38bdf8", fontWeight: 600 }}>NOW</span>}
                       <span onClick={e => { e.stopPropagation(); removeBlock(block.id); }} style={{ fontSize: 14, color: "#4b5563", padding: "2px 4px", cursor: "pointer" }}>×</span>
                     </div>
                   </div>

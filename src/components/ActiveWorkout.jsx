@@ -113,7 +113,7 @@ function Summary({ workout, log, seconds, sessions, onSave, onDiscard }) {
             <div className="text-[13px] mb-5" style={{ color: "#9ca3af" }}>{workout.name}</div>
             <div className="grid grid-cols-2 gap-2 w-full mb-4">
                 {[[Clock, fmt(seconds), "Duration"], [Layers, sets, "Sets"], [Dumbbell, volume ? `${volume.toLocaleString()} kg` : "—", "Volume"], [Check, `${done.length}/${log.length}`, "Exercises"]].map(([Icon, v, l]) => (
-                    <div key={l} className="pl-card text-center"><Icon size={16} className="mx-auto mb-1 text-emerald-400" /><div className="text-[20px] font-extrabold tabular-nums">{v}</div><div className="text-[11px]" style={{ color: "#9ca3af" }}>{l}</div></div>
+                    <div key={l} className="pl-card text-center"><Icon size={16} className="mx-auto mb-1 text-sky-300" /><div className="text-[20px] font-extrabold tabular-nums">{v}</div><div className="text-[11px]" style={{ color: "#9ca3af" }}>{l}</div></div>
                 ))}
             </div>
             {prs.length > 0 && (
@@ -285,7 +285,7 @@ export default function ActiveWorkout({ workout, sessions = [], onComplete, onQu
                 <div className="px-4">
                     <div className="flex items-start justify-between gap-3 mt-3">
                         <div className="min-w-0">
-                            <div className="text-[11px] font-bold tracking-[1.5px] text-emerald-400">EXERCISE {idx + 1} OF {log.length}</div>
+                            <div className="text-[11px] font-bold tracking-[1.5px] text-sky-300">EXERCISE {idx + 1} OF {log.length}</div>
                             <div className="text-[21px] font-extrabold leading-tight">{ex.name}</div>
                             <div className="text-[13px]" style={{ color: "#9ca3af" }}>{ex.sets.length} sets × {timed ? `${ex.duration}s` : `${ex.reps} reps`} · rest {ex.rest}s</div>
                         </div>

@@ -154,6 +154,35 @@ export const sounds = {
     navTap: () => {
         playTone(900, 0.04, 'sine', 0.08);
     },
+
+    // [SYSTEM] window opens — glassy two-tone chime
+    system: () => {
+        playTone(1320, 0.09, 'sine', 0.12);
+        setTimeout(() => playTone(1760, 0.18, 'sine', 0.1), 70);
+    },
+
+    // Quest completed — rising arpeggio
+    questComplete: () => {
+        [660, 880, 1100, 1320].forEach((f, i) => setTimeout(() => playTone(f, 0.16, 'triangle', 0.16), i * 90));
+    },
+
+    // Penalty / warning — low pulse
+    warning: () => {
+        playTone(180, 0.25, 'square', 0.08);
+        setTimeout(() => playTone(140, 0.35, 'square', 0.08), 260);
+    },
+
+    // Rank up — heavy fanfare
+    rankUp: () => {
+        [330, 440, 554, 660, 880].forEach((f, i) => setTimeout(() => playTone(f, 0.28, 'sawtooth', 0.07), i * 140));
+        setTimeout(() => playTone(1320, 0.6, 'sine', 0.18), 720);
+    },
+
+    // Gold / item obtained — coin
+    coin: () => {
+        playTone(1500, 0.06, 'square', 0.06);
+        setTimeout(() => playTone(2000, 0.12, 'square', 0.05), 60);
+    },
 };
 
 // ── Voice Countdown (3, 2, 1, GO!) ──

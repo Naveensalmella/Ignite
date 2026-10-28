@@ -33,7 +33,7 @@ function formatDateLabel(dateStr) {
     title: "Push Day Training",
     subtitle: "45 min · 12 exercises",
     value: "320 cal",
-    valueColor: "#10b981",
+    valueColor: "#38bdf8",
     badge: { text: "Verified", color: "#22c55e" },  // optional
     photo: "data:image/...",  // optional
     details: [
@@ -99,8 +99,8 @@ export default function HistoryPanel({ entries: rawEntries = [], title = "Histor
                                 onClick={() => setExpandedId(isExpanded ? null : entry._idx)}
                                 style={{
                                     padding: "12px 14px", marginBottom: 4, borderRadius: 10, cursor: "pointer",
-                                    background: isExpanded ? "rgba(16,185,129,.03)" : "rgba(255,255,255,.015)",
-                                    border: isExpanded ? "1px solid rgba(16,185,129,.12)" : "1px solid rgba(255,255,255,.03)",
+                                    background: isExpanded ? "rgba(56,189,248,.03)" : "rgba(255,255,255,.015)",
+                                    border: isExpanded ? "1px solid rgba(56,189,248,.12)" : "1px solid rgba(255,255,255,.03)",
                                     transition: "all .2s",
                                 }}>
 
@@ -129,7 +129,7 @@ export default function HistoryPanel({ entries: rawEntries = [], title = "Histor
 
                                     {/* Value + Badge */}
                                     <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                        <div style={{ fontSize: 14, fontWeight: 700, color: entry.valueColor || "#10b981", fontFamily: "Rajdhani,sans-serif" }}>
+                                        <div style={{ fontSize: 14, fontWeight: 700, color: entry.valueColor || "#38bdf8", fontFamily: "Rajdhani,sans-serif" }}>
                                             {entry.value}
                                         </div>
                                         {entry.badge && (
@@ -183,7 +183,7 @@ export default function HistoryPanel({ entries: rawEntries = [], title = "Histor
                                         {/* Photo */}
                                         {entry.photo && (
                                             <div style={{ marginTop: 8, textAlign: "center" }}>
-                                                <img src={entry.photo} alt="proof" style={{ width: 100, height: 100, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(16,185,129,.2)" }} />
+                                                <img src={entry.photo} alt="proof" style={{ width: 100, height: 100, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(56,189,248,.2)" }} />
                                             </div>
                                         )}
                                     </div>

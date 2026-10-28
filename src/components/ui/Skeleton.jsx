@@ -133,7 +133,7 @@ export default function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="text-center">
-        <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full mx-auto mb-3" style={{ animation: "spin .8s linear infinite" }} />
+        <div className="w-8 h-8 border-2 border-sky-400/30 border-t-sky-400 rounded-full mx-auto mb-3" style={{ animation: "spin .8s linear infinite" }} />
         <div className="text-xs text-gray-500">Loading...</div>
       </div>
     </div>

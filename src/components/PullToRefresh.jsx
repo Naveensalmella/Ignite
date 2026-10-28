@@ -54,13 +54,13 @@ export default function PullToRefresh({ onRefresh, children }) {
                     <div style={{
                         width: 24, height: 24, borderRadius: "50%",
                         border: "2px solid rgba(255,255,255,.06)",
-                        borderTopColor: "#10b981",
+                        borderTopColor: "#38bdf8",
                         animation: refreshing ? "spin .6s linear infinite" : "none",
                         transform: refreshing ? "none" : `rotate(${pullDistance * 3}deg)`,
                         opacity: Math.min(1, pullDistance / THRESHOLD),
                     }} />
                     {pullDistance >= THRESHOLD && !refreshing && (
-                        <span style={{ fontSize: 10, color: "#10b981", marginLeft: 8 }}>Release to refresh</span>
+                        <span style={{ fontSize: 10, color: "#38bdf8", marginLeft: 8 }}>Release to refresh</span>
                     )}
                 </div>
             )}

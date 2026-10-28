@@ -110,7 +110,7 @@ export default function AuthPage({ onAuth }) {
           <div style={{ fontSize: 48, marginBottom: 8 }}>🔥</div>
           <h1 style={{
             fontSize: 36, fontWeight: 900, fontFamily: "Rajdhani,sans-serif",
-            background: "linear-gradient(135deg, #10b981, #06b6d4)",
+            background: "linear-gradient(135deg, #38bdf8, #06b6d4)",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
             letterSpacing: 3,
           }}>IGNITE</h1>
@@ -127,7 +127,7 @@ export default function AuthPage({ onAuth }) {
                 <div style={{ fontSize: 48, marginBottom: 12 }}>📧</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: "#22c55e", fontFamily: "Rajdhani,sans-serif" }}>Reset Email Sent!</div>
                 <p style={{ fontSize: 13, color: "#6b7280", marginTop: 8 }}>
-                  Check your inbox at <span style={{ color: "#10b981" }}>{email}</span>. Click the link in the email to set a new password.
+                  Check your inbox at <span style={{ color: "#38bdf8" }}>{email}</span>. Click the link in the email to set a new password.
                 </p>
                 <p style={{ fontSize: 12, color: "#4b5563", marginTop: 8 }}>Don't see it? Check spam folder.</p>
                 <button onClick={() => switchMode("login")}
@@ -153,7 +153,7 @@ export default function AuthPage({ onAuth }) {
                 </button>
                 <div style={{ textAlign: "center" }}>
                   <span onClick={() => switchMode("login")}
-                    style={{ fontSize: 13, color: "#10b981", cursor: "pointer" }}>
+                    style={{ fontSize: 13, color: "#38bdf8", cursor: "pointer" }}>
                     ← Back to Login
                   </span>
                 </div>
@@ -219,7 +219,7 @@ export default function AuthPage({ onAuth }) {
             {mode === "login" && (
               <div style={{ textAlign: "right", marginBottom: 12 }}>
                 <span onClick={() => switchMode("forgot")}
-                  style={{ fontSize: 12, color: "#10b981", cursor: "pointer" }}>
+                  style={{ fontSize: 12, color: "#38bdf8", cursor: "pointer" }}>
                   Forgot password?
                 </span>
               </div>
@@ -246,9 +246,9 @@ export default function AuthPage({ onAuth }) {
             {/* Switch mode */}
             <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>
               {mode === "login" ? (
-                <>Don't have an account? <span onClick={() => switchMode("signup")} style={{ color: "#10b981", cursor: "pointer", fontWeight: 600 }}>Sign Up</span></>
+                <>Don't have an account? <span onClick={() => switchMode("signup")} style={{ color: "#38bdf8", cursor: "pointer", fontWeight: 600 }}>Sign Up</span></>
               ) : (
-                <>Already have an account? <span onClick={() => switchMode("login")} style={{ color: "#10b981", cursor: "pointer", fontWeight: 600 }}>Login</span></>
+                <>Already have an account? <span onClick={() => switchMode("login")} style={{ color: "#38bdf8", cursor: "pointer", fontWeight: 600 }}>Login</span></>
               )}
             </div>
           </div>

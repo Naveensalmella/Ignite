@@ -7,31 +7,28 @@ import { auth, isFirebaseConfigured } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import store from '@/store';
 import { registerSW, startNotifScheduler, stopNotifScheduler } from '@/notifications';
-import { applyAccent } from './AccentPicker';
+import { applyAccent, ACCENT_KEY } from './AccentPicker';
 
 // ── Lazy-loaded page components (code splitting) ──
 const AuthPage = lazy(() => import('./AuthPage'));
 const IntroPage = lazy(() => import('./IntroPage'));
-const Dashboard = lazy(() => import('./Dashboard'));
+const StatusPage = lazy(() => import('./system/StatusPage'));
+const QuestsPage = lazy(() => import('./system/QuestsPage'));
+const InventoryPage = lazy(() => import('./system/InventoryPage'));
+const ProgressPage = lazy(() => import('./ProgressPage'));
 const TrainingPage = lazy(() => import('./TrainingPage'));
 const Nutrition = lazy(() => import('./Nutrition'));
-const DailyQuestPage = lazy(() => import('./DailyQuestPage'));
 const MissionsPage = lazy(() => import('./MissionsPage'));
 const FocusTimer = lazy(() => import('./FocusTimer'));
 const Wellness = lazy(() => import('./Wellness'));
 const FinancePage = lazy(() => import('./FinancePage'));
-const GrowthPage = lazy(() => import('./GrowthPage'));
 const FlameOracle = lazy(() => import('./FlameOracle'));
 const ProfilePage = lazy(() => import('./ProfilePage'));
 const RoutinePage = lazy(() => import('./RoutinePage'));
 const OnboardingPage = lazy(() => import('./OnboardingPage'));
 const OnboardingTutorial = lazy(() => import('./OnboardingTutorial'));
-const BodyTracker = lazy(() => import('./BodyTracker'));
-const ChallengesPage = lazy(() => import('./ChallengesPage'));
-const WorkoutPrograms = lazy(() => import('./WorkoutPrograms'));
 const SocialPage = lazy(() => import('./SocialPage'));
-const BodyProgress = lazy(() => import('./BodyProgress'));
-const GamingHub = lazy(() => import('./GamingHub'));
+const Awakening = lazy(() => import('./system/Awakening'));
 const ShareCard = lazy(() => import('./ShareCard'));
 
 // ── Eagerly loaded (always visible) ──
@@ -40,7 +37,8 @@ import LevelUpOverlay from './LevelUpOverlay';
 import HeaderXPBar from './HeaderXPBar';
 import { ConfettiBlast } from './Confetti';
 import { MilestoneOverlay } from './GamingHub';
-import BottomNav, { SideNav, PAGE_KEYS, pageTitle } from './BottomNav';
+import BottomNav, { SideNav, resolvePage, pageTitle } from './BottomNav';
+import SystemNotices from './system/SystemNotices';
 import PageTransition from './PageTransition';
 import ErrorBoundary from './ErrorBoundary';
 import SplashScreen from './SplashScreen';
@@ -52,14 +50,13 @@ const PERSISTED = [
     'profile', 'habits', 'tasks', 'totalXP', 'streak', 'lastCheck', 'pillarProg', 'routineData',
     'masteryData', 'bodyData', 'challengeData', 'programData', 'freezeData', 'programState',
     'loginData', 'activeTitle', 'questChainData', 'workoutLog', 'foodLog', 'journal', 'xpLog',
-    'focusLog', 'habitLog', 'chatHistory', 'finances', 'activityLog',
+    'focusLog', 'habitLog', 'chatHistory', 'finances', 'activityLog', 'system',
 ];
 const SAVE_DELAY = 1500;
 
 const hashPage = () => {
     if (typeof window === 'undefined') return null;
-    const h = window.location.hash.replace('#', '');
-    return PAGE_KEYS.has(h) ? h : null;
+    return window.location.hash.replace('#', '') || null;
 };
 
 function FullScreenMessage({ icon, title, children }) {
@@ -96,26 +93,26 @@ export default function App() {
         user, loading, dataReady, loadError, syncStatus, page, setPage, setPageSilent,
         showTutorial, setShowTutorial,
         profile, setProfile, workoutLog, setWorkoutLog, foodLog, setFoodLog,
-        journal, setJournal, habits, setHabits, habitLog, setHabitLog,
+        journal, setJournal,
         tasks, setTasks, finances, setFinances, setChatHistory,
-        focusLog, setFocusLog, pillarProg, setPillarProg,
+        focusLog, setFocusLog,
         activityLog, routineData, setRoutineData,
-        bodyData, setBodyData, challengeData, setChallengeData, programData, setProgramData,
-        freezeData, setFreezeData, programState, setProgramState,
-        xpLog, loginData, setLoginData, activeTitle, setActiveTitle,
-        questChainData, setQuestChainData, bodyPhotos, setBodyPhotos,
+        bodyData, setBodyData, freezeData, programState, setProgramState,
+        bodyPhotos, setBodyPhotos, system,
         totalXP, streak, xpEvents, confetti, levelUp, setLevelUp,
         milestone, setMilestone, addXP, getAppState, loadUserData, logout,
     } = useAppStore();
 
     const saveTimer = useRef(null);
+    const [awakenLater, setAwakenLater] = useState(false);
+    const [awakenOpen, setAwakenOpen] = useState(false); // keeps the "Player Awakened" summary up after accepting
     const [showIntro, setShowIntro] = useState(() => {
         try { return typeof window !== 'undefined' && !localStorage.getItem("ignite_visited"); } catch { return false; }
     });
 
     // ── One-time browser setup ──
     useEffect(() => {
-        try { applyAccent(localStorage.getItem('ignite-accent') || 'emerald'); } catch { /* ignore */ }
+        try { applyAccent(localStorage.getItem(ACCENT_KEY) || 'system'); } catch { /* ignore */ }
         registerSW();
     }, []);
 
@@ -147,7 +144,7 @@ export default function App() {
         // API, and an entry without Next's internal state makes Back do a full reload.
         const initial = hashPage();
         if (initial) setPageSilent(initial);
-        const onPop = () => setPageSilent(hashPage() || 'dashboard');
+        const onPop = () => setPageSilent(hashPage() || 'status');
         window.addEventListener('popstate', onPop);
         return () => window.removeEventListener('popstate', onPop);
     }, [setPageSilent]);
@@ -203,7 +200,7 @@ export default function App() {
         const t = setTimeout(() => {
             const st = useAppStore.getState();
             import('./SocialPage')
-                .then(m => m.syncPublicProfile?.({ user: st.user, profile: st.profile, totalXP: st.totalXP, streak: st.streak, workoutLog: st.workoutLog }))
+                .then(m => m.syncPublicProfile?.({ user: st.user, profile: st.profile, totalXP: st.totalXP, streak: st.streak, workoutLog: st.workoutLog, system: st.system }))
                 .catch(() => { /* social is optional */ });
         }, 3000);
         return () => clearTimeout(t);
@@ -275,55 +272,60 @@ export default function App() {
 
     const appState = getAppState();
 
+    // Old page keys (bookmarks, AI navigation) open the feature's new home.
+    const current = resolvePage(page) || 'status';
+
     const renderPage = () => {
-        switch (page) {
+        switch (current) {
+            case 'quests': return <QuestsPage initialTab={page === 'growth' ? 'long' : page === 'dailyquest' ? 'habits' : 'daily'} />;
+            case 'inventory': return <InventoryPage initialTab={page === 'gaming' ? 'achievements' : page === 'shop' ? 'shop' : 'inventory'} />;
             case 'training': return <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} programState={programState} setProgramState={setProgramState} />;
             case 'nutrition': return <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} profile={profile} />;
-            case 'dailyquest': return <DailyQuestPage habits={habits} setHabits={setHabits} habitLog={habitLog} setHabitLog={setHabitLog} addXP={addXP} workoutLog={workoutLog} />;
             case 'missions': return <MissionsPage tasks={tasks} setTasks={setTasks} addXP={addXP} />;
             case 'focus': return <FocusTimer addXP={addXP} focusLog={focusLog} setFocusLog={setFocusLog} />;
             case 'wellness': return <Wellness journal={journal} setJournal={setJournal} addXP={addXP} />;
             case 'finance': return <FinancePage finances={finances} setFinances={setFinances} addXP={addXP} />;
             case 'routine': return <RoutinePage profile={profile} routineData={routineData} setRoutineData={setRoutineData} />;
-            case 'growth': return <GrowthPage pillarProg={pillarProg} setPillarProg={setPillarProg} />;
             case 'oracle': return <FlameOracle appState={appState} addXP={addXP} setFoodLog={setFoodLog} setChatHistory={setChatHistory} setPage={setPage} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />;
             case 'profile': return <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} appState={appState} freezeData={freezeData} setPage={setPage} />;
-            case 'body': return <BodyTracker bodyData={bodyData} setBodyData={setBodyData} />;
-            case 'challenges': return <ChallengesPage challengeData={challengeData} setChallengeData={setChallengeData} addXP={addXP} />;
             case 'share': return <ShareCard totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} />;
-            case 'bodyphotos': return <BodyProgress bodyPhotos={bodyPhotos} setBodyPhotos={setBodyPhotos} userId={user?.uid} />;
+            case 'bodyphotos': return <ProgressPage bodyPhotos={bodyPhotos} setBodyPhotos={setBodyPhotos} userId={user?.uid} bodyData={bodyData} setBodyData={setBodyData} initialTab={page === 'body' ? 'measurements' : 'photos'} />;
             case 'social': return <SocialPage user={user} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} />;
-            case 'gaming': return <GamingHub appState={appState} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} profile={profile} loginData={loginData} setLoginData={setLoginData} xpLog={xpLog} activeTitle={activeTitle} setActiveTitle={setActiveTitle} questChainData={questChainData} setQuestChainData={setQuestChainData} />;
-            case 'programs': return <WorkoutPrograms programData={programData} setProgramData={setProgramData} addXP={addXP} />;
-            default: return <Dashboard appState={appState} setPage={setPage} totalXP={totalXP} streak={streak} workoutLog={workoutLog} foodLog={foodLog} focusLog={focusLog} habitLog={habitLog} freezeData={freezeData} setFreezeData={setFreezeData} addXP={addXP} xpLog={xpLog} loginData={loginData} setLoginData={setLoginData} profile={profile} />;
+            default: return <StatusPage />;
         }
     };
 
-    const fallback = page === "dashboard" ? <DashboardSkeleton /> : page === "training" ? <TrainingSkeleton /> : page === "nutrition" ? <NutritionSkeleton /> : <SkeletonPage />;
+    const fallback = current === "status" ? <DashboardSkeleton /> : current === "training" ? <TrainingSkeleton /> : current === "nutrition" ? <NutritionSkeleton /> : <SkeletonPage />;
 
     return (
         <div className="app-shell">
             <XPToast xpEvents={xpEvents} />
             <MilestoneOverlay milestone={milestone} onClose={() => setMilestone(null)} />
-            {levelUp && <LevelUpOverlay level={levelUp.level} rank={levelUp.rank} onClose={() => setLevelUp(null)} />}
+            {levelUp && <LevelUpOverlay level={levelUp.level} rank={levelUp.rank} ap={levelUp.ap} onClose={() => setLevelUp(null)} />}
+            <SystemNotices />
             {showTutorial && <Suspense fallback={null}><OnboardingTutorial onComplete={handleTutorialComplete} /></Suspense>}
+            {!showTutorial && ((!system?.awakened && !awakenLater) || awakenOpen) && (
+                <Suspense fallback={null}>
+                    <Awakening onAccept={() => setAwakenOpen(true)} onClose={() => { setAwakenOpen(false); setAwakenLater(true); }} />
+                </Suspense>
+            )}
 
-            <SideNav active={page} setPage={setPage} />
+            <SideNav active={current} setPage={setPage} />
 
             <header className="app-header">
                 <div className="app-header-inner">
-                    <h1 className="page-title">{pageTitle(page)}</h1>
+                    <h1 className="page-title">{pageTitle(current)}</h1>
                     <SyncBadge status={syncStatus} />
                     <div className="app-header-xp">
-                        <HeaderXPBar totalXP={totalXP} streak={streak} />
+                        <HeaderXPBar totalXP={totalXP} streak={streak} system={system} />
                     </div>
                 </div>
             </header>
 
             <main className="app-main">
                 <div className="app-content">
-                    <ErrorBoundary key={page}>
-                        <PageTransition pageKey={page}>
+                    <ErrorBoundary key={current}>
+                        <PageTransition pageKey={current}>
                             <Suspense fallback={fallback}>
                                 {renderPage()}
                             </Suspense>
@@ -332,7 +334,7 @@ export default function App() {
                 </div>
             </main>
 
-            <BottomNav active={page} setPage={setPage} />
+            <BottomNav active={current} setPage={setPage} />
 
             <ConfettiBlast trigger={confetti} />
         </div>

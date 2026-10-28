@@ -1,7 +1,11 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { hasDayWorkout, getDaySplit, countWorkoutDays } from '@/lib/workoutHelpers';
-import { getLevel, getRank, today, toArr } from '../utils';
+import { getLevel, today, toArr } from '../utils';
+import useAppStore from '@/stores/useAppStore';
+import { playerRank } from '@/lib/system/ranks';
+import { statSheet } from '@/lib/system/stats';
+import { questItems, questDay, questStatus } from '@/lib/system/quests';
 
 // Streaming AI call — calls onToken with the full text so far; resolves with the final text.
 async function callAIStream(messages, mode, userContext, onToken) {
@@ -73,13 +77,13 @@ function stopSpeaking() {
 }
 
 const MODES = [
-  { id: "coach", name: "Coach", icon: "🔥", color: "#10b981", desc: "Fitness & training advice", personality: "You are an intense, motivating fitness coach. Push the user to their limits. Be direct, use short powerful sentences." },
+  { id: "coach", name: "Trainer", icon: "⚔️", color: "#38bdf8", desc: "Fitness & training advice", personality: "You are an intense, motivating fitness coach. Push the user to their limits. Be direct, use short powerful sentences." },
   { id: "nutritionist", name: "Nutritionist", icon: "🍎", color: "#f59e0b", desc: "Diet & nutrition guidance", personality: "You are a knowledgeable sports nutritionist specializing in Indian diets. Give specific meal suggestions with macros." },
-  { id: "wellness", name: "Wellness", icon: "🧘", color: "#8b5cf6", desc: "Mental health & recovery", personality: "You are a calm, empathetic wellness guide. Focus on sleep, stress, recovery, mindfulness. Speak gently." },
-  { id: "motivator", name: "Motivator", icon: "⚡", color: "#ef4444", desc: "Pure motivation & hype", personality: "You are an EXPLOSIVE motivational speaker. Use CAPS for emphasis. Fire up the user. Short, punchy sentences." },
+  { id: "wellness", name: "Recovery", icon: "🧘", color: "#8b5cf6", desc: "Mental health & recovery", personality: "You are a calm, empathetic wellness guide. Focus on sleep, stress, recovery, mindfulness. Speak gently." },
+  { id: "motivator", name: "Commander", icon: "⚡", color: "#ef4444", desc: "Pure motivation & hype", personality: "You are an EXPLOSIVE motivational speaker. Use CAPS for emphasis. Fire up the user. Short, punchy sentences." },
 ];
 
-const PAGE_NAMES = { training: "⚔️ Training", nutrition: "🍎 Nutrition", dailyquest: "🎯 Daily Quests", focus: "⏱ Focus", wellness: "💛 Wellness", routine: "📅 My Day", growth: "🌱 Growth", profile: "👤 Profile", social: "👥 Social" };
+const PAGE_NAMES = { status: "🪪 Status", quests: "📜 Quests", inventory: "🎒 Inventory", training: "⚔️ Training", nutrition: "🍎 Nutrition", dailyquest: "📜 Quests", focus: "⏱ Focus", wellness: "💛 Wellness", routine: "📅 My Day", growth: "📜 Quests", profile: "👤 Profile", social: "👥 Social" };
 
 const MAX_CHATS = 30;
 const newChatObj = (mode = "coach") => ({ id: Date.now(), title: "New Chat", messages: [], mode });
@@ -131,9 +135,18 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages.length, displayText]);
 
   // ── User context ──
+  const system = useAppStore(st => st.system);
   const userContext = useMemo(() => {
     const lv = getLevel(totalXP || 0);
-    const rank = getRank(lv);
+    const rank = playerRank(system, lv);
+    const stats = statSheet(appState || {}, system).map(x => `${x.label} ${x.total}`).join(", ");
+    const qItems = questItems(system, lv);
+    const qDay = questDay(system, d);
+    const qs = questStatus(qItems, qDay);
+    const questLine = !system?.awakened ? "Not awakened yet."
+      : system.penalty?.active ? "PENALTY ZONE ACTIVE (missed yesterday's Daily Quest): XP halved until the 5-minute Penalty Zone is survived."
+        : `Daily Quest today: ${qDay.claimed ? "COMPLETED" : `${Math.round(qs.pct * 100)}% — ` + qItems.map(i => `${i.name} ${Number(qDay.progress?.[i.id]) || 0}/${i.target}${i.unit === "reps" ? "" : i.unit}`).join(", ")}.`;
+    const systemLine = `SYSTEM STATUS: Hunter rank ${rank.name}. Stats: ${stats}. Unspent Ability Points: ${Number(system?.abilityPoints) || 0}. Gold: ${Number(system?.gold) || 0}. ${questLine}`;
     const todayFood = toArr(appState?.foodLog?.[d]);
     const todayWorked = hasDayWorkout(workoutLog, d);
     const todayCal = todayFood.reduce((s, f) => s + (f.cal || 0), 0);
@@ -143,8 +156,8 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
     const w = parseFloat(profile?.weight) || 70, h = parseFloat(profile?.height) || 170, age = parseInt(profile?.age) || 25;
     const bmr = profile?.gender === "female" ? 10 * w + 6.25 * h - 5 * age - 161 : 10 * w + 6.25 * h - 5 * age + 5;
     const calTarget = Math.round(bmr * 1.55 * (profile?.goal === "lose" ? 0.8 : profile?.goal === "muscle" ? 1.2 : 1));
-    return `USER: ${profile?.name || "Warrior"}, Age ${profile?.age || 25}, ${profile?.gender || "male"}, ${profile?.weight || 70}kg, Goal: ${profile?.goal || "fit"}, Level: ${lv} (${rank.name}), XP: ${totalXP || 0}, Streak: ${streak || 0}d, Workouts: ${totalWorkouts}\nTODAY: Trained=${todayWorked ? "YES (" + (getDaySplit(workoutLog, d) || "done") + ")" : "NO"}, Calories=${todayCal}/${calTarget}, Protein=${Math.round(todayProtein)}g, Water=${water}/8`;
-  }, [totalXP, streak, workoutLog, appState, profile, d]);
+    return `USER: ${profile?.name || "Warrior"}, Age ${profile?.age || 25}, ${profile?.gender || "male"}, ${profile?.weight || 70}kg, Goal: ${profile?.goal || "fit"}, Level: ${lv} (${rank.name}), XP: ${totalXP || 0}, Streak: ${streak || 0}d, Workouts: ${totalWorkouts}\nTODAY: Trained=${todayWorked ? "YES (" + (getDaySplit(workoutLog, d) || "done") + ")" : "NO"}, Calories=${todayCal}/${calTarget}, Protein=${Math.round(todayProtein)}g, Water=${water}/8\n${systemLine}`;
+  }, [totalXP, streak, workoutLog, appState, profile, d, system]);
 
   const curMode = MODES.find(m => m.id === mode) || MODES[0];
 
@@ -196,7 +209,7 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
     });
 
     try {
-      const context = `${curMode.personality}\n\n${userContext}\n\nCOMMANDS (use ONLY when appropriate):\n- Log food: [ADD_FOOD:name|cal|protein|carbs|fat] — use when the user says they ATE something\n- Navigate: [NAVIGATE:page] — ONLY when the user EXPLICITLY asks to open/go to a page. Valid: training,nutrition,dailyquest,focus,wellness,routine,growth,profile,social\n\nCall the user by name.`;
+      const context = `${curMode.personality}\n\n${userContext}\n\nCOMMANDS (use ONLY when appropriate):\n- Log food: [ADD_FOOD:name|cal|protein|carbs|fat] — use when the user says they ATE something\n- Navigate: [NAVIGATE:page] — ONLY when the user EXPLICITLY asks to open/go to a page. Valid: status,quests,training,nutrition,inventory,focus,wellness,routine,profile,social\n\nCall the user by name.`;
 
       // Stream response in real-time
       setIsTyping(true);
@@ -242,19 +255,19 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
   }, [workoutLog, appState, d]);
 
   const lv = getLevel(totalXP || 0);
-  const rank = getRank(lv);
+  const rank = playerRank(system, lv);
 
   // ── Render a single message ──
   const renderMessage = (m, i) => (
     <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", marginBottom: 12, gap: 8 }}>
       {m.role === "assistant" && <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg,${(MODES.find(md => md.id === m.mode) || curMode).color},#06b6d4)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, marginTop: 4 }}>🔮</div>}
-      <div style={{ maxWidth: "80%", padding: "10px 14px", borderRadius: 16, ...(m.role === "user" ? { background: "linear-gradient(135deg,#10b981,#06b6d4)", borderBottomRightRadius: 4, color: "#fff" } : { background: "rgba(255,255,255,.04)", borderBottomLeftRadius: 4, color: "#d1d5db", border: "1px solid rgba(255,255,255,.06)" }) }}>
+      <div style={{ maxWidth: "80%", padding: "10px 14px", borderRadius: 16, ...(m.role === "user" ? { background: "linear-gradient(135deg,#38bdf8,#06b6d4)", borderBottomRightRadius: 4, color: "#fff" } : { background: "rgba(255,255,255,.04)", borderBottomLeftRadius: 4, color: "#d1d5db", border: "1px solid rgba(255,255,255,.06)" }) }}>
         <div style={{ fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{m.text}</div>
         {/* Navigation buttons — user taps to navigate, never auto */}
         {m.navPages && m.navPages.length > 0 && (
           <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
             {m.navPages.map((page, pi) => (
-              <button key={pi} onClick={() => setPage(page)} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(16,185,129,.1)", border: "1px solid rgba(16,185,129,.2)", color: "#10b981", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>→ {PAGE_NAMES[page] || page}</button>
+              <button key={pi} onClick={() => setPage(page)} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(56,189,248,.1)", border: "1px solid rgba(56,189,248,.2)", color: "#38bdf8", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>→ {PAGE_NAMES[page] || page}</button>
             ))}
           </div>
         )}
@@ -270,13 +283,13 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span onClick={() => setShowSidebar(!showSidebar)} style={{ fontSize: 18, cursor: "pointer", padding: "4px 8px", borderRadius: 6, background: "rgba(255,255,255,.03)" }}>☰</span>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>🔮 Flame Oracle</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }} className="sys-glow">◈ The System</div>
             <div style={{ fontSize: 10, color: curMode.color }}>{curMode.icon} {curMode.name} Mode</div>
           </div>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <span onClick={() => setShowModes(!showModes)} style={{ padding: "6px 10px", borderRadius: 8, background: `${curMode.color}10`, border: `1px solid ${curMode.color}20`, cursor: "pointer", fontSize: 16 }}>{curMode.icon}</span>
-          <span onClick={newChat} style={{ fontSize: 12, color: "#10b981", cursor: "pointer", padding: "6px 12px", borderRadius: 8, background: "rgba(16,185,129,.06)" }}>+ New</span>
+          <span onClick={newChat} style={{ fontSize: 12, color: "#38bdf8", cursor: "pointer", padding: "6px 12px", borderRadius: 8, background: "rgba(56,189,248,.06)" }}>+ New</span>
         </div>
       </div>
 
@@ -300,9 +313,9 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
             <span onClick={clearAllChats} style={{ fontSize: 10, color: "#ef4444", cursor: "pointer" }}>Clear All</span>
           </div>
           {chats.map(c => (
-            <div key={c.id} onClick={() => switchChat(c.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: 8, marginBottom: 4, cursor: "pointer", background: c.id === activeId ? "rgba(16,185,129,.06)" : "rgba(255,255,255,.02)", border: c.id === activeId ? "1px solid rgba(16,185,129,.15)" : "1px solid transparent" }}>
+            <div key={c.id} onClick={() => switchChat(c.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: 8, marginBottom: 4, cursor: "pointer", background: c.id === activeId ? "rgba(56,189,248,.06)" : "rgba(255,255,255,.02)", border: c.id === activeId ? "1px solid rgba(56,189,248,.15)" : "1px solid transparent" }}>
               <div>
-                <div style={{ fontSize: 13, color: c.id === activeId ? "#10b981" : "#d1d5db", fontWeight: c.id === activeId ? 600 : 400 }}>{c.title || "New Chat"}</div>
+                <div style={{ fontSize: 13, color: c.id === activeId ? "#38bdf8" : "#d1d5db", fontWeight: c.id === activeId ? 600 : 400 }}>{c.title || "New Chat"}</div>
                 <div style={{ fontSize: 10, color: "#4b5563" }}>{c.messages?.length || 0} messages</div>
               </div>
               <span onClick={(e) => { e.stopPropagation(); deleteChat(c.id); }} style={{ fontSize: 14, color: "#4b5563", padding: "0 4px" }}>×</span>
@@ -315,10 +328,10 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 0" }}>
         {messages.length === 0 && !isTyping && (
           <div style={{ textAlign: "center", padding: "30px 0" }}>
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg,${curMode.color},#06b6d4)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 12px", boxShadow: `0 0 30px ${curMode.color}30` }}>🔮</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Hey {profile?.name || "Warrior"}!</div>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg,${curMode.color},#06b6d4)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 12px", boxShadow: `0 0 30px ${curMode.color}30` }}>◈</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>Player {profile?.name || "Hunter"}.</div>
             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Lv.{lv} {rank.name} · 🔥 {streak || 0}d streak · {totalXP || 0} XP</div>
-            <p style={{ fontSize: 13, color: "#6b7280", marginTop: 8, marginBottom: 20 }}>{curMode.desc}. Ask me anything.</p>
+            <p style={{ fontSize: 13, color: "#6b7280", marginTop: 8, marginBottom: 20 }}>[SYSTEM] {curMode.desc}. State your query.</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
               {quickActions.slice(0, 6).map((qa, i) => (
                 <span key={i} onClick={() => { setInput(qa.label); setTimeout(() => inputRef.current?.focus(), 100); }} style={{ padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", cursor: "pointer", fontSize: 11, color: "#d1d5db" }}>{qa.icon} {qa.label}</span>
@@ -360,7 +373,7 @@ export default function FlameOracle({ appState = {}, setFoodLog = () => { }, set
         )}
         <div style={{ display: "flex", gap: 6 }}>
           {/* Voice output toggle */}
-          <button onClick={() => { setVoiceOn(!voiceOn); if (voiceOn) stopSpeaking(); }} style={{ background: voiceOn ? "rgba(16,185,129,.15)" : "rgba(255,255,255,.03)", border: voiceOn ? "1px solid rgba(16,185,129,.3)" : "1px solid rgba(255,255,255,.06)", borderRadius: 12, padding: "10px 12px", cursor: "pointer", fontSize: 16, color: voiceOn ? "#10b981" : "#6b7280", flexShrink: 0 }}>
+          <button onClick={() => { setVoiceOn(!voiceOn); if (voiceOn) stopSpeaking(); }} style={{ background: voiceOn ? "rgba(56,189,248,.15)" : "rgba(255,255,255,.03)", border: voiceOn ? "1px solid rgba(56,189,248,.3)" : "1px solid rgba(255,255,255,.06)", borderRadius: 12, padding: "10px 12px", cursor: "pointer", fontSize: 16, color: voiceOn ? "#38bdf8" : "#6b7280", flexShrink: 0 }}>
             {voiceOn ? "🔊" : "🔇"}
           </button>
           {speechSupported && (

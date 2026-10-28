@@ -70,7 +70,7 @@ export default function YearHeatmap({ workoutLog = {}, title = "Activity" }) {
         <div className="gs" style={{ padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{title}</div>
-                <div style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}>{totalActive} days active</div>
+                <div style={{ fontSize: 12, color: "#38bdf8", fontWeight: 600 }}>{totalActive} days active</div>
             </div>
 
             <div ref={scrollRef} style={{ overflowX: "auto", paddingBottom: 4 }}>
@@ -98,9 +98,9 @@ export default function YearHeatmap({ workoutLog = {}, title = "Activity" }) {
                         {week.map((day, di) => (
                             <div key={di} style={{
                                 width: cellSize, height: cellSize, borderRadius: 2,
-                                background: !day ? "transparent" : day.active ? "#10b981" : "rgba(255,255,255,.04)",
+                                background: !day ? "transparent" : day.active ? "#38bdf8" : "rgba(255,255,255,.04)",
                                 opacity: !day ? 0 : day.active ? (day.date === todayKey ? 1 : 0.75) : 1,
-                                border: day?.date === todayKey ? "1px solid #10b981" : "none",
+                                border: day?.date === todayKey ? "1px solid #38bdf8" : "none",
                                 boxSizing: "border-box",
                             }} title={day ? `${day.date}: ${day.active ? "Active" : "Rest"}` : ""} />
                         ))}
@@ -113,7 +113,7 @@ export default function YearHeatmap({ workoutLog = {}, title = "Activity" }) {
             <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, marginTop: 8 }}>
                 <div style={{ width: 10, height: 10, borderRadius: 2, background: "rgba(255,255,255,.04)" }} />
                 <span style={{ fontSize: 11, color: "#4b5563" }}>Rest</span>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: "#10b981", opacity: 0.75, marginLeft: 6 }} />
+                <div style={{ width: 10, height: 10, borderRadius: 2, background: "#38bdf8", opacity: 0.75, marginLeft: 6 }} />
                 <span style={{ fontSize: 11, color: "#4b5563" }}>Trained</span>
             </div>
         </div>

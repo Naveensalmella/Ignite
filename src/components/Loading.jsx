@@ -69,7 +69,7 @@ export function SkeletonPage() {
 }
 
 // ── Inline loading spinner ──
-export function Spinner({ size = 20, color = "#10b981" }) {
+export function Spinner({ size = 20, color = "#38bdf8" }) {
   return (
     <div style={{
       width: size, height: size, border: `2px solid rgba(255,255,255,.06)`,

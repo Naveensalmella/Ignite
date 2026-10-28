@@ -39,7 +39,7 @@ export default function ExerciseDemo({ info, animate = true, rounded = 16, heigh
             {showBadge && animate && (
                 <div style={{ position: "absolute", left: 8, bottom: 8, display: "flex", gap: 4 }}>
                     {["Start", "End"].map((l, i) => (
-                        <span key={l} style={{ fontSize: 10, fontWeight: 700, padding: "3px 7px", borderRadius: 999, background: (shown === i) ? "rgba(16,185,129,.95)" : "rgba(0,0,0,.45)", color: "#fff", transition: "background .3s" }}>{l}</span>
+                        <span key={l} style={{ fontSize: 10, fontWeight: 700, padding: "3px 7px", borderRadius: 999, background: (shown === i) ? "rgba(56,189,248,.95)" : "rgba(0,0,0,.45)", color: "#fff", transition: "background .3s" }}>{l}</span>
                     ))}
                 </div>
             )}

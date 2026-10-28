@@ -35,54 +35,22 @@ export const DEFAULT_HABITS = [
 export const REQUIRED_DAILY = 1;
 export const pillars = [
   { key: "power", label: "Power", icon: "🔥", color: "#ef4444", gradient: "linear-gradient(135deg,#ef4444,#dc2626)", desc: "Strength, combat & endurance" },
-  { key: "mind", label: "Mind", icon: "⚡", color: "#10b981", gradient: "linear-gradient(135deg,#10b981,#059669)", desc: "Strategy, focus & knowledge" },
+  { key: "mind", label: "Mind", icon: "⚡", color: "#38bdf8", gradient: "linear-gradient(135deg,#38bdf8,#0284c7)", desc: "Strategy, focus & knowledge" },
   { key: "heart", label: "Heart", icon: "💛", color: "#f59e0b", gradient: "linear-gradient(135deg,#f59e0b,#d97706)", desc: "Mood, bonds & willpower" },
-  { key: "spirit", label: "Spirit", icon: "🌟", color: "#34d399", gradient: "linear-gradient(135deg,#34d399,#10b981)", desc: "Discipline, recovery & clarity" },
+  { key: "spirit", label: "Spirit", icon: "🌟", color: "#7dd3fc", gradient: "linear-gradient(135deg,#7dd3fc,#38bdf8)", desc: "Discipline, recovery & clarity" },
   { key: "fortune", label: "Fortune", icon: "💎", color: "#fbbf24", gradient: "linear-gradient(135deg,#fbbf24,#f59e0b)", desc: "Wealth & resource management" },
 ];
 
-// ═══════════════════════════════════════
-// GROUPED NAVIGATION — 5 main + "More" submenu
-// ═══════════════════════════════════════
-export const navItems = [
-  { key: "dashboard", label: "Dashboard", icon: "🔥" },
-  { key: "training", label: "Training", icon: "⚔️" },
-  { key: "nutrition", label: "Nutrition", icon: "🍎" },
-  { key: "oracle", label: "Flame Oracle", icon: "🔮" },
-  { key: "social", label: "Social", icon: "👥" },
-  { key: "gaming", label: "Gaming", icon: "🎮" },
-  { key: "more", label: "More", icon: "☰", submenu: [
-    { key: "dailyquest", label: "Daily Quests", icon: "🎯" },
-    { key: "missions", label: "Missions", icon: "📋" },
-    { key: "focus", label: "Focus Timer", icon: "⏱" },
-    { key: "wellness", label: "Wellness", icon: "💛" },
-    { key: "finance", label: "Finance", icon: "💰" },
-    { key: "routine", label: "My Day", icon: "📅" },
-    { key: "growth", label: "Growth", icon: "🌱" },
-    { key: "body", label: "Body Tracker", icon: "📊" },
-    { key: "challenges", label: "Challenges", icon: "🏆" },
-    { key: "programs", label: "Programs", icon: "🏋️" },
-    { key: "share", label: "Share Card", icon: "📱" },
-    { key: "profile", label: "Profile", icon: "👤" },
-  ]},
-];
-
+// Hunter ranks (Solo Leveling). Reaching a rank's level unlocks its Rank Assessment;
+// the rank itself is only granted once the assessment is passed (see lib/system).
 export const RANKS = [
-  { name: "Cinder", min: 1, max: 4, color: "#64748b", emoji: "▪", tier: 1, title: "The Awakening" },
-  { name: "Iron", min: 5, max: 10, color: "#94a3b8", emoji: "◆", tier: 2, title: "Forged in Silence" },
-  { name: "Steel", min: 11, max: 18, color: "#06b6d4", emoji: "◆◆", tier: 3, title: "Unbreaking Will" },
-  { name: "Shadow", min: 19, max: 28, color: "#8b5cf6", emoji: "◈", tier: 4, title: "Walking the Edge" },
-  { name: "Storm", min: 29, max: 40, color: "#3b82f6", emoji: "◈◈", tier: 5, title: "Thunder Within" },
-  { name: "Wrath", min: 41, max: 54, color: "#ef4444", emoji: "★", tier: 6, title: "Fury Unleashed" },
-  { name: "Phantom", min: 55, max: 70, color: "#e11d48", emoji: "★★", tier: 7, title: "Beyond the Veil" },
-  { name: "Dragon", min: 71, max: 88, color: "#f97316", emoji: "✦", tier: 8, title: "Ancient Fire Awakened" },
-  { name: "Apex", min: 89, max: 108, color: "#f59e0b", emoji: "✦✦", tier: 9, title: "Peak of Mortals" },
-  { name: "Sovereign", min: 109, max: 130, color: "#fbbf24", emoji: "♛", tier: 10, title: "Ruler of Self" },
-  { name: "Mythic", min: 131, max: 160, color: "#a78bfa", emoji: "♛♛", tier: 11, title: "Legend Incarnate" },
-  { name: "Celestial", min: 161, max: 200, color: "#22d3ee", emoji: "✧", tier: 12, title: "Heavenly Ascension" },
-  { name: "Eternal", min: 201, max: 260, color: "#e0f2fe", emoji: "✧✧", tier: 13, title: "Beyond Time" },
-  { name: "Void", min: 261, max: 350, color: "#c4b5fd", emoji: "◉", tier: 14, title: "The Boundless" },
-  { name: "Absolute", min: 351, max: 999999, color: "#ffffff", emoji: "◉◉", tier: 15, title: "The One Above All" },
+  { id: "E", name: "E-Rank", min: 1, max: 9, color: "#9ca3af", emoji: "E", tier: 1, title: "The Weakest Hunter" },
+  { id: "D", name: "D-Rank", min: 10, max: 19, color: "#4ade80", emoji: "D", tier: 2, title: "Awakened Hunter" },
+  { id: "C", name: "C-Rank", min: 20, max: 34, color: "#38bdf8", emoji: "C", tier: 3, title: "Rising Hunter" },
+  { id: "B", name: "B-Rank", min: 35, max: 49, color: "#a78bfa", emoji: "B", tier: 4, title: "Elite Hunter" },
+  { id: "A", name: "A-Rank", min: 50, max: 69, color: "#f87171", emoji: "A", tier: 5, title: "Guild Ace" },
+  { id: "S", name: "S-Rank", min: 70, max: 99, color: "#fbbf24", emoji: "S", tier: 6, title: "Strongest Hunter" },
+  { id: "N", name: "National Level", min: 100, max: 999999, color: "#e0f2fe", emoji: "N", tier: 7, title: "Pillar of the Nation" },
 ];
 
 // ── GATES WITH DETAILED INSTRUCTIONS (Combat Skills — renamed from Fighting) ──

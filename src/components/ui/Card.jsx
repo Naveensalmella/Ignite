@@ -19,7 +19,7 @@ export default function Card({ children, style, className = "", onClick, padding
 /**
  * Small stat display card (replaces inline className="gc" stat boxes)
  */
-export function StatCard({ value, label, color = "text-emerald-500", icon, onClick, className = "" }) {
+export function StatCard({ value, label, color = "text-sky-400", icon, onClick, className = "" }) {
   return (
     <div
       className={`gc p-[14px] text-center ${onClick ? "cursor-pointer" : ""} ${className}`.trim()}

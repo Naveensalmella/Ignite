@@ -109,7 +109,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                     {/* Daily XP Goal */}
                     <div className="gs" style={{ marginBottom: 12, padding: 14 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                            <Ring pct={xpProgress.pct} color={xpProgress.pct >= 100 ? "#22c55e" : "#10b981"} size={64} stroke={6}>
+                            <Ring pct={xpProgress.pct} color={xpProgress.pct >= 100 ? "#22c55e" : "#38bdf8"} size={64} stroke={6}>
                                 <div style={{ textAlign: "center" }}>
                                     <div style={{ fontSize: 16, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{xpProgress.earned}</div>
                                     <div style={{ fontSize: 11, color: "#6b7280" }}>/{xpProgress.goal}</div>
@@ -166,8 +166,8 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                         <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 60 }}>
                             {xpHistory.map((h, i) => (
                                 <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                                    <div style={{ width: "100%", background: h.xp > 0 ? (h.date === d ? "#10b981" : "rgba(16,185,129,.3)") : "rgba(255,255,255,.03)", borderRadius: "3px 3px 0 0", height: `${Math.max(2, (h.xp / maxDayXP) * 50)}px`, transition: "height .5s" }} />
-                                    <div style={{ fontSize: 11, color: h.date === d ? "#10b981" : "#4b5563", marginTop: 2 }}>{h.day}</div>
+                                    <div style={{ width: "100%", background: h.xp > 0 ? (h.date === d ? "#38bdf8" : "rgba(56,189,248,.3)") : "rgba(255,255,255,.03)", borderRadius: "3px 3px 0 0", height: `${Math.max(2, (h.xp / maxDayXP) * 50)}px`, transition: "height .5s" }} />
+                                    <div style={{ fontSize: 11, color: h.date === d ? "#38bdf8" : "#4b5563", marginTop: 2 }}>{h.day}</div>
                                 </div>
                             ))}
                         </div>
@@ -192,7 +192,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                     </div>
                                     {data.next && (
                                         <div style={{ width: 50, height: 4, background: "rgba(255,255,255,.06)", borderRadius: 2, overflow: "hidden" }}>
-                                            <div style={{ height: "100%", width: `${Math.min(100, (data.value / data.next.threshold) * 100)}%`, background: "#10b981", borderRadius: 2 }} />
+                                            <div style={{ height: "100%", width: `${Math.min(100, (data.value / data.next.threshold) * 100)}%`, background: "#38bdf8", borderRadius: 2 }} />
                                         </div>
                                     )}
                                 </div>
@@ -227,7 +227,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                     </div>
                                 </div>
                                 <div style={{ height: 6, background: "rgba(255,255,255,.04)", borderRadius: 3, marginTop: 8, overflow: "hidden" }}>
-                                    <div style={{ height: "100%", width: `${pct}%`, background: done ? "#22c55e" : "linear-gradient(90deg,#10b981,#06b6d4)", borderRadius: 3, transition: "width .5s" }} />
+                                    <div style={{ height: "100%", width: `${pct}%`, background: done ? "#22c55e" : "linear-gradient(90deg,#38bdf8,#06b6d4)", borderRadius: 3, transition: "width .5s" }} />
                                 </div>
                                 {done && !claimed && (
                                     <button className="bp" onClick={() => claimChallenge(ch)} style={{ width: "100%", marginTop: 10, padding: 10, fontSize: 13 }}>🎁 Claim +{ch.reward} XP</button>
@@ -253,7 +253,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                         const isComplete = progress?.complete;
                         const isFailed = progress?.failed;
                         return (
-                            <div key={chain.id} className="gs" style={{ marginBottom: 10, padding: 14, border: isComplete ? "1px solid rgba(34,197,94,.2)" : isActive ? "1px solid rgba(16,185,129,.15)" : "1px solid rgba(255,255,255,.04)" }}>
+                            <div key={chain.id} className="gs" style={{ marginBottom: 10, padding: 14, border: isComplete ? "1px solid rgba(34,197,94,.2)" : isActive ? "1px solid rgba(56,189,248,.15)" : "1px solid rgba(255,255,255,.04)" }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                                     <div>
                                         <div style={{ fontSize: 16, fontWeight: 700, color: isComplete ? "#22c55e" : "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{chain.icon} {chain.name}</div>
@@ -261,7 +261,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                         <div style={{ fontSize: 11, color: "#4b5563", marginTop: 4 }}>Daily: {chain.dailyTask}</div>
                                     </div>
                                     <div style={{ textAlign: "right" }}>
-                                        {progress && <div style={{ fontSize: 13, fontWeight: 700, color: isComplete ? "#22c55e" : isFailed ? "#ef4444" : "#10b981" }}>{progress.daysCompleted}/{chain.totalDays}</div>}
+                                        {progress && <div style={{ fontSize: 13, fontWeight: 700, color: isComplete ? "#22c55e" : isFailed ? "#ef4444" : "#38bdf8" }}>{progress.daysCompleted}/{chain.totalDays}</div>}
                                         <div style={{ fontSize: 11, color: "#f59e0b" }}>+{chain.rewards.completion} XP</div>
                                     </div>
                                 </div>

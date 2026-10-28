@@ -54,7 +54,7 @@ function getNutritionScore(totals, target, proteinG, carbG, fatG) {
   else if (fatPctVal >= 0.5) score += 8;
 
   if (score >= 90) return { grade: "A+", color: "#22c55e", desc: "Perfect nutrition day!" };
-  if (score >= 80) return { grade: "A", color: "#10b981", desc: "Excellent — right on target" };
+  if (score >= 80) return { grade: "A", color: "#22c55e", desc: "Excellent — right on target" };
   if (score >= 70) return { grade: "B", color: "#06b6d4", desc: "Good — minor adjustments needed" };
   if (score >= 55) return { grade: "C", color: "#f59e0b", desc: "Fair — watch your macros" };
   if (score >= 40) return { grade: "D", color: "#f97316", desc: "Needs improvement" };
@@ -350,7 +350,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
           <div className="grid grid-cols-3 gap-[10px] mb-4">
             <div className="gc p-5 text-center cursor-pointer" onClick={() => { setScanMode("camera"); setTimeout(startCam, 100) }}>
               <div className="text-[32px] mb-1.5">📸</div>
-              <div className="text-[13px] font-bold text-emerald-500">Camera</div>
+              <div className="text-[13px] font-bold text-sky-400">Camera</div>
               <div className="text-[10px] text-gray-500">Point at food</div>
             </div>
             <div className="gc p-5 text-center cursor-pointer" onClick={() => fileRef.current?.click()}>
@@ -390,10 +390,10 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       {/* Camera mode */}
       {scanMode === "camera" && !scanPhoto && !scanning && (
         <div>
-          <div className="w-full max-w-[400px] aspect-square rounded-2xl overflow-hidden border-2 border-emerald-500/20 mx-auto mb-4 bg-[#111] relative">
+          <div className="w-full max-w-[400px] aspect-square rounded-2xl overflow-hidden border-2 border-sky-400/20 mx-auto mb-4 bg-[#111] relative">
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-            <div className="absolute inset-0 border-[3px] border-emerald-500/30 rounded-[14px] pointer-events-none">
-              <div className="absolute top-[20%] left-[20%] right-[20%] bottom-[20%] border border-dashed border-emerald-500/40 rounded-lg" />
+            <div className="absolute inset-0 border-[3px] border-sky-400/30 rounded-[14px] pointer-events-none">
+              <div className="absolute top-[20%] left-[20%] right-[20%] bottom-[20%] border border-dashed border-sky-400/40 rounded-lg" />
             </div>
           </div>
           <canvas ref={canvasRef} className="hidden" />
@@ -444,11 +444,11 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       {/* Scanning animation */}
       {scanning && (
         <div className="text-center py-10">
-          {scanPhoto && <div className="w-[160px] h-[160px] rounded-2xl overflow-hidden mx-auto mb-5 border-2 border-emerald-500/20"><img src={scanPhoto} alt="" className="w-full h-full object-cover" /></div>}
+          {scanPhoto && <div className="w-[160px] h-[160px] rounded-2xl overflow-hidden mx-auto mb-5 border-2 border-sky-400/20"><img src={scanPhoto} alt="" className="w-full h-full object-cover" /></div>}
           <div className="flex gap-1.5 justify-center mb-3">
-            {[0, 1, 2].map(i => <div key={i} className="w-[10px] h-[10px] rounded-full bg-emerald-500" style={{ animation: `dotPulse 1.2s ${i * .2}s infinite` }} />)}
+            {[0, 1, 2].map(i => <div key={i} className="w-[10px] h-[10px] rounded-full bg-sky-400" style={{ animation: `dotPulse 1.2s ${i * .2}s infinite` }} />)}
           </div>
-          <div className="text-sm text-emerald-500 font-semibold">Analyzing your food with AI...</div>
+          <div className="text-sm text-sky-400 font-semibold">Analyzing your food with AI...</div>
           <div className="text-[11px] text-gray-500 mt-1">Estimating calories, protein, carbs, fat</div>
         </div>
       )}
@@ -503,14 +503,14 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       {/* Remaining calories */}
       <div className="gs mb-4 text-center p-5">
         <div className="text-[11px] text-gray-500 font-heading tracking-[2px]">REMAINING TODAY</div>
-        <div className={`text-[42px] font-black font-heading leading-[1.1] ${remaining > 0 ? "text-emerald-500" : "text-red-500"}`}>{remaining > 0 ? remaining : 0}</div>
+        <div className={`text-[42px] font-black font-heading leading-[1.1] ${remaining > 0 ? "text-sky-400" : "text-red-500"}`}>{remaining > 0 ? remaining : 0}</div>
         <div className="text-xs text-gray-500">of {target} cal · Eaten: {totals.cal}</div>
         <div className="inline-flex items-center gap-1.5 mt-2 px-[14px] py-1 rounded-full" style={{ background: nutScore.color + "10", border: "1px solid " + nutScore.color + "25" }}>
           <span className="text-[18px] font-black font-heading" style={{ color: nutScore.color }}>{nutScore.grade}</span>
           <span className="text-[11px]" style={{ color: nutScore.color }}>{nutScore.desc}</span>
         </div>
         <div className="h-2 bg-white/[.04] rounded overflow-hidden mt-[10px]">
-          <div className="h-full rounded transition-[width] duration-500" style={{ width: `${Math.min(100, (totals.cal / target) * 100)}%`, background: totals.cal > target ? "#ef4444" : "linear-gradient(90deg,#10b981,#06b6d4)" }} />
+          <div className="h-full rounded transition-[width] duration-500" style={{ width: `${Math.min(100, (totals.cal / target) * 100)}%`, background: totals.cal > target ? "#ef4444" : "linear-gradient(90deg,#38bdf8,#06b6d4)" }} />
         </div>
         <div className="flex justify-center gap-4 mt-3">
           {[["Protein", totals.protein, proteinG, "#ef4444"], ["Carbs", totals.carbs, carbG, "#f59e0b"], ["Fat", totals.fat, fatG, "#06b6d4"], ["Fiber", totals.fiber, 25, "#22c55e"]].map(([l, v, t, c]) => (
@@ -551,16 +551,16 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       <div className="flex gap-1.5 mb-3">{MEALS.map(m => { const mc = todayLog.filter(f => f.meal === m); const cal = mc.reduce((s, f) => s + (f.cal || 0), 0); return <span key={m} className={`chip ${selMeal === m ? "chip-a" : "chip-i"}`} onClick={() => setSelMeal(m)}>{m}{mc.length > 0 ? ` (${cal}cal)` : ""}</span> })}</div>
 
       {/* Meal timing */}
-      <div className="px-3 py-1.5 rounded-lg bg-[rgba(16,185,129,.03)] border border-[rgba(16,185,129,.08)] mb-[10px] flex gap-2 items-center">
+      <div className="px-3 py-1.5 rounded-lg bg-[rgba(56,189,248,.03)] border border-[rgba(56,189,248,.08)] mb-[10px] flex gap-2 items-center">
         <span className="text-sm">🕐</span>
         <div>
-          <span className="text-[11px] text-emerald-500 font-semibold">{MEAL_TIMES[selMeal]?.time}</span>
+          <span className="text-[11px] text-sky-400 font-semibold">{MEAL_TIMES[selMeal]?.time}</span>
           <span className="text-[11px] text-gray-500"> — {MEAL_TIMES[selMeal]?.tip}</span>
         </div>
       </div>
 
       {/* Food quantity picker */}
-      {selFood && (<div className="gs fade-in mb-[14px] border border-emerald-500/20">
+      {selFood && (<div className="gs fade-in mb-[14px] border border-sky-400/20">
         <div className="flex items-center gap-3 mb-[10px]">
           <span className="text-[28px]">{selFood.emoji}</span>
           <div className="flex-1"><div className="text-[16px] font-semibold text-gray-100">{selFood.name}</div><div className="text-[11px] text-gray-500">{selFood.category} · Nutrition per 100g</div></div>
@@ -610,8 +610,8 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         {filtered.length === 0 && search && !apiSearching && apiItems.length === 0 && <div className="text-center text-gray-500 py-3 text-[13px]">No food found for "{search}"</div>}
         {apiSearching && <div className="text-center py-2 text-xs text-cyan-500">Searching global database...</div>}
         {apiItems.length > 0 && (<div className="mt-3"><div className="text-xs text-cyan-500 font-semibold mb-2">More from global database ({apiItems.length})</div><div className="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2 max-h-[200px] overflow-y-auto">{apiItems.map((f, i) => (<div key={"api" + i} className="fc border-cyan-500/[.15]" onClick={() => { setSelFood(f); setGrams(100); }}><div className="text-xl">{f.emoji}</div><div className="text-[11px] font-medium text-gray-200 mt-[3px]">{f.name}</div><div className="text-[11px] text-cyan-500">{f.cal}cal</div></div>))}</div></div>)}
-        <span onClick={() => setShowCustom(!showCustom)} className="text-xs text-emerald-500 cursor-pointer font-semibold">{showCustom ? "Cancel" : "+ Add Custom Food"}</span>
-        {showCustom && (<div className="gs fade-in mt-[10px] border border-emerald-500/[.15]">
+        <span onClick={() => setShowCustom(!showCustom)} className="text-xs text-sky-400 cursor-pointer font-semibold">{showCustom ? "Cancel" : "+ Add Custom Food"}</span>
+        {showCustom && (<div className="gs fade-in mt-[10px] border border-sky-400/[.15]">
           <input className="inp mb-2" placeholder="Food name" value={custom.name} onChange={e => setCustom(p => ({ ...p, name: e.target.value }))} />
           <div className="text-[10px] text-gray-500 mb-1">Nutrition per 100g</div>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(80px,1fr))] gap-1.5 mb-2">
@@ -623,7 +623,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
 
       {/* Today's log */}
       {todayLog.length > 0 && (<div className="gs mt-[14px]"><div className="sl">Today · {todayLog.length} items · {totals.cal}cal</div>
-        {MEALS.map(meal => { const items = todayLog.map((f, i) => ({ ...f, _idx: i })).filter(f => f.meal === meal); if (items.length === 0) return null; return (<div key={meal} className="mb-[10px]"><div className="text-xs text-emerald-500 font-semibold mb-1">{meal} — {items.reduce((s, f) => s + (f.cal || 0), 0)}cal</div>{items.map(f => (<div key={f._idx} className="flex justify-between items-center py-1.5 border-b border-white/[.03]"><div className="flex gap-2 items-center"><span>{f.emoji}</span><div><div className="text-[13px]">{f.name}{f.grams && f.grams !== 100 ? <span className="text-gray-500"> {f.grams}g</span> : ""}</div><div className="text-[10px] text-gray-600">P:{f.protein}g C:{f.carbs}g F:{f.fat}g</div></div></div><div className="flex gap-2 items-center"><span className="text-[13px] font-semibold text-amber-500">{f.cal}cal</span><span onClick={() => removeFood(f._idx)} className="cursor-pointer text-gray-600 text-sm">×</span></div></div>))}</div>); })}
+        {MEALS.map(meal => { const items = todayLog.map((f, i) => ({ ...f, _idx: i })).filter(f => f.meal === meal); if (items.length === 0) return null; return (<div key={meal} className="mb-[10px]"><div className="text-xs text-sky-400 font-semibold mb-1">{meal} — {items.reduce((s, f) => s + (f.cal || 0), 0)}cal</div>{items.map(f => (<div key={f._idx} className="flex justify-between items-center py-1.5 border-b border-white/[.03]"><div className="flex gap-2 items-center"><span>{f.emoji}</span><div><div className="text-[13px]">{f.name}{f.grams && f.grams !== 100 ? <span className="text-gray-500"> {f.grams}g</span> : ""}</div><div className="text-[10px] text-gray-600">P:{f.protein}g C:{f.carbs}g F:{f.fat}g</div></div></div><div className="flex gap-2 items-center"><span className="text-[13px] font-semibold text-amber-500">{f.cal}cal</span><span onClick={() => removeFood(f._idx)} className="cursor-pointer text-gray-600 text-sm">×</span></div></div>))}</div>); })}
       </div>)}
     </div>)}
 
@@ -638,9 +638,9 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
             const over = day.cal > target;
             return (
               <div key={i} className="flex-1 flex flex-col items-center">
-                <div className={`text-[11px] font-semibold mb-0.5 ${day.cal > 0 ? (over ? "text-red-500" : "text-emerald-500") : "text-gray-600"}`}>{day.cal > 0 ? day.cal : ""}</div>
-                <div className="w-full rounded-t transition-[height] duration-500" style={{ background: over ? "rgba(239,68,68,.3)" : day.isToday ? "#10b981" : "rgba(16,185,129,.25)", height: `${Math.max(4, pct * 0.7)}px` }} />
-                <div className={`text-[10px] mt-1 ${day.isToday ? "text-emerald-500 font-bold" : "text-gray-500 font-normal"}`}>{day.label}</div>
+                <div className={`text-[11px] font-semibold mb-0.5 ${day.cal > 0 ? (over ? "text-red-500" : "text-sky-400") : "text-gray-600"}`}>{day.cal > 0 ? day.cal : ""}</div>
+                <div className="w-full rounded-t transition-[height] duration-500" style={{ background: over ? "rgba(239,68,68,.3)" : day.isToday ? "#38bdf8" : "rgba(56,189,248,.25)", height: `${Math.max(4, pct * 0.7)}px` }} />
+                <div className={`text-[10px] mt-1 ${day.isToday ? "text-sky-400 font-bold" : "text-gray-500 font-normal"}`}>{day.label}</div>
               </div>
             );
           })}
@@ -723,7 +723,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         <div>
           <div className="text-center mb-[14px]">
             <div className="text-[11px] text-gray-500 tracking-[2px]">YOUR DAILY TARGET</div>
-            <div className="text-[32px] font-black text-emerald-500 font-heading">{target} cal</div>
+            <div className="text-[32px] font-black text-sky-400 font-heading">{target} cal</div>
             <div className="text-[11px] text-gray-500">P: {proteinG}g · C: {carbG}g · F: {fatG}g</div>
           </div>
 
@@ -771,7 +771,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
                   return (
                     <div key={meal} className="gs mb-[10px] p-3">
                       <div className="flex justify-between mb-2">
-                        <span className="text-[13px] font-bold text-emerald-500">{meal}</span>
+                        <span className="text-[13px] font-bold text-sky-400">{meal}</span>
                         <span className="text-xs text-amber-500 font-semibold">{mealCal} cal</span>
                       </div>
                       {items.map((f, i) => (
@@ -824,7 +824,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
                 return (
                   <div>
                     <div className="text-center mb-[10px]">
-                      <span className="text-[18px] font-extrabold text-emerald-500 font-heading">{dayTotals.cal} cal</span>
+                      <span className="text-[18px] font-extrabold text-sky-400 font-heading">{dayTotals.cal} cal</span>
                       <span className="text-[11px] text-gray-500"> · P:{Math.round(dayTotals.protein)}g C:{Math.round(dayTotals.carbs)}g F:{Math.round(dayTotals.fat)}g</span>
                     </div>
                     {["Breakfast", "Lunch", "Dinner", "Snack"].map(meal => {
@@ -832,7 +832,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
                       if (items.length === 0) return null;
                       return (
                         <div key={meal} className="mb-[10px]">
-                          <div className="text-xs text-emerald-500 font-semibold mb-1">{meal}</div>
+                          <div className="text-xs text-sky-400 font-semibold mb-1">{meal}</div>
                           {items.map((f, i) => (
                             <div key={i} className="flex justify-between py-1 text-xs">
                               <span>{f.emoji} {f.name} <span className="text-gray-500">{f.grams}g</span></span>
@@ -904,7 +904,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
             <div className="sl">{editingPlan ? "Edit Plan" : "Create New Plan"}</div>
             <input className="inp mb-[10px]" placeholder="Plan name..." value={planName} onChange={e => setPlanName(e.target.value)} />
             {MEALS.map(meal => (<div key={meal} className="mb-3">
-              <div className="text-[13px] font-semibold text-emerald-500 mb-1.5">{meal}</div>
+              <div className="text-[13px] font-semibold text-sky-400 mb-1.5">{meal}</div>
               {(planItems[meal] || []).map((f, i) => (<div key={i} className="flex justify-between items-center py-1 border-b border-white/[.03]">
                 <span className="text-[13px]">{f.emoji} {f.name} <span className="text-gray-500">{f.grams || 100}g</span></span>
                 <div className="flex gap-1.5 items-center"><span className="text-[11px] text-amber-500">{Math.round(f.cal * (f.grams || 100) / 100)}cal</span><span onClick={() => removeFromPlan(meal, i)} className="cursor-pointer text-gray-600">×</span></div>
@@ -915,7 +915,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
             {planSearch.length >= 2 && <div className="max-h-[180px] overflow-y-auto mb-[10px]">
               {searchFoods(planSearch).slice(0, 12).map((f, i) => (<div key={f.name + i} className="flex justify-between items-center py-1.5 border-b border-white/[.03] cursor-pointer">
                 <span className="text-[13px]">{f.emoji} {f.name} <span className="text-gray-500">{f.cal}cal/100g</span></span>
-                <div className="flex gap-1">{MEALS.map(m => <span key={m} onClick={() => addToPlan(f, m)} className="text-[10px] px-2 py-[3px] rounded-md bg-[rgba(16,185,129,.06)] text-emerald-500 cursor-pointer border border-emerald-500/[.15]">{m[0]}</span>)}</div>
+                <div className="flex gap-1">{MEALS.map(m => <span key={m} onClick={() => addToPlan(f, m)} className="text-[10px] px-2 py-[3px] rounded-md bg-[rgba(56,189,248,.06)] text-sky-400 cursor-pointer border border-sky-400/[.15]">{m[0]}</span>)}</div>
               </div>))}
             </div>}
             <div className="flex gap-2 mt-[10px]">

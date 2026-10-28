@@ -3,7 +3,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { today, toArr, parseDateKey } from '@/utils';
 
 const MEASUREMENTS = [
-  { key: "weight", label: "Weight", unit: "kg", icon: "⚖️", color: "#10b981" },
+  { key: "weight", label: "Weight", unit: "kg", icon: "⚖️", color: "#38bdf8" },
   { key: "chest", label: "Chest", unit: "in", icon: "📏", color: "#06b6d4" },
   { key: "waist", label: "Waist", unit: "in", icon: "📏", color: "#f59e0b" },
   { key: "arms", label: "Arms", unit: "in", icon: "💪", color: "#8b5cf6" },
@@ -101,7 +101,7 @@ export default function BodyTracker({ bodyData, setBodyData = () => { } }) {
     // Date stamp
     ctx.fillStyle = "rgba(0,0,0,0.5)";
     ctx.fillRect(0, 375, 300, 25);
-    ctx.fillStyle = "#10b981";
+    ctx.fillStyle = "#38bdf8";
     ctx.font = "bold 12px sans-serif";
     ctx.fillText(`IGNITE · ${new Date().toLocaleDateString()}`, 8, 392);
     setCapturedPhoto(c.toDataURL("image/jpeg", 0.6));
@@ -125,7 +125,7 @@ export default function BodyTracker({ bodyData, setBodyData = () => { } }) {
         </div>
         {!capturedPhoto ? (
           <div>
-            <div style={{ width: "100%", maxWidth: 300, aspectRatio: "3/4", borderRadius: 16, overflow: "hidden", border: "2px solid rgba(16,185,129,.2)", margin: "0 auto 16px", background: "#111" }}>
+            <div style={{ width: "100%", maxWidth: 300, aspectRatio: "3/4", borderRadius: 16, overflow: "hidden", border: "2px solid rgba(56,189,248,.2)", margin: "0 auto 16px", background: "#111" }}>
               <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }} />
             </div>
             <canvas ref={canvasRef} style={{ display: "none" }} />
@@ -247,7 +247,7 @@ export default function BodyTracker({ bodyData, setBodyData = () => { } }) {
                   const max = Math.max(...vals);
                   const range = max - min || 1;
                   const pct = ((d.val - min) / range) * 100;
-                  const col = MEASUREMENTS.find(m => m.key === chartKey)?.color || "#10b981";
+                  const col = MEASUREMENTS.find(m => m.key === chartKey)?.color || "#38bdf8";
                   return (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 11, color: "#6b7280", width: 45, textAlign: "right", flexShrink: 0 }}>{fmtDate(d.date, { day: 'numeric', month: 'short' })}</span>
@@ -282,7 +282,7 @@ export default function BodyTracker({ bodyData, setBodyData = () => { } }) {
                 <img src={p.photo} alt="progress" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
                 <div style={{ padding: "8px 10px", background: "rgba(255,255,255,.02)" }}>
                   <div style={{ fontSize: 11, fontWeight: 600 }}>{fmtDate(p.date, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-                  {p.weight && <div style={{ fontSize: 11, color: "#10b981" }}>{p.weight} kg</div>}
+                  {p.weight && <div style={{ fontSize: 11, color: "#38bdf8" }}>{p.weight} kg</div>}
                   {p.note && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{p.note}</div>}
                 </div>
               </div>

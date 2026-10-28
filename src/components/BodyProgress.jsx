@@ -126,7 +126,7 @@ export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { 
                                     <div style={{ fontSize: 12, fontWeight: 600, color: "#f3f4f6" }}>
                                         {fmtDate(date, { day: "numeric", month: "short", year: "numeric" })}
                                     </div>
-                                    {entry.weight && <div style={{ fontSize: 11, color: "#10b981" }}>{entry.weight} kg</div>}
+                                    {entry.weight && <div style={{ fontSize: 11, color: "#38bdf8" }}>{entry.weight} kg</div>}
                                     {entry.note && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{entry.note}</div>}
                                 </div>
                                 <button onClick={() => deletePhoto(date)} aria-label="Delete photo" style={{ position: "absolute", top: 6, right: 6, width: 24, height: 24, borderRadius: "50%", background: "rgba(0,0,0,.6)", border: "none", color: "#ef4444", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
@@ -204,7 +204,7 @@ export default function BodyProgress({ bodyPhotos = {}, setBodyPhotos = () => { 
 
             {/* Tips */}
             {sortedDates.length > 0 && sortedDates.length < 3 && (
-                <div style={{ marginTop: 16, padding: "10px 14px", borderRadius: 10, background: "rgba(16,185,129,.04)", border: "1px solid rgba(16,185,129,.1)", fontSize: 12, color: "#10b981" }}>
+                <div style={{ marginTop: 16, padding: "10px 14px", borderRadius: 10, background: "rgba(56,189,248,.04)", border: "1px solid rgba(56,189,248,.1)", fontSize: 12, color: "#38bdf8" }}>
                     💡 Take photos monthly in the same lighting, pose, and clothing for the best comparison.
                 </div>
             )}

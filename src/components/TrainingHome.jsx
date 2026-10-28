@@ -35,7 +35,7 @@ const CHALLENGES = [
     { id: "massive_body", title: "Massive Body", days: 28, color: "linear-gradient(135deg,#1e40af,#3b82f6)", desc: "Progressive bodyweight muscle building", icon: "💪", getDayExercises: (day) => buildChallengeDay(["chest", "back", "arms", "shoulders"], Math.min(3, 1 + Math.floor(day / 10)), Math.min(10, 5 + Math.floor(day / 7)), day) },
     { id: "fat_burner", title: "Fat Burner", days: 30, color: "linear-gradient(135deg,#dc2626,#f97316)", desc: "HIIT and cardio combos", icon: "🔥", getDayExercises: (day) => buildChallengeDay(["cardio", "core", "legs"], Math.min(3, 1 + Math.floor(day / 10)), Math.min(10, 5 + Math.floor(day / 5)), day) },
     { id: "calisthenics", title: "Calisthenics", days: 28, color: "linear-gradient(135deg,#7c3aed,#a855f7)", desc: "Master bodyweight strength", icon: "🤸", getDayExercises: (day) => buildChallengeDay(["chest", "back", "core", "legs"], Math.min(3, 1 + Math.floor(day / 10)), Math.min(10, 6 + Math.floor(day / 7)), day) },
-    { id: "full_body", title: "Full Body Kickstart", days: 14, color: "linear-gradient(135deg,#059669,#10b981)", desc: "Two weeks to build the habit", icon: "⚡", getDayExercises: (day) => buildChallengeDay(["chest", "back", "legs", "core", "arms"], 2, Math.min(9, 5 + Math.floor(day / 3)), day) },
+    { id: "full_body", title: "Full Body Kickstart", days: 14, color: "linear-gradient(135deg,#0284c7,#38bdf8)", desc: "Two weeks to build the habit", icon: "⚡", getDayExercises: (day) => buildChallengeDay(["chest", "back", "legs", "core", "arms"], 2, Math.min(9, 5 + Math.floor(day / 3)), day) },
 ];
 
 // ── Quick workouts ──

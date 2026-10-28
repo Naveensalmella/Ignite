@@ -5,7 +5,7 @@ import { today, toArr, dateKey } from '@/utils';
 
 const MOODS = [
   { emoji: "😄", label: "Great", color: "#22c55e", value: 5 },
-  { emoji: "🙂", label: "Good", color: "#10b981", value: 4 },
+  { emoji: "🙂", label: "Good", color: "#38bdf8", value: 4 },
   { emoji: "😐", label: "Okay", color: "#f59e0b", value: 3 },
   { emoji: "😔", label: "Low", color: "#f97316", value: 2 },
   { emoji: "😢", label: "Bad", color: "#ef4444", value: 1 },
@@ -252,7 +252,7 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
                 <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <div style={{ fontSize: 11, color: day.hours >= 7 ? "#22c55e" : day.hours >= 5 ? "#f59e0b" : "#ef4444", fontWeight: 600, marginBottom: 2 }}>{day.hours > 0 ? `${day.hours}h` : ""}</div>
                   <div style={{ width: "100%", background: day.hours >= 7 ? "#22c55e" : day.hours >= 5 ? "rgba(245,158,11,.4)" : day.hours > 0 ? "rgba(239,68,68,.3)" : "rgba(255,255,255,.03)", borderRadius: "4px 4px 0 0", height: `${Math.min(65, Math.max(4, (day.hours / 10) * 65))}px`, transition: "height .5s" }} />
-                  <div style={{ fontSize: 11, color: day.isToday ? "#10b981" : "#6b7280", marginTop: 4, fontWeight: day.isToday ? 700 : 400 }}>{day.label}</div>
+                  <div style={{ fontSize: 11, color: day.isToday ? "#38bdf8" : "#6b7280", marginTop: 4, fontWeight: day.isToday ? 700 : 400 }}>{day.label}</div>
                 </div>
               ))}
             </div>
@@ -269,7 +269,7 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
         <div>
           <div style={{ textAlign: "center", padding: "20px 0" }}>
             {/* Breathing circle */}
-            <div style={{ width: 180, height: 180, borderRadius: "50%", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", background: `radial-gradient(circle, ${medActive ? "rgba(139,92,246,.08)" : "rgba(16,185,129,.04)"} 0%, transparent 70%)`, border: `2px solid ${medActive ? "rgba(139,92,246,.2)" : "rgba(255,255,255,.06)"}`, transition: "all 1s", transform: medActive ? (breathPhase === "Inhale" ? "scale(1.15)" : breathPhase === "Hold" ? "scale(1.15)" : "scale(0.9)") : "scale(1)" }}>
+            <div style={{ width: 180, height: 180, borderRadius: "50%", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", background: `radial-gradient(circle, ${medActive ? "rgba(139,92,246,.08)" : "rgba(56,189,248,.04)"} 0%, transparent 70%)`, border: `2px solid ${medActive ? "rgba(139,92,246,.2)" : "rgba(255,255,255,.06)"}`, transition: "all 1s", transform: medActive ? (breathPhase === "Inhale" ? "scale(1.15)" : breathPhase === "Hold" ? "scale(1.15)" : "scale(0.9)") : "scale(1)" }}>
               <div style={{ textAlign: "center" }}>
                 {medActive ? (
                   <>
@@ -329,7 +329,7 @@ export default function Wellness({ journal = {}, setJournal = () => { }, addXP =
                   <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <div style={{ fontSize: 12, marginBottom: 2 }}>{day.mood || ""}</div>
                     <div style={{ width: "100%", background: moodObj ? `${moodObj.color}40` : "rgba(255,255,255,.03)", borderRadius: "4px 4px 0 0", height: `${Math.max(4, day.value * 12)}px`, transition: "height .5s" }} />
-                    <div style={{ fontSize: 11, color: day.isToday ? "#10b981" : "#4b5563", marginTop: 2 }}>{day.day}</div>
+                    <div style={{ fontSize: 11, color: day.isToday ? "#38bdf8" : "#4b5563", marginTop: 2 }}>{day.day}</div>
                   </div>
                 );
               })}

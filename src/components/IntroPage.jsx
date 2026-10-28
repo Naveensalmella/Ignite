@@ -10,7 +10,7 @@ export default function IntroPage({ onGetStarted }) {
             title: "Welcome to IGNITE",
             subtitle: "Level Up Your Life",
             desc: "The gamified self-improvement platform that turns your daily routine into an RPG adventure.",
-            color: "#10b981",
+            color: "#38bdf8",
         },
         {
             icon: "⚔️",
@@ -27,17 +27,17 @@ export default function IntroPage({ onGetStarted }) {
             color: "#f59e0b",
         },
         {
-            icon: "🔮",
-            title: "AI Coach at Your Side",
-            subtitle: "Flame Oracle",
-            desc: "Your personal AI coach. 4 modes: Coach, Nutritionist, Wellness Guide, Motivator. Real-time streaming.",
+            icon: "◈",
+            title: "The System Speaks",
+            subtitle: "AI guide",
+            desc: "An AI guide in the voice of the System. 4 specialties: Trainer, Nutrition, Recovery, Commander. It knows your stats and quests.",
             color: "#8b5cf6",
         },
         {
-            icon: "🎮",
-            title: "Game Your Growth",
-            subtitle: "XP • Levels • Ranks • Badges",
-            desc: "Earn XP for every action. Level up through 15 ranks. Unlock achievements, titles, and compete with friends.",
+            icon: "⚔️",
+            title: "Arise, Player",
+            subtitle: "Daily Quest • Stats • Hunter Ranks",
+            desc: "Clear the Daily Quest, grow STR, AGI, VIT, INT and PER, earn Gold for real rewards, and climb from E-Rank to National Level.",
             color: "#ec4899",
         },
     ];
@@ -53,7 +53,7 @@ export default function IntroPage({ onGetStarted }) {
             {/* Logo */}
             <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 24 }}>🔥</span>
-                <span style={{ fontSize: 20, fontWeight: 800, color: "#10b981", fontFamily: "Rajdhani, sans-serif", letterSpacing: 2 }}>IGNITE</span>
+                <span style={{ fontSize: 20, fontWeight: 800, color: "#38bdf8", fontFamily: "Rajdhani, sans-serif", letterSpacing: 2 }}>IGNITE</span>
             </div>
 
             {/* Slide content */}

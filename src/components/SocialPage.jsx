@@ -2,6 +2,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { StaggerContainer, StaggerItem } from './PageTransition';
 import { getLevel, getRank, today, toArr, addDays, parseDateKey } from '@/utils';
+import { playerRank, rankById } from '@/lib/system/ranks';
+import useAppStore from '@/stores/useAppStore';
 import { collection, query, where, getDocs, doc, getDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { countWorkoutDays, getDayEntries } from '@/lib/workoutHelpers';
@@ -48,7 +50,7 @@ function recentWorkoutsFrom(workoutLog, d) {
 
 // Publish this user's public stats so friends can find / rank them.
 // Exported so it can also be called after login (users only become searchable once synced).
-export async function syncPublicProfile({ user, profile, totalXP = 0, streak = 0, workoutLog = {} }, prev = null) {
+export async function syncPublicProfile({ user, profile, totalXP = 0, streak = 0, workoutLog = {}, system = null }, prev = null) {
     if (!user?.uid) return null;
     const d = today();
     const level = getLevel(totalXP);
@@ -59,6 +61,7 @@ export async function syncPublicProfile({ user, profile, totalXP = 0, streak = 0
         streak: Number(streak) || 0,
         workouts: countWorkoutDays(workoutLog || {}),
         level,
+        rank: playerRank(system, level).id,
         recentWorkouts: recentWorkoutsFrom(workoutLog, d),
         updatedAt: new Date().toISOString(),
     };
@@ -69,7 +72,7 @@ export async function syncPublicProfile({ user, profile, totalXP = 0, streak = 0
 }
 
 // Load everything the page needs. Pure data fetch — no React state in here.
-async function fetchSocial({ user, profile, totalXP, streak, workoutLog }) {
+async function fetchSocial({ user, profile, totalXP, streak, workoutLog, system }) {
     const uid = user.uid;
     const myRef = doc(db, PUBLIC, uid);
     let snap = await getDoc(myRef);
@@ -91,7 +94,7 @@ async function fetchSocial({ user, profile, totalXP, streak, workoutLog }) {
         } catch (e) { console.warn("Social migration skipped:", e?.code || e); }
     }
 
-    await syncPublicProfile({ user, profile, totalXP, streak, workoutLog }, me);
+    await syncPublicProfile({ user, profile, totalXP, streak, workoutLog, system }, me);
     snap = await getDoc(myRef);
     me = snap.exists() ? snap.data() : {};
 
@@ -127,6 +130,7 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
     const user = rawUser || {};
     const profile = rawProfile || {};
     const uid = user.uid;
+    const system = useAppStore(s => s.system);
     const [tab, setTab] = useState("feed");
     const [searchEmail, setSearchEmail] = useState("");
     const [searchResult, setSearchResult] = useState(null);
@@ -147,7 +151,7 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
     useEffect(() => {
         if (!uid) return;
         let cancelled = false;
-        fetchSocial({ user, profile, totalXP, streak, workoutLog })
+        fetchSocial({ user, profile, totalXP, streak, workoutLog, system: useAppStore.getState().system })
             .then(res => { if (!cancelled) { setSocial(res); setLoadError(""); } })
             .catch(e => {
                 console.error("Load friends error:", e);
@@ -368,7 +372,7 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
             {loadError && (
                 <div style={{ fontSize: 12, color: "#ef4444", padding: "8px 12px", borderRadius: 8, background: "rgba(239,68,68,.06)", marginBottom: 12, display: "flex", justifyContent: "space-between", gap: 8 }}>
                     <span>{loadError}</span>
-                    <span onClick={reload} style={{ cursor: "pointer", color: "#10b981", flexShrink: 0 }}>Retry</span>
+                    <span onClick={reload} style={{ cursor: "pointer", color: "#38bdf8", flexShrink: 0 }}>Retry</span>
                 </div>
             )}
 
@@ -379,7 +383,7 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
                     <StaggerItem>
                         <div className="gs" style={{ marginBottom: 14, padding: 14 }}>
                             <div style={{ display: "flex", gap: 10 }}>
-                                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", flexShrink: 0 }}>{(profile.name || "U")[0]?.toUpperCase()}</div>
+                                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#38bdf8,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff", flexShrink: 0 }}>{(profile.name || "U")[0]?.toUpperCase()}</div>
                                 <div style={{ flex: 1 }}>
                                     <textarea className="inp" rows={2} placeholder="Share your progress, thoughts, or wins..." value={postText} onChange={e => setPostText(e.target.value)} style={{ resize: "none", marginBottom: 8 }} />
                                     <button className="bp" onClick={createPost} disabled={!postText.trim() || posting} style={{ padding: "8px 20px", fontSize: 12 }}>📤 Post</button>
@@ -401,7 +405,7 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
                         <StaggerItem key={`${item.type}-${item.uid}-${item.id ?? item.time}-${i}`}>
                             <div className="gs" style={{ marginBottom: 10, padding: 14 }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(16,185,129,.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#10b981" }}>{(item.user || "U")[0]?.toUpperCase()}</div>
+                                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(56,189,248,.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#38bdf8" }}>{(item.user || "U")[0]?.toUpperCase()}</div>
                                     <div style={{ flex: 1 }}>
                                         <span style={{ fontSize: 13, fontWeight: 600, color: "#f3f4f6" }}>{item.user}</span>
                                         <span style={{ fontSize: 11, color: "#6b7280", marginLeft: 8 }}>{timeAgo(item.time)}</span>
@@ -410,7 +414,7 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
 
                                 {item.type === "workout" && (
                                     <div>
-                                        <div style={{ fontSize: 13, color: "#d1d5db" }}>💪 Completed a workout: <span style={{ color: "#10b981", fontWeight: 600 }}>{item.data?.splitName || "Training"}</span></div>
+                                        <div style={{ fontSize: 13, color: "#d1d5db" }}>💪 Completed a workout: <span style={{ color: "#38bdf8", fontWeight: 600 }}>{item.data?.splitName || "Training"}</span></div>
                                         {item.data?.calBurned > 0 && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>🔥 {item.data.calBurned} cal · {Math.round((item.data.duration || 0) / 60)} min</div>}
                                     </div>
                                 )}
@@ -448,7 +452,7 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
                 <div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
                         <span className="sl">🏆 XP Leaderboard</span>
-                        <span onClick={reload} style={{ fontSize: 11, color: "#10b981", cursor: "pointer" }}>🔄 Refresh</span>
+                        <span onClick={reload} style={{ fontSize: 11, color: "#38bdf8", cursor: "pointer" }}>🔄 Refresh</span>
                     </div>
 
                     {friendProfiles.length === 0 ? (
@@ -465,19 +469,19 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
                                 .sort((a, b) => b.totalXP - a.totalXP)
                                 .map((p, i) => {
                                     const lv = getLevel(p.totalXP);
-                                    const rank = getRank(lv);
+                                    const rank = p.isMe ? playerRank(system, lv) : p.rank ? rankById(p.rank) : getRank(lv);
                                     return (
-                                        <div key={p.uid} className="gc" style={{ marginBottom: 8, padding: 14, border: p.isMe ? "1px solid rgba(16,185,129,.15)" : undefined, background: p.isMe ? "rgba(16,185,129,.03)" : undefined }}>
+                                        <div key={p.uid} className="gc" style={{ marginBottom: 8, padding: 14, border: p.isMe ? "1px solid rgba(56,189,248,.15)" : undefined, background: p.isMe ? "rgba(56,189,248,.03)" : undefined }}>
                                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                                 <div style={{ width: 28, height: 28, borderRadius: "50%", background: i === 0 ? "linear-gradient(135deg,#f59e0b,#f97316)" : i === 1 ? "linear-gradient(135deg,#9ca3af,#6b7280)" : i === 2 ? "linear-gradient(135deg,#b45309,#92400e)" : "rgba(255,255,255,.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: i < 3 ? "#fff" : "#6b7280" }}>
                                                     {i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1}
                                                 </div>
                                                 <div style={{ flex: 1 }}>
-                                                    <div style={{ fontSize: 13, fontWeight: 600, color: p.isMe ? "#10b981" : "#f3f4f6" }}>{p.name} {p.isMe ? "(You)" : ""}</div>
+                                                    <div style={{ fontSize: 13, fontWeight: 600, color: p.isMe ? "#38bdf8" : "#f3f4f6" }}>{p.name} {p.isMe ? "(You)" : ""}</div>
                                                     <div style={{ fontSize: 11, color: "#6b7280" }}>Lv.{lv} {rank.name} · {p.workouts || 0} workouts</div>
                                                 </div>
                                                 <div style={{ textAlign: "right" }}>
-                                                    <div style={{ fontSize: 16, fontWeight: 800, color: rank.color || "#10b981", fontFamily: "Rajdhani,sans-serif" }}>{p.totalXP.toLocaleString()}</div>
+                                                    <div style={{ fontSize: 16, fontWeight: 800, color: rank.color || "#38bdf8", fontFamily: "Rajdhani,sans-serif" }}>{p.totalXP.toLocaleString()}</div>
                                                     <div style={{ fontSize: 11, color: "#6b7280" }}>XP</div>
                                                 </div>
                                             </div>
@@ -499,10 +503,10 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
                             <input className="inp" placeholder="friend@email.com" value={searchEmail} onChange={e => setSearchEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSearch()} style={{ flex: 1 }} />
                             <button className="bp" onClick={handleSearch} disabled={searching} style={{ padding: "10px 16px", fontSize: 13 }}>{searching ? "..." : "🔍"}</button>
                         </div>
-                        {sentMsg && <div style={{ fontSize: 12, color: "#10b981", marginTop: 8 }}>{sentMsg}</div>}
+                        {sentMsg && <div style={{ fontSize: 12, color: "#38bdf8", marginTop: 8 }}>{sentMsg}</div>}
 
                         {searchResult && !searchResult.error && (
-                            <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(16,185,129,.04)", border: "1px solid rgba(16,185,129,.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(56,189,248,.04)", border: "1px solid rgba(56,189,248,.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                                 <div>
                                     <div style={{ fontSize: 13, fontWeight: 600, color: "#f3f4f6" }}>{searchResult.name}</div>
                                     <div style={{ fontSize: 11, color: "#6b7280" }}>{searchResult.email} · {searchResult.totalXP} XP</div>
@@ -566,7 +570,7 @@ export default function SocialPage({ user: rawUser = {}, profile: rawProfile = {
                                         <div style={{ fontSize: 11, color: "#6b7280" }}>By {ch.creatorName} · Started {ch.startDate} · {ch.duration} days{ended ? " · Ended" : ""}</div>
                                     </div>
                                 </div>
-                                <div style={{ fontSize: 12, color: "#10b981" }}>{toArr(ch.participants).length} participants</div>
+                                <div style={{ fontSize: 12, color: "#38bdf8" }}>{toArr(ch.participants).length} participants</div>
                             </div>
                         );
                     }) : (

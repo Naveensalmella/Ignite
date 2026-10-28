@@ -5,7 +5,7 @@ const PILLARS = [
   { id: "mind", label: "Mind", icon: "⚡", color: "#06b6d4", desc: "Knowledge, learning, intellectual growth" },
   { id: "heart", label: "Heart", icon: "💛", color: "#f59e0b", desc: "Relationships, empathy, emotional intelligence" },
   { id: "spirit", label: "Spirit", icon: "🌟", color: "#8b5cf6", desc: "Mindfulness, discipline, inner peace" },
-  { id: "fortune", label: "Fortune", icon: "💎", color: "#10b981", desc: "Financial literacy, wealth building, career" },
+  { id: "fortune", label: "Fortune", icon: "💎", color: "#38bdf8", desc: "Financial literacy, wealth building, career" },
 ];
 
 const GROWTH_DATA = {
@@ -249,7 +249,7 @@ export default function GrowthPage({ pillarProg = {}, setPillarProg = () => { } 
   return (<div>
     {/* Overall */}
     <div className="gs" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-      <Ring pct={overallPct} color="#10b981" size={70} stroke={6}>
+      <Ring pct={overallPct} color="#38bdf8" size={70} stroke={6}>
         <div style={{ textAlign: "center" }}><div style={{ fontSize: 20, fontWeight: 900, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif", lineHeight: 1 }}>{overallPct}%</div><div style={{ fontSize: 11, color: "#6b7280" }}>Growth</div></div>
       </Ring>
       <div style={{ flex: 1 }}>

@@ -124,8 +124,8 @@ export default function OnboardingPage({ onComplete = () => { } }) {
 
   const cardStyle = (selected) => ({
     padding: "14px 16px", borderRadius: 10, cursor: "pointer",
-    background: selected ? "rgba(16,185,129,.08)" : "rgba(255,255,255,.02)",
-    border: selected ? "1px solid rgba(16,185,129,.3)" : "1px solid rgba(255,255,255,.04)",
+    background: selected ? "rgba(56,189,248,.08)" : "rgba(255,255,255,.02)",
+    border: selected ? "1px solid rgba(56,189,248,.3)" : "1px solid rgba(255,255,255,.04)",
     transition: "all .2s",
   });
 
@@ -135,14 +135,14 @@ export default function OnboardingPage({ onComplete = () => { } }) {
 
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 12, margin: "0 auto 12px", background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 900, color: "#fff", fontFamily: "Rajdhani,sans-serif" }}>I</div>
-          <h1 style={{ fontSize: 28, fontWeight: 900, fontFamily: "Rajdhani,sans-serif", background: "linear-gradient(135deg,#10b981,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: 6 }}>IGNITE</h1>
+          <div style={{ width: 56, height: 56, borderRadius: 12, margin: "0 auto 12px", background: "linear-gradient(135deg,#38bdf8,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 900, color: "#fff", fontFamily: "Rajdhani,sans-serif" }}>I</div>
+          <h1 style={{ fontSize: 28, fontWeight: 900, fontFamily: "Rajdhani,sans-serif", background: "linear-gradient(135deg,#38bdf8,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: 6 }}>IGNITE</h1>
         </div>
 
         {/* Progress Bar */}
         <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
           {Array.from({ length: totalSteps }, (_, i) => (
-            <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= step ? "linear-gradient(90deg,#10b981,#06b6d4)" : "rgba(255,255,255,.06)", transition: "background .3s" }} />
+            <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= step ? "linear-gradient(90deg,#38bdf8,#06b6d4)" : "rgba(255,255,255,.06)", transition: "background .3s" }} />
           ))}
         </div>
 
@@ -189,7 +189,7 @@ export default function OnboardingPage({ onComplete = () => { } }) {
                   <div key={g.id} onClick={() => update("gender", g.id)}
                     style={{ ...cardStyle(data.gender === g.id), flex: 1, textAlign: "center", padding: 14 }}>
                     <div style={{ fontSize: 24 }}>{g.icon}</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: data.gender === g.id ? "#10b981" : "#e5e7eb", marginTop: 4 }}>{g.label}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: data.gender === g.id ? "#38bdf8" : "#e5e7eb", marginTop: 4 }}>{g.label}</div>
                   </div>
                 ))}
               </div>
@@ -209,10 +209,10 @@ export default function OnboardingPage({ onComplete = () => { } }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <span style={{ fontSize: 28 }}>{g.icon}</span>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: data.goal === g.id ? "#10b981" : "#e5e7eb" }}>{g.label}</div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: data.goal === g.id ? "#38bdf8" : "#e5e7eb" }}>{g.label}</div>
                       <div style={{ fontSize: 12, color: "#6b7280" }}>{g.desc}</div>
                     </div>
-                    {data.goal === g.id && <span style={{ marginLeft: "auto", color: "#10b981" }}>✓</span>}
+                    {data.goal === g.id && <span style={{ marginLeft: "auto", color: "#38bdf8" }}>✓</span>}
                   </div>
                 </div>
               ))}
@@ -224,7 +224,7 @@ export default function OnboardingPage({ onComplete = () => { } }) {
                 <div key={fl.id} onClick={() => update("fitnessLevel", fl.id)}
                   style={{ ...cardStyle(data.fitnessLevel === fl.id), flex: 1, textAlign: "center", padding: 14 }}>
                   <div style={{ fontSize: 24 }}>{fl.icon}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: data.fitnessLevel === fl.id ? "#10b981" : "#e5e7eb", marginTop: 4 }}>{fl.label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: data.fitnessLevel === fl.id ? "#38bdf8" : "#e5e7eb", marginTop: 4 }}>{fl.label}</div>
                   <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{fl.desc}</div>
                 </div>
               ))}
@@ -243,7 +243,7 @@ export default function OnboardingPage({ onComplete = () => { } }) {
                 <div key={t.id} onClick={() => update("trainingType", t.id)}
                   style={{ ...cardStyle(data.trainingType === t.id), textAlign: "center", padding: 16 }}>
                   <div style={{ fontSize: 28 }}>{t.icon}</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: data.trainingType === t.id ? "#10b981" : "#e5e7eb", marginTop: 4 }}>{t.label}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: data.trainingType === t.id ? "#38bdf8" : "#e5e7eb", marginTop: 4 }}>{t.label}</div>
                   <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{t.desc}</div>
                 </div>
               ))}
@@ -256,10 +256,10 @@ export default function OnboardingPage({ onComplete = () => { } }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <span style={{ fontSize: 24 }}>{f.icon}</span>
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: data.fightingStyle === f.id ? "#10b981" : "#e5e7eb" }}>{f.label}</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: data.fightingStyle === f.id ? "#38bdf8" : "#e5e7eb" }}>{f.label}</div>
                       <div style={{ fontSize: 12, color: "#6b7280" }}>{f.desc}</div>
                     </div>
-                    {data.fightingStyle === f.id && <span style={{ marginLeft: "auto", color: "#10b981" }}>✓</span>}
+                    {data.fightingStyle === f.id && <span style={{ marginLeft: "auto", color: "#38bdf8" }}>✓</span>}
                   </div>
                 </div>
               ))}
@@ -277,7 +277,7 @@ export default function OnboardingPage({ onComplete = () => { } }) {
               {TIME_OPTIONS.map(t => (
                 <div key={t.id} onClick={() => update("dailyTime", t.id)}
                   style={{ ...cardStyle(data.dailyTime === t.id), flex: 1, textAlign: "center", padding: 12 }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: data.dailyTime === t.id ? "#10b981" : "#e5e7eb", fontFamily: "Rajdhani,sans-serif" }}>{t.label}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: data.dailyTime === t.id ? "#38bdf8" : "#e5e7eb", fontFamily: "Rajdhani,sans-serif" }}>{t.label}</div>
                   <div style={{ fontSize: 11, color: "#6b7280" }}>{t.desc}</div>
                 </div>
               ))}
@@ -291,7 +291,7 @@ export default function OnboardingPage({ onComplete = () => { } }) {
                 <div key={bp.id} onClick={() => toggleFocus(bp.id)}
                   style={{ ...cardStyle(data.focusAreas.includes(bp.id)), textAlign: "center", padding: 12 }}>
                   <div style={{ fontSize: 22 }}>{bp.icon}</div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: data.focusAreas.includes(bp.id) ? "#10b981" : "#e5e7eb", marginTop: 4 }}>{bp.label}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: data.focusAreas.includes(bp.id) ? "#38bdf8" : "#e5e7eb", marginTop: 4 }}>{bp.label}</div>
                 </div>
               ))}
             </div>
@@ -302,18 +302,18 @@ export default function OnboardingPage({ onComplete = () => { } }) {
         {step === 5 && (
           <div className="fade-in" style={{ textAlign: "center" }}>
             <div style={{ fontSize: 52, marginBottom: 12 }}>🔥</div>
-            <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: "Rajdhani,sans-serif", background: "linear-gradient(135deg,#10b981,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: 2 }}>WARRIOR PROFILE READY</h2>
+            <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: "Rajdhani,sans-serif", background: "linear-gradient(135deg,#38bdf8,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: 2 }}>WARRIOR PROFILE READY</h2>
             <p style={{ color: "#6b7280", fontSize: 14, marginTop: 8, marginBottom: 24 }}>Your personalized training has been configured</p>
 
-            <div style={{ background: "rgba(10,16,18,.9)", border: "1px solid rgba(16,185,129,.15)", borderRadius: 14, padding: 24, textAlign: "left" }}>
+            <div style={{ background: "rgba(10,16,18,.9)", border: "1px solid rgba(56,189,248,.15)", borderRadius: 14, padding: 24, textAlign: "left" }}>
               {/* Avatar + Name */}
               <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
-                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 800, color: "#fff", fontFamily: "Rajdhani,sans-serif" }}>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg,#38bdf8,#06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 800, color: "#fff", fontFamily: "Rajdhani,sans-serif" }}>
                   {data.name[0]?.toUpperCase() || "I"}
                 </div>
                 <div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: "#f3f4f6", fontFamily: "Rajdhani,sans-serif" }}>{data.name}</div>
-                  <div style={{ fontSize: 12, color: "#10b981" }}>Level 1 · {getRank(1).name}</div>
+                  <div style={{ fontSize: 12, color: "#38bdf8" }}>Level 1 · {getRank(1).name}</div>
                 </div>
               </div>
 
@@ -359,7 +359,7 @@ export default function OnboardingPage({ onComplete = () => { } }) {
           )}
           <button onClick={() => { if (step < totalSteps - 1) setStep(s => s + 1); else finish(); }}
             disabled={!canNext()}
-            style={{ flex: 1, padding: 14, background: canNext() ? "linear-gradient(135deg,#10b981,#059669)" : "rgba(255,255,255,.03)", color: canNext() ? "#fff" : "#4b5563", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: canNext() ? "pointer" : "not-allowed", fontFamily: "inherit", letterSpacing: 1, boxShadow: canNext() ? "0 4px 16px rgba(16,185,129,.25)" : "none", transition: "all .25s" }}>
+            style={{ flex: 1, padding: 14, background: canNext() ? "linear-gradient(135deg,#38bdf8,#0284c7)" : "rgba(255,255,255,.03)", color: canNext() ? "#fff" : "#4b5563", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: canNext() ? "pointer" : "not-allowed", fontFamily: "inherit", letterSpacing: 1, boxShadow: canNext() ? "0 4px 16px rgba(56,189,248,.25)" : "none", transition: "all .25s" }}>
             {step === totalSteps - 1 ? (submitting ? "SAVING..." : "BEGIN YOUR JOURNEY →") : "NEXT →"}
           </button>
         </div>

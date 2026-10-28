@@ -1,19 +1,21 @@
-# 🔥 IGNITE — Level Up Your Life
+# 🔥 IGNITE — Arise, Player
 
-A gamified self-improvement app: train, eat well, build habits, focus, journal — and earn XP, ranks and streaks for it.
+A self-improvement app built like **the System from Solo Leveling**: real workouts, meals, habits and focus sessions earn XP, Gold and stats; a Daily Quest waits every day; Hunter ranks are earned through real Rank Assessments.
 Built with **Next.js 16 (App Router)**, **React 19**, **Zustand**, **Tailwind CSS v4** and **Firebase** (Auth + Firestore), with AI features powered by **Groq** and **Gemini**.
 
 ## Features
 
 | Area | What it does |
 |------|--------------|
-| **Dashboard** | Level, streak, today's score, "next step" suggestion, daily login bonus, weekly report |
+| **Status** (home) | The Status Window: level, Hunter rank, job, title, XP, Gold, and five stats — STR, AGI, VIT, INT, PER — earned from your real activity, plus Ability Points (+3 per level) to allocate |
+| **Quests** | The System's **Daily Quest** (push-ups, sit-ups, squats, run — scaled to your level, fully editable, resets at midnight), the **Penalty Zone** (a missed Daily Quest means a 5-minute survival workout; XP is halved until it's cleared — nothing is ever taken away), **Rank Assessments** (E → D → C → B → A → S → National Level), habits and long-term missions |
+| **Inventory & Shop** | Spend Gold on System items (Streak Shield, XP Potion, Penalty Pardon, Random Box, Stat Reset Scroll) or on real-life rewards you define yourself; achievements and titles |
 | **Training** | Visual demo for **every** exercise (start/end photos or an animated athlete), 900+ exercise library, workout player with set/weight logging, rest timer and PR detection, muscle-recovery map, 22 programs (strength, combat, running, yoga, HIIT, mind), custom workouts, AI workout builder, progress analytics |
 | **Nutrition** | Food log with 190+ Indian/global foods, AI photo & text food scanner, water tracker, macro targets, meal plans & shopping list |
-| **Flame Oracle** | Streaming AI coach with 4 modes; can log food from chat |
-| **Habits & life** | Daily quests, missions (to-dos), focus timer (Pomodoro), wellness journal, finance tracker, daily routine, growth missions |
-| **Progress** | Body stats, progress photos, year heatmap, data export |
-| **Social & gaming** | Friends, feed, group challenges, XP sources, quest chains, titles |
+| **The System** (AI) | Streaming AI guide in the System's voice, 4 specialties; knows your rank, stats and quest status; can log food from chat |
+| **Life** | Missions (to-dos), focus timer (Pomodoro), wellness journal, finance tracker, daily routine |
+| **Body Progress** | Progress photos and body measurements, year heatmap, data export |
+| **Social** | Friends, feed, leaderboard with Hunter ranks |
 
 Works on phones (bottom navigation, installable PWA) and desktop (sidebar), in dark or light mode.
 
@@ -75,7 +77,7 @@ python3 scripts/build_exercise_assets.py
 ## How data is stored
 
 ```
-users/{uid}                     profile, XP, streak, settings (small)
+users/{uid}                     profile, XP, streak, settings, `system` (rank, stats allocation, Gold, inventory, quest log)
 users/{uid}/workouts/{date}     one document per day   (also foodLog, journal, xpLog, focusLog, habitLog)
 users/{uid}/chatHistory/current Flame Oracle chats (capped)
 users/{uid}/finances/ledger     transactions
@@ -99,6 +101,8 @@ src/components/training/  Training hub pieces: MoveFigure, BodyMap, ExerciseDemo
 src/stores/         Zustand store — loading, auto-save, XP, streak logic
 src/store-v2.js     Firestore read/write layer
 src/lib/            Firebase init, AI helpers, workout helpers
+src/lib/system/     The System: Hunter ranks & assessments, stats engine, Daily Quest, shop items, actions
+src/components/system/  Status window, Quests, Inventory & Shop, [SYSTEM] notifications, Awakening
 src/data/           Food database, exercises, programs, gamification data
 public/             PWA manifest, service worker, icons
 ```
