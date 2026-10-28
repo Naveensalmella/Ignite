@@ -1,7 +1,7 @@
 // Player stats, earned from real activity (history) plus allocated Ability Points.
 import { toArr, habitDoneIds } from "@/utils";
 import { getDayEntries } from "@/lib/workoutHelpers";
-import { classifyPattern } from "@/lib/exerciseVisuals";
+import { classifyPattern } from "@/lib/movePattern";
 
 export const STATS = [
     { key: "str", label: "STR", name: "Strength", color: "#f87171", desc: "Strength training — every completed set" },

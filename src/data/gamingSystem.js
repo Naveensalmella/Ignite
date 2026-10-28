@@ -75,27 +75,8 @@ export function getComboStatus(appState, workoutLog) {
     return { activities, count, label };
 }
 
-// ── 4. DAILY LOGIN BONUS ──
-export function getLoginBonus(loginData) {
-    const d = today();
-    if (loginData?.lastClaim === d) return { claimed: true, streak: loginData.streak || 1, reward: 0 };
-
-    const yd = shiftDay(d, -1);
-    const consecutive = loginData?.lastClaim === yd ? (loginData.streak || 0) + 1 : 1;
-
-    // Rewards escalate: Day 1=5, 2=10, 3=15, 4=20, 5=25, 6=35, 7=50 (then resets)
-    const rewards = [5, 10, 15, 20, 25, 35, 50];
-    const dayIdx = Math.min(consecutive - 1, 6);
-    const reward = rewards[dayIdx];
-
-    return { claimed: false, streak: consecutive, reward, dayIdx };
-}
-
-export function claimLoginBonus(loginData) {
-    const d = today();
-    const bonus = getLoginBonus(loginData);
-    return { lastClaim: d, streak: bonus.streak };
-}
+// ── 4. DAILY LOGIN BONUS (in ./loginBonus so Home can load it without this file) ──
+export { getLoginBonus, claimLoginBonus } from './loginBonus';
 
 // ── 5. WEEKLY CHALLENGES ──
 export function generateWeeklyChallenges(seed) {
@@ -323,25 +304,8 @@ export function getXPHistory(xpLog, days = 14) {
     return history;
 }
 
-// ── 11. MILESTONES ──
-export const MILESTONES = [
-    { xp: 100, title: "First Steps", emoji: "👣", msg: "Your journey begins!" },
-    { xp: 500, title: "Warming Up", emoji: "🔥", msg: "The fire is building!" },
-    { xp: 1000, title: "1K Club", emoji: "🏅", msg: "Welcome to the 1K club!" },
-    { xp: 2500, title: "Rising Star", emoji: "⭐", msg: "You're becoming unstoppable!" },
-    { xp: 5000, title: "5K Warrior", emoji: "⚔️", msg: "A true warrior emerges!" },
-    { xp: 10000, title: "10K Legend", emoji: "🏆", msg: "LEGENDARY status achieved!" },
-    { xp: 25000, title: "25K Titan", emoji: "💎", msg: "You are a TITAN!" },
-    { xp: 50000, title: "50K Mythic", emoji: "🌟", msg: "MYTHIC power unlocked!" },
-    { xp: 100000, title: "100K GOD", emoji: "🔱", msg: "YOU ARE A GOD!" },
-];
-
-export function checkMilestone(prevXP, newXP) {
-    for (const m of MILESTONES) {
-        if (prevXP < m.xp && newXP >= m.xp) return m;
-    }
-    return null;
-}
+// ── 11. MILESTONES (in ./milestones so the store can load them without this file) ──
+export { MILESTONES, checkMilestone } from './milestones';
 
 // ── 12. SKILL TREE DATA ──
 export const SKILL_TREE = {

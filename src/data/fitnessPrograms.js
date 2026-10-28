@@ -39,7 +39,7 @@ export function getRecommendedPrograms(gender, age, goal) {
     const goalLower = (goal || "").toLowerCase();
 
     return Object.entries(PROGRAM_TAGS)
-        .filter(([id, tag]) => {
+        .filter(([, tag]) => {
             if (tag.gender !== "all" && tag.gender !== g) return false;
             if (a < tag.ageMin || a > tag.ageMax) return false;
             return true;

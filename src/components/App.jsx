@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, lazy, Suspense } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { today } from '@/utils';
 import useAppStore, { computeStreak } from '@/stores/useAppStore';
@@ -7,37 +8,20 @@ import { auth, isFirebaseConfigured } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import store from '@/store';
 import { registerSW, startNotifScheduler, stopNotifScheduler } from '@/notifications';
-import { applyAccent } from './AccentPicker';
+import { applyAccent } from '@/lib/accent';
 
-// ── Lazy-loaded page components (code splitting) ──
+// ── Lazy-loaded screens (code splitting; the pages themselves are in PageRoutes) ──
 const AuthPage = lazy(() => import('./AuthPage'));
 const IntroPage = lazy(() => import('./IntroPage'));
-const StatusPage = lazy(() => import('./system/StatusPage'));
-const QuestsPage = lazy(() => import('./system/QuestsPage'));
-const InventoryPage = lazy(() => import('./system/InventoryPage'));
-const ProgressPage = lazy(() => import('./ProgressPage'));
-const ShadowArmyPage = lazy(() => import('./system/ShadowArmyPage'));
-const TrainingPage = lazy(() => import('./TrainingPage'));
-const Nutrition = lazy(() => import('./Nutrition'));
-const MissionsPage = lazy(() => import('./MissionsPage'));
-const FocusTimer = lazy(() => import('./FocusTimer'));
-const Wellness = lazy(() => import('./Wellness'));
-const FinancePage = lazy(() => import('./FinancePage'));
-const FlameOracle = lazy(() => import('./FlameOracle'));
-const ProfilePage = lazy(() => import('./ProfilePage'));
-const RoutinePage = lazy(() => import('./RoutinePage'));
 const OnboardingPage = lazy(() => import('./OnboardingPage'));
 const OnboardingTutorial = lazy(() => import('./OnboardingTutorial'));
-const SocialPage = lazy(() => import('./SocialPage'));
 const Awakening = lazy(() => import('./system/Awakening'));
-const ShareCard = lazy(() => import('./ShareCard'));
 
 // ── Eagerly loaded (always visible) ──
+import PageRoute from './PageRoutes';
 import XPToast from './XPToast';
-import LevelUpOverlay from './LevelUpOverlay';
+import Celebrations from './Celebrations';
 import HeaderXPBar from './HeaderXPBar';
-import { ConfettiBlast } from './Confetti';
-import { MilestoneOverlay } from './GamingHub';
 import BottomNav, { SideNav, resolvePage, pageTitle } from './BottomNav';
 import SystemNotices from './system/SystemNotices';
 import { IconBadge } from './ui/kit';
@@ -91,20 +75,23 @@ function SyncBadge({ status }) {
     );
 }
 
+// Header level chip: subscribes to XP/streak/penalty on its own.
+function HeaderLevel() {
+    const { totalXP, streak, system } = useAppStore(useShallow(s => ({ totalXP: s.totalXP, streak: s.streak, system: s.system })));
+    return <HeaderXPBar totalXP={totalXP} streak={streak} system={system} />;
+}
+
 export default function App() {
+    // Only what the shell itself needs — pages subscribe to their own data (PageRoutes).
     const {
         user, loading, dataReady, loadError, syncStatus, page, setPage, setPageSilent,
-        showTutorial, setShowTutorial,
-        profile, setProfile, workoutLog, setWorkoutLog, foodLog, setFoodLog,
-        journal, setJournal,
-        tasks, setTasks, finances, setFinances, setChatHistory,
-        focusLog, setFocusLog,
-        activityLog, routineData, setRoutineData,
-        bodyData, setBodyData, freezeData, programState, setProgramState,
-        bodyPhotos, setBodyPhotos, system,
-        totalXP, streak, xpEvents, confetti, levelUp, setLevelUp,
-        milestone, setMilestone, addXP, getAppState, loadUserData, logout,
-    } = useAppStore();
+        showTutorial, setShowTutorial, onboarded, awakened, setProfile, loadUserData, logout,
+    } = useAppStore(useShallow(s => ({
+        user: s.user, loading: s.loading, dataReady: s.dataReady, loadError: s.loadError, syncStatus: s.syncStatus,
+        page: s.page, setPage: s.setPage, setPageSilent: s.setPageSilent, showTutorial: s.showTutorial,
+        setShowTutorial: s.setShowTutorial, onboarded: !!s.profile?.onboardingComplete, awakened: !!s.system?.awakened,
+        setProfile: s.setProfile, loadUserData: s.loadUserData, logout: s.logout,
+    })));
 
     const saveTimer = useRef(null);
     const [awakenLater, setAwakenLater] = useState(false);
@@ -205,10 +192,16 @@ export default function App() {
 
     // ── Keep the streak in sync with logged workouts / freezes ──
     useEffect(() => {
-        if (!dataReady) return;
-        const next = computeStreak(workoutLog, freezeData);
-        if (next !== useAppStore.getState().streak) useAppStore.getState().setStreak(next);
-    }, [dataReady, workoutLog, freezeData]);
+        const sync = (st) => {
+            if (!st.dataReady) return;
+            const next = computeStreak(st.workoutLog, st.freezeData);
+            if (next !== st.streak) st.setStreak(next);
+        };
+        sync(useAppStore.getState());
+        return useAppStore.subscribe((cur, prev) => {
+            if (cur.dataReady !== prev.dataReady || cur.workoutLog !== prev.workoutLog || cur.freezeData !== prev.freezeData) sync(cur);
+        });
+    }, []);
 
     // ── Publish the public profile once per session so friends can find this user ──
     useEffect(() => {
@@ -273,12 +266,14 @@ export default function App() {
     if (!dataReady) return <SplashScreen message="Loading your progress…" />;
 
     // Onboarding for new users
-    if (!profile.onboardingComplete) {
+    if (!onboarded) {
         const handleOnboardingComplete = (profileData) => {
             setProfile(p => ({ ...p, ...profileData, onboardingComplete: true }));
             useAppStore.getState().saveData();
         };
-        return <Suspense fallback={<SplashScreen />}><OnboardingPage onComplete={handleOnboardingComplete} /></Suspense>;
+        // The sign-up form already asked for a name (Firebase displayName) — don't ask twice.
+        const knownName = auth?.currentUser?.displayName || "";
+        return <Suspense fallback={<SplashScreen />}><OnboardingPage initialName={knownName} onComplete={handleOnboardingComplete} /></Suspense>;
     }
 
     const handleTutorialComplete = async () => {
@@ -286,42 +281,18 @@ export default function App() {
         await store.saveUserData(user.uid, { tutorialDone: true });
     };
 
-    const appState = getAppState();
-
     // Old page keys (bookmarks, AI navigation) open the feature's new home.
     const current = resolvePage(page) || 'status';
-
-    const renderPage = () => {
-        switch (current) {
-            case 'quests': return <QuestsPage initialTab={page === 'growth' ? 'long' : page === 'dailyquest' ? 'habits' : 'daily'} />;
-            case 'inventory': return <InventoryPage initialTab={page === 'gaming' ? 'achievements' : page === 'shop' ? 'shop' : page === 'titles' ? 'titles' : 'inventory'} />;
-            case 'army': return <ShadowArmyPage />;
-            case 'training': return <TrainingPage totalXP={totalXP} addXP={addXP} workoutLog={workoutLog} setWorkoutLog={setWorkoutLog} profile={profile} programState={programState} setProgramState={setProgramState} />;
-            case 'nutrition': return <Nutrition foodLog={foodLog} setFoodLog={setFoodLog} addXP={addXP} profile={profile} />;
-            case 'missions': return <MissionsPage tasks={tasks} setTasks={setTasks} addXP={addXP} />;
-            case 'focus': return <FocusTimer addXP={addXP} focusLog={focusLog} setFocusLog={setFocusLog} />;
-            case 'wellness': return <Wellness journal={journal} setJournal={setJournal} addXP={addXP} />;
-            case 'finance': return <FinancePage finances={finances} setFinances={setFinances} addXP={addXP} />;
-            case 'routine': return <RoutinePage profile={profile} routineData={routineData} setRoutineData={setRoutineData} />;
-            case 'oracle': return <FlameOracle appState={appState} addXP={addXP} setFoodLog={setFoodLog} setChatHistory={setChatHistory} setPage={setPage} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} />;
-            case 'profile': return <ProfilePage profile={profile} setProfile={setProfile} user={user} onLogout={logout} totalXP={totalXP} streak={streak} workoutLog={workoutLog} activityLog={activityLog} appState={appState} freezeData={freezeData} setPage={setPage} />;
-            case 'share': return <ShareCard totalXP={totalXP} streak={streak} workoutLog={workoutLog} profile={profile} />;
-            case 'bodyphotos': return <ProgressPage bodyPhotos={bodyPhotos} setBodyPhotos={setBodyPhotos} userId={user?.uid} bodyData={bodyData} setBodyData={setBodyData} initialTab={page === 'body' ? 'measurements' : 'photos'} />;
-            case 'social': return <SocialPage user={user} profile={profile} totalXP={totalXP} streak={streak} workoutLog={workoutLog} addXP={addXP} />;
-            default: return <StatusPage />;
-        }
-    };
 
     const fallback = current === "status" ? <DashboardSkeleton /> : current === "training" ? <TrainingSkeleton /> : current === "nutrition" ? <NutritionSkeleton /> : <SkeletonPage />;
 
     return (
         <div className="app-shell">
-            <XPToast xpEvents={xpEvents} />
-            <MilestoneOverlay milestone={milestone} onClose={() => setMilestone(null)} />
-            {levelUp && <LevelUpOverlay level={levelUp.level} rank={levelUp.rank} ap={levelUp.ap} onClose={() => setLevelUp(null)} />}
+            <XPToast />
             <SystemNotices />
+            <Celebrations />
             {showTutorial && <Suspense fallback={null}><OnboardingTutorial onComplete={handleTutorialComplete} /></Suspense>}
-            {!showTutorial && ((!system?.awakened && !awakenLater) || awakenOpen) && (
+            {!showTutorial && ((!awakened && !awakenLater) || awakenOpen) && (
                 <Suspense fallback={null}>
                     <Awakening onAccept={() => setAwakenOpen(true)} onClose={() => { setAwakenOpen(false); setAwakenLater(true); }} />
                 </Suspense>
@@ -334,17 +305,18 @@ export default function App() {
                     <h1 className="page-title">{current === 'status' ? <span className="text-accent-grad tracking-[2px]">IGNITE</span> : pageTitle(current)}</h1>
                     <SyncBadge status={syncStatus} />
                     <div className="app-header-xp">
-                        <HeaderXPBar totalXP={totalXP} streak={streak} system={system} />
+                        <HeaderLevel />
                     </div>
                 </div>
             </header>
 
             <main className="app-main">
                 <div className="app-content">
+                    {/* Keyed per page: a crash resets on navigation and the entrance fade replays. */}
                     <ErrorBoundary key={current}>
-                        <PageTransition pageKey={current}>
+                        <PageTransition>
                             <Suspense fallback={fallback}>
-                                {renderPage()}
+                                <PageRoute current={current} page={page} />
                             </Suspense>
                         </PageTransition>
                     </ErrorBoundary>
@@ -352,8 +324,6 @@ export default function App() {
             </main>
 
             <BottomNav active={current} setPage={setPage} />
-
-            <ConfettiBlast trigger={confetti} />
         </div>
     );
 }

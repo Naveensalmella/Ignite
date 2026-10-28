@@ -364,7 +364,7 @@ export const BODY_PARTS = [
 
 export const TIME_OPTIONS = [15, 30, 45, 60, 90];
 
-export function generateWorkout(profile, dailyConfig = null) {
+export function generateWorkout(profile) {
   const dayOfWeek = new Date().getDay();
   const equipment = profile.trainingType || "bodyweight";
   const level = profile.fitnessLevel || "intermediate";

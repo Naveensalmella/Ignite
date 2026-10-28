@@ -5,6 +5,8 @@ import { today, toArr, dateKey } from '@/utils';
 import HistoryPanel from './HistoryPanel';
 import { formatQuestHistory } from '@/historyFormatters';
 import { Card, Ring, Pill, Check, EmptyState } from '@/components/ui/kit';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import useAppStore from '@/stores/useAppStore';
 import { Dumbbell, Brain, Heart, Sparkles, Gem, Flame, Zap, Plus, X, Lightbulb, ChevronDown, ChevronRight, ListChecks } from 'lucide-react';
 
 // `icon` (emoji) is saved on new habits as their default icon; `Icon`/`tone` are only for display.
@@ -96,6 +98,11 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
   };
 
   const removeQuest = (id) => { if (id !== "h1") setHabits(p => toArr(p).filter(h => h && h.id !== id)) };
+  // Removing asks first — and warns when a Shadow (Shadow Army) is bound to the habit.
+  const [confirmId, setConfirmId] = useState(null);
+  const shadows = useAppStore(s => s.system?.shadows);
+  const confirmHabit = confirmId != null ? userQuests.find(h => h.id === confirmId) : null;
+  const boundShadow = confirmHabit ? toArr(shadows).find(sh => String(sh?.habitId) === String(confirmHabit.id)) : null;
 
   // Only count checked ids that belong to a current quest (ignores deleted habits / h1)
   const doneQuestCount = userQuests.filter(h => checked.includes(h.id)).length;
@@ -172,7 +179,7 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
               </span>
             </button>
             {habitStreak > 0 && <Pill tone={habitStreak >= 7 ? "orange" : undefined} icon={Flame} className="num">{habitStreak}d</Pill>}
-            <button type="button" className="icon-btn !w-9 !h-9 shrink-0" onClick={() => removeQuest(h.id)} aria-label={`Remove ${h.name}`} style={{ background: "transparent", color: "var(--text-dim)" }}><X size={16} /></button>
+            <button type="button" className="icon-btn !w-9 !h-9 shrink-0" onClick={() => setConfirmId(h.id)} aria-label={`Remove ${h.name}`} style={{ background: "transparent", color: "var(--text-dim)" }}><X size={16} /></button>
           </div>);
         })}
       </div>
@@ -217,5 +224,14 @@ export default function DailyQuestPage({ habits = [], setHabits = () => { }, hab
     )}
 
     <HistoryPanel entries={historyEntries} title="Quest History" emptyText="Complete quests to see history" />
+
+    {confirmHabit && (
+      <ConfirmDialog title={`Remove “${confirmHabit.name}”?`} confirmLabel="Remove habit"
+        onCancel={() => setConfirmId(null)} onConfirm={() => { removeQuest(confirmHabit.id); setConfirmId(null); }}>
+        {boundShadow
+          ? <>The shadow <b>{boundShadow.name}</b> is bound to this habit. Without it, {boundShadow.name} can&apos;t fight and stops adding XP to your Shadow Army.</>
+          : "Its streak and check-ins will no longer be shown."}
+      </ConfirmDialog>
+    )}
   </div>);
 }

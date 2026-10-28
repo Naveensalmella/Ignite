@@ -1,8 +1,11 @@
 "use client";
 // Home — greeting, level hero card, Daily Quest, stats, abilities and today's activity.
-import { useMemo, useState } from "react";
-import { Plus, Dumbbell, Apple, Heart, ChevronRight, TriangleAlert, Sparkles, Award, Ghost, FlaskConical, Lock } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
+import { useShallow } from "zustand/react/shallow";
+import { Plus, Dumbbell, Apple, Heart, ChevronRight, TriangleAlert, Sparkles, Award, Ghost, FlaskConical, Lock, CalendarCheck, Gift } from "lucide-react";
 import useAppStore from "@/stores/useAppStore";
+import { useIntentState } from "../usePageIntent";
+import { getLoginBonus, claimLoginBonus } from "@/data/loginBonus";
 import { Card, Ring, Bar, Pill, IconBadge, Tile } from "../ui/kit";
 import { SKILL_ICON, STAT_ICON } from "../ui/icons";
 import { DailyQuestCard, useNow, fmtClock } from "./QuestWidgets";
@@ -107,9 +110,14 @@ function Alerts({ setPage }) {
 }
 
 function StatsCard() {
-    const s = useAppStore();
-    const { system, workoutLog, foodLog, focusLog, journal, habitLog, tasks, finances } = s;
-    const [assign, setAssign] = useState(false);
+    const { system, workoutLog, foodLog, focusLog, journal, habitLog, tasks, finances } = useAppStore(useShallow(s => ({
+        system: s.system, workoutLog: s.workoutLog, foodLog: s.foodLog, focusLog: s.focusLog,
+        journal: s.journal, habitLog: s.habitLog, tasks: s.tasks, finances: s.finances,
+    })));
+    // "Allocate points" in a [SYSTEM] window opens this in assign mode (openPage intent).
+    const [assign, setAssign, intentNonce] = useIntentState("status", "assign", false);
+    const cardRef = useRef(null);
+    useEffect(() => { if (intentNonce) cardRef.current?.scrollIntoView({ block: "center", behavior: "smooth" }); }, [intentNonce]);
     const sheet = useMemo(
         () => statSheet({ workoutLog, foodLog, focusLog, journal, habitLog, tasks, finances }, system),
         [workoutLog, foodLog, focusLog, journal, habitLog, tasks, finances, system]
@@ -119,7 +127,7 @@ function StatsCard() {
     const assigning = assign && ap > 0;
 
     return (
-        <Card title="Stats" action={ap > 0
+        <Card ref={cardRef} title="Stats" action={ap > 0
             ? <button type="button" className="link-btn" onClick={() => setAssign(a => !a)}>{assigning ? "Done" : `${ap} point${ap === 1 ? "" : "s"} to spend`}</button>
             : <span className="card-sub">Grow by doing</span>}>
             <div className="stat5">
@@ -186,7 +194,8 @@ function Abilities({ setPage }) {
     const system = useAppStore(s => s.system);
     const habits = useAppStore(s => s.habits);
     const habitLog = useAppStore(s => s.habitLog);
-    const [showSkills, setShowSkills] = useState(false);
+    // "View skills" in a [SYSTEM] window opens the sheet directly (openPage intent).
+    const [showSkills, setShowSkills] = useIntentState("status", "skills", false);
     if (!system?.awakened) return null;
     const army = armyState(system, habits, habitLog);
     return (
@@ -218,14 +227,48 @@ function TodayCard({ setPage }) {
     );
 }
 
+/** Daily login bonus (escalating XP for consecutive days) — hidden once claimed today. */
+function LoginBonusCard() {
+    const loginData = useAppStore(s => s.loginData);
+    const bonus = getLoginBonus(loginData || {});
+    if (bonus.claimed) return null;
+    const claim = () => {
+        const st = useAppStore.getState();
+        if (getLoginBonus(st.loginData || {}).claimed) return; // no double claims
+        st.setLoginData(claimLoginBonus(st.loginData || {}));
+        st.addXP(bonus.reward, "Login");
+    };
+    return (
+        <Card className="slide-up">
+            <div className="flex items-center gap-3">
+                <IconBadge icon={CalendarCheck} tone="blue" size={40} />
+                <div className="flex-1 min-w-0">
+                    <div className="row-title">Daily login bonus</div>
+                    <div className="row-sub">Day {bonus.streak} streak</div>
+                </div>
+                <button type="button" className="bp !py-2 !px-4 !text-[13px]" onClick={claim}><Gift size={15} />Claim +{bonus.reward} XP</button>
+            </div>
+            <div className="flex gap-1 mt-3" aria-hidden="true">
+                {[5, 10, 15, 20, 25, 35, 50].map((r, i) => (
+                    <div key={i} className="flex-1 h-1 rounded-full" style={{ background: i < bonus.dayIdx ? "var(--tone-blue)" : i === bonus.dayIdx ? "color-mix(in srgb, var(--tone-blue) 55%, transparent)" : "var(--track)" }} />
+                ))}
+            </div>
+        </Card>
+    );
+}
+
 export default function StatusPage() {
     const setPage = useAppStore(s => s.setPage);
-    const s = useAppStore();
+    const s = useAppStore(useShallow(st => ({
+        name: st.profile?.name || st.user?.name, workoutLog: st.workoutLog, foodLog: st.foodLog, focusLog: st.focusLog,
+        habitLog: st.habitLog, totalXP: st.totalXP, streak: st.streak,
+    })));
     return (
         <div className="page fade-in">
-            <Greeting name={s.profile?.name || s.user?.name} onProfile={() => setPage("profile")} />
+            <Greeting name={s.name} onProfile={() => setPage("profile")} />
             <Alerts setPage={setPage} />
             <LevelHero />
+            <LoginBonusCard />
             <DailyQuestCard compact onOpen={() => setPage("quests")} />
             <StatsCard />
             <Abilities setPage={setPage} />

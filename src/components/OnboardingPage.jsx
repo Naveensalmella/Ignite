@@ -65,12 +65,12 @@ const GENDERS = [
 const inRange = (v, min, max) => { const n = parseFloat(v); return Number.isFinite(n) && n >= min && n <= max; };
 const BOUNDS = { age: [10, 100], weight: [25, 300], height: [100, 250] };
 
-export default function OnboardingPage({ onComplete = () => { } }) {
+export default function OnboardingPage({ onComplete = () => { }, initialName = "" }) {
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState({
-    name: "", age: "", gender: "", weight: "", height: "",
+    name: initialName, age: "", gender: "", weight: "", height: "",
     goal: "", fitnessLevel: "", trainingType: "",
     fightingStyle: "", dailyTime: "45", focusAreas: ["full"],
   });

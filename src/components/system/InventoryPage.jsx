@@ -1,8 +1,11 @@
 "use client";
 // Items: inventory, shop (System items + your own real-life rewards), titles and badges.
 import { useState, lazy, Suspense } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { Trash2, Plus, Backpack, Award, Lock, Coins } from "lucide-react";
 import useAppStore from "@/stores/useAppStore";
+import { useAppState } from "@/stores/useAppState";
+import { useIntentState } from "../usePageIntent";
 import { Card, Tabs, IconBadge, EmptyState, Pill } from "../ui/kit";
 import { ITEM_ICON, ITEM_TONE } from "../ui/icons";
 import { GoldAmount } from "./SysWin";
@@ -10,7 +13,8 @@ import { SkeletonPage } from "../Loading";
 import { SHOP_ITEMS, itemById, REWARD_PREFIX } from "@/lib/system/items";
 import { buy, buyReward, consumeItem, saveRewards, equipTitle } from "@/lib/system/actions";
 import { TITLES, describeEffect } from "@/lib/system/progression";
-import { today, toArr } from "@/utils";
+import { today, toArr, getLevel } from "@/utils";
+import BadgeCollection from "../BadgeCollection";
 
 const GamingHub = lazy(() => import("../GamingHub"));
 const TABS = [["inventory", "Items"], ["shop", "Shop"], ["titles", "Titles"], ["achievements", "Badges"]];
@@ -149,9 +153,29 @@ function TitlesTab({ system, activeTitle }) {
     );
 }
 
+/** Badges tab: the one home for badges — collection + achievements hub (subscribed only while open). */
+function BadgesTab() {
+    const appState = useAppState();
+    const s = useAppStore(useShallow(st => ({
+        totalXP: st.totalXP, streak: st.streak, addXP: st.addXP,
+        setActiveTitle: st.setActiveTitle, setQuestChainData: st.setQuestChainData,
+    })));
+    return (
+        <>
+            <BadgeCollection totalXP={s.totalXP || 0} level={getLevel(s.totalXP || 0)} streak={s.streak || 0} appState={appState} />
+            <Suspense fallback={<SkeletonPage />}>
+                <GamingHub appState={appState} totalXP={s.totalXP} streak={s.streak} workoutLog={appState.workoutLog} addXP={s.addXP}
+                    profile={appState.profile} xpLog={appState.xpLog}
+                    activeTitle={appState.activeTitle} setActiveTitle={s.setActiveTitle} questChainData={appState.questChainData} setQuestChainData={s.setQuestChainData} />
+            </Suspense>
+        </>
+    );
+}
+
 export default function InventoryPage({ initialTab = "inventory" }) {
-    const [tab, setTab] = useState(initialTab);
-    const s = useAppStore();
+    // Follows openPage("inventory", { tab }) — e.g. "Equip title" in a [SYSTEM] window.
+    const [tab, setTab] = useIntentState("inventory", "tab", initialTab);
+    const s = useAppStore(useShallow(st => ({ system: st.system, activeTitle: st.activeTitle, freezeData: st.freezeData })));
     const system = s.system;
 
     return (
@@ -172,13 +196,7 @@ export default function InventoryPage({ initialTab = "inventory" }) {
             {tab === "inventory" && <InventoryTab system={system} freezeData={s.freezeData} goShop={() => setTab("shop")} />}
             {tab === "shop" && <ShopTab system={system} />}
             {tab === "titles" && <TitlesTab system={system} activeTitle={s.activeTitle} />}
-            {tab === "achievements" && (
-                <Suspense fallback={<SkeletonPage />}>
-                    <GamingHub appState={s.getAppState()} totalXP={s.totalXP} streak={s.streak} workoutLog={s.workoutLog} addXP={s.addXP}
-                        profile={s.profile} loginData={s.loginData} setLoginData={s.setLoginData} xpLog={s.xpLog}
-                        activeTitle={s.activeTitle} setActiveTitle={s.setActiveTitle} questChainData={s.questChainData} setQuestChainData={s.setQuestChainData} />
-                </Suspense>
-            )}
+            {tab === "achievements" && <BadgesTab />}
         </div>
     );
 }

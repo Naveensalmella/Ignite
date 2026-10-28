@@ -126,8 +126,9 @@ function AIGenerator({ onReady }) {
 // ══════════════════════════════════════════════════════════════
 export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, profile = {}, programState = {}, setProgramState = () => { } }) {
     const ps = useMemo(() => programState || {}, [programState]);
-    // Old "challenges" links land on the Workouts tab, where the 30-day challenges live.
-    const [tab, setTab] = useState(() => { if (useAppStore.getState().page === "challenges") return "workouts"; try { return localStorage.getItem("ignite-training-tab") || "gates"; } catch { return "gates"; } });
+    // Old "challenges" links land on the Workouts tab, where the 30-day challenges live;
+    // new players start on Workouts too. The last tab used is remembered.
+    const [tab, setTab] = useState(() => { if (useAppStore.getState().page === "challenges") return "workouts"; try { return localStorage.getItem("ignite-training-tab") || "workouts"; } catch { return "workouts"; } });
     const [preview, setPreview] = useState(null);       // { workout, editing }
     const [active, setActive] = useState(null);
     const [program, setProgram] = useState(null);
@@ -289,9 +290,9 @@ export default function TrainingHome({ workoutLog = {}, setWorkoutLog, addXP, pr
                         </div>
                     </div>
                     <div className="flex items-center gap-1" aria-label="Weekly workout goal">
-                        <button type="button" className="icon-btn !w-8 !h-8" onClick={() => setProgramState(p => ({ ...(p || {}), weeklyGoal: Math.max(1, goal - 1) }))} aria-label="Lower weekly goal">−</button>
+                        <button type="button" className="icon-btn tap-44 !w-8 !h-8" onClick={() => setProgramState(p => ({ ...(p || {}), weeklyGoal: Math.max(1, goal - 1) }))} aria-label="Lower weekly goal">−</button>
                         <span className="text-[12px] w-12 text-center" style={{ color: "var(--text-dim)" }}>goal {goal}</span>
-                        <button type="button" className="icon-btn !w-8 !h-8" onClick={() => setProgramState(p => ({ ...(p || {}), weeklyGoal: Math.min(7, goal + 1) }))} aria-label="Raise weekly goal">+</button>
+                        <button type="button" className="icon-btn tap-44 !w-8 !h-8" onClick={() => setProgramState(p => ({ ...(p || {}), weeklyGoal: Math.min(7, goal + 1) }))} aria-label="Raise weekly goal">+</button>
                     </div>
                 </div>
                 <div className="week-row">

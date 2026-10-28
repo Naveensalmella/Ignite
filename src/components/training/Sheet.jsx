@@ -1,8 +1,9 @@
 "use client";
 // Full-screen overlay used across the training UI. The phone/browser Back
 // button closes the top-most overlay instead of leaving the page.
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
+import { useDialog } from "../ui/useDialog";
 
 const stack = [];
 let listening = false;
@@ -44,14 +45,17 @@ export function useBackToClose(open, onClose) {
 
 export default function Sheet({ open = true, onClose, title, subtitle, right, children, footer, z = 60, maxWidth = 760 }) {
     useBackToClose(open, onClose);
+    // Escape, focus into the sheet, Tab trap and focus restore (shared with every dialog).
+    const ref = useDialog({ open, onClose });
+    const titleId = useId();
     if (!open) return null;
     return (
-        <div className="overlay-screen fade-in" style={{ zIndex: z }} role="dialog" aria-modal="true" aria-label={title}>
+        <div ref={ref} className="overlay-screen fade-in" style={{ zIndex: z }} role="dialog" aria-modal="true" aria-labelledby={titleId}>
             <div className="sheet-head">
                 <div className="sheet-head-inner" style={{ maxWidth }}>
                     <button type="button" className="icon-btn" onClick={onClose} aria-label="Back"><ChevronLeft size={20} /></button>
                     <div className="min-w-0 flex-1">
-                        <div className="sheet-title">{title}</div>
+                        <div className="sheet-title" id={titleId}>{title}</div>
                         {subtitle && <div className="sheet-sub">{subtitle}</div>}
                     </div>
                     {right}

@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════
 // IGNITE — Food Database + AI Nutrition Lookup
-// Local: 137 Indian foods (instant, offline)
+// Local: 118 Indian foods (instant, offline)
 // AI: Groq estimates nutrition for ANY food worldwide
 // ══════════════════════════════════════════════════
 
