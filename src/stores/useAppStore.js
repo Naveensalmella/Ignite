@@ -4,7 +4,12 @@ import { DEFAULT_HABITS, MAX_XP_MULT } from '@/data/index';
 import { getLevel, getStreakMult, today, addDays, normalizeDayLog, toArr } from '@/utils';
 import { checkMilestone } from '@/data/gamingSystem';
 import { hasDayWorkout } from '@/lib/workoutHelpers';
-import storeV2, { DAY_COLLECTIONS, encodeDayDoc } from '@/store-v2';
+import storeV2, { DAY_COLLECTIONS } from '@/store-v2';
+import {
+  beginSession, endSession, isCurrentSession, markLoaded, saveChanges, startLiveSync, whenSynced,
+  readMainFields, withPhotos,
+} from '@/stores/sync';
+import { claimLocalData, clearLocalData } from '@/utils/localKeys';
 import { play, hapticTap } from '@/components/soundEngine';
 import { playLevelUp } from '@/sounds';
 import { playerRank, availableTrial } from '@/lib/system/ranks';
@@ -12,32 +17,9 @@ import { AP_PER_LEVEL } from '@/lib/system/stats';
 import { pruneQuestLog, msToMidnight, penaltyExpired, penaltyFine, penaltyCovers, PENALTY_DAYS } from '@/lib/system/quests';
 import { xpMultiplier, goldMultiplier } from '@/lib/system/progression';
 
-// Fields stored on the main users/{uid} document.
-const PROFILE_FIELDS = [
-  'profile', 'habits', 'tasks', 'totalXP', 'streak', 'lastCheck', 'pillarProg',
-  'routineData', 'masteryData', 'bodyData', 'challengeData', 'programData',
-  'freezeData', 'programState', 'loginData', 'activeTitle', 'questChainData', 'system',
-];
-
-// Caps that keep single documents well under Firestore's 1 MB limit.
-const MAX_CHATS = 30;
-const MAX_MESSAGES_PER_CHAT = 60;
+// Persistence (document layout, diff-based saves, live sync) lives in ./sync.js.
 const MAX_ACTIVITY = 200;
-const MAX_TRACKER_PHOTO_CHARS = 900_000;
-
-// Body-tracker photos (base64) live in their own document so they can never push
-// the main user document past 1 MB. Keep the newest photos that fit.
-function capTrackerPhotos(photos) {
-  const list = toArr(photos).filter(Boolean);
-  const kept = [];
-  let size = 0;
-  for (let i = list.length - 1; i >= 0; i--) {
-    size += JSON.stringify(list[i]).length;
-    if (size > MAX_TRACKER_PHOTO_CHARS) break;
-    kept.unshift(list[i]);
-  }
-  return kept;
-}
+const LOGOUT_SYNC_MS = 4000; // how long logout waits for the server to confirm queued writes
 
 const EMPTY_DATA = {
   profile: {}, workoutLog: {}, foodLog: {}, journal: {}, habits: DEFAULT_HABITS,
@@ -49,35 +31,8 @@ const EMPTY_DATA = {
   system: null, // Solo Leveling "System": rank, ability points, gold, inventory, quests (see lib/system)
 };
 
-// Every document the app would write for the current state: path key → { path, data }.
-function buildDocs(s) {
-  const docs = new Map();
-  const main = { email: s.user?.email || null };
-  PROFILE_FIELDS.forEach(f => { main[f] = s[f] ?? null; });
-  if (main.bodyData && typeof main.bodyData === 'object') {
-    const { photos, ...rest } = main.bodyData;
-    main.bodyData = rest;
-    docs.set('bodyData/photos', { path: ['bodyData', 'photos'], data: { photos: capTrackerPhotos(photos) } });
-  }
-  docs.set('main', { path: null, data: main });
-
-  for (const { field, subcol } of DAY_COLLECTIONS) {
-    for (const [date, value] of Object.entries(s[field] || {})) {
-      if (value === null || value === undefined) continue;
-      docs.set(`${subcol}/${date}`, { path: [subcol, date], data: encodeDayDoc(value) });
-    }
-  }
-
-  const chats = toArr(s.chatHistory).slice(0, MAX_CHATS).map(c =>
-    c && Array.isArray(c.messages) ? { ...c, messages: c.messages.slice(-MAX_MESSAGES_PER_CHAT) } : c
-  );
-  docs.set('chatHistory/current', { path: ['chatHistory', 'current'], data: { messages: chats } });
-  docs.set('finances/ledger', { path: ['finances', 'ledger'], data: { entries: toArr(s.finances) } });
-  docs.set('activityLog/recent', { path: ['activityLog', 'recent'], data: { entries: toArr(s.activityLog).slice(0, MAX_ACTIVITY) } });
-  return docs;
-}
-
-const isDayDocKey = (key) => DAY_COLLECTIONS.some(c => key.startsWith(`${c.subcol}/`));
+// Main-document fields that once held data now kept in sub-collections.
+const LEGACY_LIST_FIELDS = ['chatHistory', 'finances', 'activityLog'];
 
 // Consecutive days with a workout (or a streak freeze) ending today — or ending
 // yesterday when today isn't done yet, so the streak isn't "lost" mid-day.
@@ -95,11 +50,6 @@ export function computeStreak(workoutLog, freezeData) {
 }
 
 let midnightTimer = null; // re-runs runDailyCheck just after local midnight
-
-// Save bookkeeping (module-level: one signed-in user per tab).
-let lastSaved = new Map();   // doc key → JSON of what Firestore has
-let saving = null;           // in-flight save promise
-let saveQueued = false;
 
 const useAppStore = create((set, get) => ({
   // ── Auth & UI ──
@@ -121,7 +71,15 @@ const useAppStore = create((set, get) => ({
   notices: [],           // queue of [SYSTEM] windows
 
   // ── Setters ──
-  setUser: (user) => set({ user }),
+  setUser: (user) => {
+    // Signed out elsewhere, or another account signed in: drop the previous account's data.
+    const prev = get().user;
+    if (prev?.uid && prev.uid !== user?.uid) {
+      endSession();
+      set({ ...EMPTY_DATA, dataReady: false, loadError: null, syncStatus: 'idle', xpEvents: [], notices: [] });
+    }
+    set({ user });
+  },
   setLoading: (loading) => set({ loading }),
   setPage: (page) => {
     if (!page || page === get().page) return;
@@ -316,12 +274,18 @@ const useAppStore = create((set, get) => ({
 
   // ── Load user data from Firestore ──
   loadUserData: async (uid) => {
+    // Every await below re-checks that this load still belongs to the signed-in
+    // account, so a slow load for one user can never land in another's session.
+    const token = beginSession(uid);
+    const current = () => isCurrentSession(token, uid) && get().user?.uid === uid;
     set({ dataReady: false, loadError: null });
     try {
       let d = await storeV2.getUserProfile(uid);
+      if (!current()) return;
 
       if (d && !d._migrated) {
         await storeV2.migrateUserData(uid, d);
+        if (!current()) return;
         d = { ...d, _migrated: true };
       }
 
@@ -334,63 +298,63 @@ const useAppStore = create((set, get) => ({
           storeV2.getBodyPhotos(uid).catch(() => ({})), // photos are optional
           storeV2.getTrackerPhotos(uid),
         ])
-        : [{}, [], [], [], {}, null];
+        : [{}, null, null, null, {}, null];
+      if (!current()) return;
 
+      // Sub-collections are the source of truth once migrated. A legacy main-doc list
+      // is only adopted when its sub-document was never written (old migrations could
+      // skip it) — then it is written on the first save.
       const main = d || {};
-      const pick = (field) => {
-        const fromSub = dayLogs[field] || {};
-        // Fall back to the legacy main-document copy only if the subcollection is empty.
-        return Object.keys(fromSub).length > 0 ? fromSub : (main[field] || {});
-      };
+      const legacy = {};
+      LEGACY_LIST_FIELDS.forEach((f, i) => {
+        if ([chats, finances, activity][i] === null && toArr(main[f]).length) legacy[f] = toArr(main[f]);
+      });
+      const legacyTracker = trackerPhotos === null && toArr(main.bodyData?.photos).length > 0;
+      const legacyPhotos = main.bodyPhotos && typeof main.bodyPhotos === 'object' ? main.bodyPhotos : {};
+      const missingPhotos = Object.keys(legacyPhotos).filter(dt => legacyPhotos[dt]?.photo && !photos?.[dt]);
 
+      const fields = readMainFields(main);
       set({
-        profile: main.profile || {},
-        habits: toArr(main.habits).length ? toArr(main.habits) : DEFAULT_HABITS,
-        tasks: toArr(main.tasks),
-        pillarProg: main.pillarProg || {},
-        routineData: main.routineData || null,
-        masteryData: main.masteryData || null,
-        bodyData: main.bodyData
-          ? { ...main.bodyData, photos: trackerPhotos ?? toArr(main.bodyData.photos) }
-          : (trackerPhotos?.length ? { photos: trackerPhotos } : null),
-        challengeData: main.challengeData || null,
-        programData: main.programData || null,
-        freezeData: main.freezeData || null,
-        programState: main.programState || {},
-        loginData: main.loginData || {},
-        activeTitle: main.activeTitle || null,
-        questChainData: main.questChainData || {},
-        system: main.system && typeof main.system === 'object' ? main.system : null,
-        totalXP: Number(main.totalXP) || 0,
-        streak: Number(main.streak) || 0,
-        lastCheck: main.lastCheck || '',
+        ...fields,
+        bodyData: withPhotos(fields.bodyData, trackerPhotos ?? main.bodyData?.photos),
         showTutorial: !main.tutorialDone,
 
-        workoutLog: pick('workoutLog'),
-        foodLog: normalizeDayLog(pick('foodLog')),
-        journal: pick('journal'),
-        xpLog: normalizeDayLog(pick('xpLog')),
-        focusLog: normalizeDayLog(pick('focusLog')),
-        habitLog: normalizeDayLog(pick('habitLog')),
-        chatHistory: toArr(chats),
-        finances: toArr(finances),
-        activityLog: toArr(activity),
-        bodyPhotos: photos || {},
+        workoutLog: dayLogs.workoutLog || {},
+        foodLog: normalizeDayLog(dayLogs.foodLog),
+        journal: dayLogs.journal || {},
+        xpLog: normalizeDayLog(dayLogs.xpLog),
+        focusLog: normalizeDayLog(dayLogs.focusLog),
+        habitLog: normalizeDayLog(dayLogs.habitLog),
+        chatHistory: legacy.chatHistory || toArr(chats),
+        finances: legacy.finances || toArr(finances),
+        activityLog: legacy.activityLog || toArr(activity),
+        bodyPhotos: { ...Object.fromEntries(missingPhotos.map(dt => [dt, { date: dt, note: '', weight: '', ...legacyPhotos[dt] }])), ...(photos || {}) },
       });
 
-      // Snapshot what Firestore already has so the first save only writes real changes.
-      lastSaved = new Map();
       if (d) {
-        for (const [key, { data }] of buildDocs(get())) lastSaved.set(key, JSON.stringify(data));
-        // Legacy tracker photos still inside the main doc → move them on the first save.
-        if (trackerPhotos === null && toArr(main.bodyData?.photos).length > 0) {
-          lastSaved.delete('bodyData/photos');
-          lastSaved.delete('main');
-        }
+        // Baseline = what Firestore already has, so the first save only writes real changes.
+        const unsaved = Object.keys(legacy).map(f => `${f}/`);
+        if (legacyTracker) unsaved.push('bodyData/', 'main:bodyData');
+        markLoaded(get(), key => unsaved.some(p => key.startsWith(p)));
+
+        // Delete main-doc copies of data that now lives in sub-collections: they were
+        // dead weight and the old fallback could resurrect deleted entries from them.
+        const stale = DAY_COLLECTIONS.map(c => c.field)
+          .concat(LEGACY_LIST_FIELDS.filter(f => !legacy[f]))
+          .concat(missingPhotos.length ? [] : ['bodyPhotos'])
+          .filter(f => f in main);
+        if (stale.length) storeV2.removeUserFields(uid, stale).catch(e => console.warn('Legacy cleanup skipped:', e?.code || e));
+        missingPhotos.forEach(dt => {
+          const p = legacyPhotos[dt];
+          storeV2.saveBodyPhoto(uid, dt, p.photo, p.note, p.weight).catch(e => console.warn('Legacy photo copy skipped:', e?.code || e));
+        });
       }
+      claimLocalData(uid);
       set({ dataReady: true, syncStatus: 'idle' });
+      startLiveSync({ get, set });
       get().runDailyCheck();
     } catch (e) {
+      if (!current()) return;
       console.error("Load error:", e);
       const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
       set({
@@ -401,64 +365,24 @@ const useAppStore = create((set, get) => ({
     }
   },
 
-  // ── Save: write only documents that changed since the last successful save ──
-  saveData: async () => {
-    if (saving) { saveQueued = true; return saving; }
-    const s = get();
-    if (!s.user || !s.dataReady) return;
-    const uid = s.user.uid;
-
-    const docs = buildDocs(s);
-    const writes = [];
-    const deletes = [];
-    let mainChanged = null;
-    for (const [key, { path, data }] of docs) {
-      const json = JSON.stringify(data);
-      if (lastSaved.get(key) === json) continue;
-      if (key === 'main') mainChanged = { data, json };
-      else writes.push({ key, path, data, json });
-    }
-    for (const key of lastSaved.keys()) {
-      if (isDayDocKey(key) && !docs.has(key)) deletes.push(key);
-    }
-    if (!mainChanged && writes.length === 0 && deletes.length === 0) return;
-
-    set({ syncStatus: 'saving' });
-    saving = (async () => {
-      try {
-        // Sub-documents first, so data moved out of the main doc is stored before it's removed there.
-        await storeV2.commit(uid, writes, deletes.map(k => k.split('/')));
-        writes.forEach(w => lastSaved.set(w.key, w.json));
-        deletes.forEach(k => lastSaved.delete(k));
-        if (mainChanged) {
-          await storeV2.saveUserProfile(uid, mainChanged.data);
-          lastSaved.set('main', mainChanged.json);
-        }
-        set({ syncStatus: 'saved' });
-      } catch (e) {
-        console.error("Save error:", e);
-        const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-        set({ syncStatus: offline ? 'offline' : 'error' });
-      } finally {
-        saving = null;
-        if (saveQueued) { saveQueued = false; setTimeout(() => get().saveData(), 500); }
-      }
-    })();
-    return saving;
-  },
+  // ── Save: queue writes for documents that changed (never waits on the server) ──
+  saveData: () => saveChanges({ get, set }),
 
   // ── Logout ──
   logout: async () => {
-    try { await get().saveData(); } catch { /* best effort */ }
+    const uid = get().user?.uid;
+    // Queue every last edit, then give the server a few seconds to confirm — never hang.
+    // Unconfirmed writes stay queued on this device and sync on the next sign-in here.
+    try { saveChanges({ get, set }, true); } catch { /* best effort */ }
+    const synced = await whenSynced(LOGOUT_SYNC_MS);
+    if (!synced && typeof navigator !== 'undefined' && navigator.onLine === false && typeof window !== 'undefined'
+      && !window.confirm("You're offline and some changes haven't reached the server yet. They'll sync the next time you sign in on this device. Sign out anyway?")) return;
+    endSession();
     const { signOut } = await import('firebase/auth');
     const { auth } = await import('@/lib/firebase');
     try { await signOut(auth); } catch { /* ignore */ }
-    lastSaved = new Map();
     // Clear per-user caches so the next account on this device starts clean.
-    try {
-      ['ignite-prs', 'ignite-challenge-progress', 'ignite-scan-history', 'ignite-week-muscles', 'ignite-oracle-chats', 'ignite-oracle-active']
-        .forEach(k => localStorage.removeItem(k));
-    } catch { /* ignore */ }
+    clearLocalData(uid);
     set({ ...EMPTY_DATA, user: null, dataReady: false, loadError: null, syncStatus: 'idle', page: 'status', xpEvents: [], notices: [] });
   },
 

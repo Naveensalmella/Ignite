@@ -97,20 +97,22 @@ const newChatObj = (mode = "coach") => ({ id: Date.now(), title: "New Chat", mes
 export default function FlameOracle({ appState = {}, setFoodLog = () => { }, setChatHistory = () => { }, setPage = () => { }, profile = {}, totalXP = 0, streak = 0, workoutLog = {} }) {
   const d = today();
 
-  // ── Load chats: Firestore (via Zustand) is source of truth, localStorage is fast cache ──
-  const initChats = () => {
-    // Account data (synced to Firestore via the store) is the source of truth
-    const fromStore = toArr(appState?.oracleChats).filter(c => c && Array.isArray(c.messages));
-    if (fromStore.length > 0) return fromStore;
-    // One-time pick-up of chats that older versions only kept in this browser
-    try { const local = JSON.parse(localStorage.getItem("ignite-oracle-chats")); if (Array.isArray(local) && local.length > 0 && local[0]?.messages) return local; } catch { /* ignore */ }
-    return [newChatObj()];
+  // ── Chats live in the store (saved to the account and kept in sync across devices);
+  // this page reads them from there instead of keeping its own copy. ──
+  const validChats = (list) => toArr(list).filter(c => c && Array.isArray(c.messages));
+  const storeChats = useAppStore(s => s.chatHistory);
+  const [placeholder] = useState(() => newChatObj());
+  const chats = validChats(storeChats).length ? validChats(storeChats) : [placeholder];
+  const setChats = (updater) => {
+    const live = validChats(useAppStore.getState().chatHistory);
+    const cur = live.length ? live : [placeholder];
+    setChatHistory((typeof updater === "function" ? updater(cur) : updater).slice(0, MAX_CHATS));
   };
-
-  const [chats, setChatsRaw] = useState(initChats);
-  const setChats = (updater) => setChatsRaw(prev => (typeof updater === "function" ? updater(prev) : updater).slice(0, MAX_CHATS));
-  // Mirror chats to the store, which saves them to the user's account.
-  useEffect(() => { setChatHistory(chats); }, [chats, setChatHistory]);
+  // One-time pick-up of chats that older versions only kept in this browser.
+  useEffect(() => {
+    if (validChats(useAppStore.getState().chatHistory).length) return;
+    try { const local = JSON.parse(localStorage.getItem("ignite-oracle-chats")); if (validChats(local).length) setChatHistory(validChats(local).slice(0, MAX_CHATS)); } catch { /* ignore */ }
+  }, [setChatHistory]);
   const [activeChatId, setActiveChatId] = useState(() => {
     let saved = null;
     try { saved = parseInt(localStorage.getItem("ignite-oracle-active"), 10) || null; } catch { /* ignore */ }
