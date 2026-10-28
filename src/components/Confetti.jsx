@@ -1,14 +1,17 @@
 "use client";
 import { useEffect, useRef } from 'react';
-import { Zap, Shield } from 'lucide-react';
 
-// Lightweight confetti — drops 80 particles, auto-cleans
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+// Lightweight confetti — drops 80 particles once per `trigger` value, auto-cleans.
+// Used for level-ups and milestones only; skipped entirely for reduced-motion users.
 export function ConfettiBlast({ trigger }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
 
   useEffect(() => {
-    if (!trigger) return;
+    if (!trigger || prefersReducedMotion()) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -62,53 +65,9 @@ export function ConfettiBlast({ trigger }) {
 
   if (!trigger) return null;
   return (
-    <canvas ref={canvasRef} style={{
+    <canvas ref={canvasRef} aria-hidden="true" style={{
       position: "fixed", inset: 0, zIndex: 99998,
       pointerEvents: "none",
     }} />
-  );
-}
-
-// XP Popup Toast — shows "+25 XP Training complete"
-export function XPPopup({ events }) {
-  if (!events || events.length === 0) return null;
-  return (
-    <div className="fixed flex flex-col items-center gap-1.5" style={{ top: 80, left: "50%", transform: "translateX(-50%)", zIndex: 99997 }} aria-live="polite">
-      {events.slice(-3).map((ev, i) => (
-        <div key={ev.id || i} className="fade-in inline-flex items-center gap-1.5 text-[14px] font-bold" style={{
-          padding: "9px 16px", borderRadius: 999,
-          background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow)",
-          color: "var(--text-primary)",
-        }}>
-          <Zap size={15} style={{ color: "var(--accent)" }} aria-hidden="true" />
-          <span style={{ color: "var(--accent)" }}>+{ev.xp ?? ev.amount ?? 0} XP</span>
-          <span className="font-medium" style={{ color: "var(--text-secondary)" }}>· {ev.reason}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// Level Up Overlay — full screen celebration
-export function LevelUpCelebration({ level, rank, onClose }) {
-  if (!level) return null;
-  return (
-    <div onClick={onClose} role="dialog" aria-modal="true" aria-label={`Level up: level ${level}`}
-      className="fixed inset-0 flex items-center justify-center px-4 cursor-pointer"
-      style={{ zIndex: 99999, background: "color-mix(in srgb, var(--bg) 92%, transparent)", backdropFilter: "blur(12px)" }}>
-      <div className="card hero fade-in text-center w-full" style={{ maxWidth: 340, padding: "28px 22px" }}>
-        <div className="flex justify-center mb-3">
-          <span className="flex items-center justify-center" style={{ width: 64, height: 64, borderRadius: 22, background: "rgba(255, 255, 255, .2)", color: "#fff" }} aria-hidden="true">
-            <Zap size={32} strokeWidth={2.2} />
-          </span>
-        </div>
-        <div className="text-[13px] font-bold" style={{ color: "var(--text-secondary)", letterSpacing: 3 }}>LEVEL UP</div>
-        <div className="text-[52px] font-extrabold num leading-none mt-1" style={{ color: "var(--text-primary)" }}>Level {level}</div>
-        {rank && (
-          <div className="mt-4"><span className="pill" style={{ fontSize: 14, padding: "6px 14px" }}><Shield size={14} aria-hidden="true" /> {rank.name}</span></div>
-        )}
-        <div className="text-[12.5px] mt-5" style={{ color: "var(--text-dim)" }}>Tap anywhere to continue</div>
-      </div>
-    </div>
   );
 }

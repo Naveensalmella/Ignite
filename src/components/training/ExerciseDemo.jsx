@@ -11,7 +11,8 @@ export default function ExerciseDemo({ info, animate = true, rounded = 16, heigh
     const usePhoto = frames && !failed;
 
     useEffect(() => {
-        if (!usePhoto || !animate) return;
+        // No automatic start/end crossfade for reduced-motion users (the end frame stays put).
+        if (!usePhoto || !animate || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
         const id = setInterval(() => setPhase(p => (p ? 0 : 1)), interval);
         return () => clearInterval(id);
     }, [usePhoto, animate, interval]);

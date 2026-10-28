@@ -1,26 +1,28 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
     House, Dumbbell, Apple, MessageCircle, User, LayoutGrid, X, Timer, Heart, Users,
-    CalendarDays, Wallet, Camera, ListChecks, Share2, Backpack, Ghost,
+    CalendarDays, Wallet, Camera, ListChecks, ListTodo, Share2, Backpack, Ghost,
 } from 'lucide-react';
+import { useDialog } from './ui/useDialog';
 
 // Single source of truth for every page the app can show.
+// Daily-use pages get a tab; everything else lives under More.
 export const MAIN_TABS = [
     { key: "status", label: "Home", title: "Home", Icon: House },
     { key: "quests", label: "Quests", title: "Quests", Icon: ListChecks },
     { key: "training", label: "Train", title: "Train", Icon: Dumbbell },
+    { key: "nutrition", label: "Food", title: "Nutrition", Icon: Apple },
     { key: "oracle", label: "Coach", title: "AI Coach", Icon: MessageCircle },
-    { key: "inventory", label: "Items", title: "Items", Icon: Backpack },
 ];
 
 export const MORE_PAGES = [
+    { key: "inventory", label: "Items", title: "Items", Icon: Backpack, desc: "Gold, shop & badges" },
     { key: "army", label: "Shadows", title: "Shadow Army", Icon: Ghost, desc: "Habits that rise" },
-    { key: "nutrition", label: "Nutrition", title: "Nutrition", Icon: Apple, desc: "Food & water" },
     { key: "focus", label: "Focus", title: "Focus Timer", Icon: Timer, desc: "Pomodoro timer" },
     { key: "wellness", label: "Wellness", title: "Wellness", Icon: Heart, desc: "Mood & journal" },
     { key: "routine", label: "My Day", title: "My Day", Icon: CalendarDays, desc: "Daily routine" },
-    { key: "missions", label: "Missions", title: "Missions", Icon: ListChecks, desc: "Your to-dos" },
+    { key: "missions", label: "To-dos", title: "To-dos", Icon: ListTodo, desc: "One-off tasks" },
     { key: "finance", label: "Finance", title: "Finance", Icon: Wallet, desc: "Money tracker" },
     { key: "social", label: "Social", title: "Social", Icon: Users, desc: "Friends" },
     { key: "bodyphotos", label: "Progress", title: "Body Progress", Icon: Camera, desc: "Photos & body stats" },
@@ -36,6 +38,7 @@ export const PAGE_ALIASES = {
     dashboard: "status", gaming: "inventory", dailyquest: "quests", growth: "quests",
     programs: "training", challenges: "training", body: "bodyphotos", shop: "inventory",
     titles: "inventory", gates: "training", shadows: "army",
+    food: "nutrition", items: "inventory", badges: "inventory", todos: "missions", todo: "missions",
 };
 export const resolvePage = (key) => (PAGE_KEYS.has(key) ? key : PAGE_ALIASES[key] || null);
 export const pageTitle = (key) => ALL_PAGES.find(p => p.key === key)?.title || "IGNITE";
@@ -71,13 +74,8 @@ export default function BottomNav({ active, setPage }) {
     const isMorePage = MORE_PAGES.some(p => p.key === active);
     const moreActive = showMore || isMorePage;
 
-    // Close the sheet with Escape
-    useEffect(() => {
-        if (!showMore) return;
-        const onKey = (e) => { if (e.key === "Escape") setShowMore(false); };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [showMore]);
+    // Escape, focus trap and focus restore for the sheet
+    const sheetRef = useDialog({ open: showMore, onClose: () => setShowMore(false) });
 
     const go = (key) => { setPage(key); setShowMore(false); };
 
@@ -85,7 +83,7 @@ export default function BottomNav({ active, setPage }) {
         <>
             {showMore && (
                 <div className="more-sheet-backdrop" onClick={() => setShowMore(false)}>
-                    <div className="more-sheet slide-up" role="dialog" aria-label="All pages" onClick={e => e.stopPropagation()}>
+                    <div ref={sheetRef} className="more-sheet slide-up" role="dialog" aria-modal="true" aria-label="More pages" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-4">
                             <span className="card-title">More</span>
                             <button type="button" onClick={() => setShowMore(false)} className="icon-btn" aria-label="Close menu"><X size={20} /></button>
@@ -94,7 +92,7 @@ export default function BottomNav({ active, setPage }) {
                             {MORE_PAGES.map(p => {
                                 const isActive = active === p.key;
                                 return (
-                                    <button key={p.key} type="button" onClick={() => go(p.key)} className={`more-tile ${isActive ? "is-active" : ""}`}>
+                                    <button key={p.key} type="button" onClick={() => go(p.key)} className={`more-tile ${isActive ? "is-active" : ""}`} aria-current={isActive ? "page" : undefined}>
                                         <span className="icon-badge" style={{ width: 40, height: 40, borderRadius: 13, "--tone": "var(--accent)" }}><p.Icon size={20} strokeWidth={2} /></span>
                                         <span className="more-tile-label">{p.label}</span>
                                         <span className="more-tile-desc">{p.desc}</span>
@@ -118,7 +116,7 @@ export default function BottomNav({ active, setPage }) {
                             </button>
                         );
                     })}
-                    <button type="button" onClick={() => setShowMore(!showMore)} aria-expanded={showMore}
+                    <button type="button" onClick={() => setShowMore(!showMore)} aria-expanded={showMore} aria-haspopup="dialog"
                         className={`bottom-nav-item ${moreActive ? "is-active" : ""}`}>
                         <span className="nav-ico"><LayoutGrid size={21} strokeWidth={moreActive ? 2.3 : 1.9} /></span>
                         <span>More</span>

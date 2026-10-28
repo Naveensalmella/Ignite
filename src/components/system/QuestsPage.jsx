@@ -1,7 +1,9 @@
 "use client";
 // Quests: the System's Daily Quest (+ Penalty Zone, Rank Assessment), habits and long-term missions.
-import { useState, lazy, Suspense } from "react";
+import { lazy, Suspense } from "react";
+import { useShallow } from "zustand/react/shallow";
 import useAppStore from "@/stores/useAppStore";
+import { useIntentState } from "../usePageIntent";
 import { DailyQuestCard, PenaltyZone, RankTrialCard, JobChangeCard } from "./QuestWidgets";
 import { SkeletonPage } from "../Loading";
 import { Tabs } from "../ui/kit";
@@ -13,8 +15,11 @@ const GrowthPage = lazy(() => import("../GrowthPage"));
 const TABS = [["daily", "Daily"], ["habits", "Habits"], ["long", "Goals"]];
 
 export default function QuestsPage({ initialTab = "daily" }) {
-    const [tab, setTab] = useState(initialTab);
-    const s = useAppStore();
+    const [tab, setTab] = useIntentState("quests", "tab", initialTab);
+    const s = useAppStore(useShallow(st => ({
+        habits: st.habits, setHabits: st.setHabits, habitLog: st.habitLog, setHabitLog: st.setHabitLog,
+        addXP: st.addXP, workoutLog: st.workoutLog, pillarProg: st.pillarProg, setPillarProg: st.setPillarProg,
+    })));
 
     return (
         <div className="page fade-in">

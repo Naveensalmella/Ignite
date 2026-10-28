@@ -106,7 +106,7 @@ function claimQuest() {
     notify({
         kind: "quest", title: "DAILY QUEST COMPLETE",
         lines: ["Preparations to become powerful — cleared.", `+${r.xp} XP · +${r.gold} Gold · +${r.ap} Ability Point`, ...(box ? ["🎁 Random Box obtained"] : [])],
-        cta: s.abilityPoints || r.ap ? { label: "Allocate points", page: "status" } : undefined,
+        cta: s.abilityPoints || r.ap ? { label: "Allocate points", page: "status", action: "assign" } : undefined,
     });
 }
 
@@ -311,7 +311,7 @@ export function checkUnlocks() {
         ...newSkills.map(id => { const sk = SKILLS.find(x => x.id === id); return `Skill acquired: ${sk.icon} ${sk.name} — ${describeEffect(sk.effect, sk.desc)}`; }),
         ...newTitles.map(id => `Title earned: “${TITLES.find(x => x.id === id).name}”`),
     ];
-    if (lines.length) notify({ kind: "quest", title: newSkills.length ? "SKILL ACQUIRED" : "TITLE EARNED", lines, cta: { label: newSkills.length ? "View skills" : "Equip title", page: newSkills.length ? "status" : "titles" } });
+    if (lines.length) notify({ kind: "quest", title: newSkills.length ? "SKILL ACQUIRED" : "TITLE EARNED", lines, cta: newSkills.length ? { label: "View skills", page: "status", action: "skills" } : { label: "Equip title", page: "inventory", tab: "titles" } });
 }
 
 export function equipTitle(name) {

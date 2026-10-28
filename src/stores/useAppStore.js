@@ -2,11 +2,10 @@
 import { create } from 'zustand';
 import { DEFAULT_HABITS } from '@/data/index';
 import { getLevel, getStreakMult, today, addDays, normalizeDayLog, toArr } from '@/utils';
-import { checkMilestone } from '@/data/gamingSystem';
+import { checkMilestone } from '@/data/milestones';
 import { hasDayWorkout } from '@/lib/workoutHelpers';
 import storeV2, { DAY_COLLECTIONS, encodeDayDoc } from '@/store-v2';
 import { play, hapticTap } from '@/components/soundEngine';
-import { playLevelUp } from '@/sounds';
 import { playerRank, availableTrial } from '@/lib/system/ranks';
 import { AP_PER_LEVEL } from '@/lib/system/stats';
 import { pruneQuestLog } from '@/lib/system/quests';
@@ -107,13 +106,13 @@ const useAppStore = create((set, get) => ({
   loadError: null,       // message when loading failed (saving stays disabled)
   syncStatus: 'idle',    // idle | saving | saved | error | offline
   page: 'status',
+  pageIntent: null,      // { key, tab?, action?, nonce } — see openPage
   showTutorial: false,
 
   ...EMPTY_DATA,
 
   // ── XP & Gamification (transient) ──
   xpEvents: [],
-  confetti: 0,
   levelUp: null,
   milestone: null,
   notices: [],           // queue of [SYSTEM] windows
@@ -124,14 +123,21 @@ const useAppStore = create((set, get) => ({
   setPage: (page) => {
     if (!page || page === get().page) return;
     play("navTap");
-    set({ page });
+    set(s => ({ page, ...(s.pageIntent && s.pageIntent.key !== page ? { pageIntent: null } : {}) }));
     // Push a history entry so the browser/phone Back button returns to the previous page.
     if (typeof window !== 'undefined' && window.location.hash !== `#${page}`) {
       window.history.pushState({ page }, '', `#${page}`);
     }
     if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
   },
-  setPageSilent: (page) => set({ page }),
+  setPageSilent: (page) => set(s => ({ page, ...(s.pageIntent && s.pageIntent.key !== page ? { pageIntent: null } : {}) })),
+  // Open a page AND ask it to do something (switch tab, open a sheet…), even when it is
+  // already showing. Pages read it with usePageIntent(); it is dropped when you leave.
+  openPage: (page, intent = {}) => {
+    if (!page) return;
+    get().setPage(page);
+    set({ pageIntent: { ...intent, key: page, nonce: Date.now() + Math.random() } });
+  },
   setShowTutorial: (showTutorial) => set({ showTutorial }),
 
   setProfile: (v) => set(s => ({ profile: typeof v === 'function' ? v(s.profile) : v })),
@@ -188,7 +194,7 @@ const useAppStore = create((set, get) => ({
 
   // ── Add XP (streak multiplier, XP Potion, Penalty halving, gold, ability points, level-up) ──
   addXP: (amount, reason = "") => {
-    const { streak, logActivity, pushXpEvent, system, activeTitle } = get();
+    const { streak, system, activeTitle } = get();
     const mult = getStreakMult(streak);
     const boosted = (Number(system?.buffs?.xpBoostUntil) || 0) > Date.now();
     const penalized = !!system?.penalty?.active;
@@ -201,48 +207,16 @@ const useAppStore = create((set, get) => ({
     const nextXP = prevXP + actual;
     const oldLv = getLevel(prevXP);
     const newLv = getLevel(nextXP);
-    set(s => ({ totalXP: nextXP, confetti: s.confetti + 1 }));
 
     // System rewards: gold for every XP gain, Ability Points for every new level.
     let gainedAP = 0;
+    let systemPatch = null;
     if (system?.awakened) {
       const apLevel = Number(system.apLevel) || oldLv;
       gainedAP = newLv > apLevel ? (newLv - apLevel) * AP_PER_LEVEL : 0;
       const gold = Math.max(1, Math.round((actual / 5) * goldMultiplier(system, activeTitle)));
-      set(s => ({
-        system: {
-          ...s.system,
-          gold: (Number(s.system?.gold) || 0) + gold,
-          abilityPoints: (Number(s.system?.abilityPoints) || 0) + gainedAP,
-          apLevel: Math.max(apLevel, newLv),
-        },
-      }));
+      systemPatch = { gold, gainedAP, apLevel: Math.max(apLevel, newLv) };
     }
-
-    if (newLv > oldLv) {
-      const trialBefore = availableTrial(system, oldLv);
-      const trialNow = availableTrial(system, newLv);
-      setTimeout(() => {
-        set({ levelUp: { level: newLv, rank: playerRank(get().system, newLv), ap: gainedAP } });
-        playLevelUp();
-      }, 300);
-      if (trialNow && !trialBefore) {
-        setTimeout(() => get().notify({
-          kind: 'rank', title: 'RANK ASSESSMENT UNLOCKED',
-          lines: [`You have reached the level required for ${trialNow.name}.`, 'Pass the Rank Assessment to be promoted.'],
-          cta: { label: 'View assessment', page: 'quests' },
-        }), 5200);
-      }
-    }
-    try {
-      const ms = checkMilestone(prevXP, nextXP);
-      if (ms) setTimeout(() => set({ milestone: ms }), 800);
-    } catch { /* milestone data is optional */ }
-    const tags = `${mult > 1 ? ` ×${mult}` : ''}${bonus > 1 ? ` +${Math.round((bonus - 1) * 100)}%` : ''}${boosted ? ' 🧪×2' : ''}${penalized ? ' (penalty ½)' : ''}`;
-    pushXpEvent(actual, reason + tags, 1600);
-    logActivity("xp", `+${actual} XP: ${reason}`);
-    play('xpGain');
-    hapticTap();
 
     // Log XP source for the daily breakdown
     const r = reason || "";
@@ -255,7 +229,46 @@ const useAppStore = create((set, get) => ({
                 : /Combo/.test(r) ? "Combo"
                   : /Challenge/.test(r) ? "Challenge" : "Other";
     const d = today();
-    set(s => ({ xpLog: { ...(s.xpLog || {}), [d]: [...toArr((s.xpLog || {})[d]), { amount: actual, category: cat, reason: r, time: Date.now() }] } }));
+    const now = Date.now();
+    const tags = `${mult > 1 ? ` ×${mult}` : ''}${bonus > 1 ? ` +${Math.round((bonus - 1) * 100)}%` : ''}${boosted ? ' 🧪×2' : ''}${penalized ? ' (penalty ½)' : ''}`;
+    const toast = { id: now + Math.random(), amount: actual, reason: reason + tags };
+    const activity = { id: now, type: "xp", detail: `+${actual} XP: ${reason}`, date: d, time: new Date().toLocaleTimeString(), timestamp: now };
+
+    // One store update (one re-render) for XP, gold/AP, the toast, the activity log and the XP log.
+    set(s => ({
+      totalXP: nextXP,
+      ...(systemPatch ? {
+        system: {
+          ...s.system,
+          gold: (Number(s.system?.gold) || 0) + systemPatch.gold,
+          abilityPoints: (Number(s.system?.abilityPoints) || 0) + systemPatch.gainedAP,
+          apLevel: systemPatch.apLevel,
+        },
+      } : {}),
+      xpEvents: [...s.xpEvents, toast],
+      activityLog: [activity, ...toArr(s.activityLog)].slice(0, MAX_ACTIVITY),
+      xpLog: { ...(s.xpLog || {}), [d]: [...toArr((s.xpLog || {})[d]), { amount: actual, category: cat, reason: r, time: now }] },
+    }));
+    setTimeout(() => set(s => ({ xpEvents: s.xpEvents.filter(e => e.id !== toast.id) })), 1600);
+    play('xpGain');
+    hapticTap();
+
+    // Celebrations wait behind any open [SYSTEM] window (see Celebrations in App).
+    if (newLv > oldLv) {
+      const trialBefore = availableTrial(system, oldLv);
+      const trialNow = availableTrial(system, newLv);
+      const followUp = trialNow && !trialBefore ? {
+        kind: 'rank', title: 'RANK ASSESSMENT UNLOCKED',
+        lines: [`You have reached the level required for ${trialNow.name}.`, 'Pass the Rank Assessment to be promoted.'],
+        cta: { label: 'View assessment', page: 'quests', tab: 'daily' },
+      } : null;
+      // (A second level-up before the first is closed keeps its pending follow-up and adds the AP.)
+      setTimeout(() => set(s => ({ levelUp: { level: newLv, rank: playerRank(s.system, newLv), ap: gainedAP + (s.levelUp?.ap || 0), followUp: followUp || s.levelUp?.followUp || null } })), 300);
+    }
+    try {
+      const ms = checkMilestone(prevXP, nextXP);
+      if (ms) setTimeout(() => set({ milestone: ms }), 800);
+    } catch { /* milestone data is optional */ }
   },
 
   // ── Daily check: streak + Penalty Quest for a missed Daily Quest (only after data loaded) ──

@@ -1,6 +1,7 @@
 "use client";
 // Daily Quest, Penalty Zone, Rank Assessment and Job Change cards (B6 style).
 import { useEffect, useRef, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { Pencil, Plus, Trash2, RotateCcw, Clock, Lock, Gift, ScrollText, ChevronRight, TriangleAlert } from "lucide-react";
 import useAppStore from "@/stores/useAppStore";
 import { Card, Bar, Ring, Check, Pill, IconBadge } from "../ui/kit";
@@ -325,7 +326,10 @@ export function RankTrialCard() {
 
 /** Job Change Quest (Lv 40): 7 days in a row of Daily Quest + a workout, then pick a class. */
 export function JobChangeCard() {
-    const state = useAppStore();
+    const state = useAppStore(useShallow(s => ({
+        system: s.system, totalXP: s.totalXP, workoutLog: s.workoutLog, foodLog: s.foodLog, focusLog: s.focusLog,
+        journal: s.journal, habitLog: s.habitLog, tasks: s.tasks, finances: s.finances,
+    })));
     const { system, totalXP, workoutLog } = state;
     const lv = getLevel(totalXP || 0);
     if (!system?.awakened || system.job?.id) return null;

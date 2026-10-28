@@ -24,14 +24,13 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
-    { media: "(prefers-color-scheme: dark)", color: "#07090d" },
-  ],
+  // No themeColor here: the app picks its own theme (saved choice, else the OS preference),
+  // so the inline script below writes <meta name="theme-color"> and ThemeToggle updates it.
 };
 
-// Apply the saved theme before first paint so there is no dark/light flash.
-const themeScript = `try{var t=localStorage.getItem("ignite-theme");if(t==="light"){document.documentElement.setAttribute("data-theme","light")}else{document.documentElement.classList.add("dark")}}catch(e){}`;
+// Apply the theme before first paint so there is no dark/light flash: the saved choice,
+// or the OS preference on first run. Also sets <meta name="theme-color"> to the theme's --bg.
+const themeScript = `try{var t=localStorage.getItem("ignite-theme");if(t!=="light"&&t!=="dark"){t=window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"}var d=document.documentElement;if(t==="light"){d.setAttribute("data-theme","light")}else{d.classList.add("dark")}var c=t==="light"?"#f4f6fb":"#0f1115",m=function(){var e=document.querySelectorAll('meta[name="theme-color"]');if(!e.length){var n=document.createElement("meta");n.name="theme-color";document.head.appendChild(n);e=[n]}e.forEach(function(x){x.removeAttribute("media");x.content=c})};m();document.addEventListener("DOMContentLoaded",m)}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

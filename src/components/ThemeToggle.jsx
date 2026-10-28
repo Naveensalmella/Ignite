@@ -3,33 +3,39 @@ import { useState, useEffect } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { IconBadge } from '@/components/ui/kit';
 
-function readSavedTheme() {
+// Browser chrome colour per theme (matches --bg in globals.css).
+const THEME_COLOR = { dark: "#0f1115", light: "#f4f6fb" };
+
+// The inline script in layout.tsx already chose the theme before first paint
+// (saved choice, else the OS preference) — read that instead of guessing.
+function readCurrentTheme() {
     try {
-        return typeof window !== "undefined" && localStorage.getItem("ignite-theme") === "light" ? "light" : "dark";
+        return typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
     } catch { return "dark"; }
 }
 
 function applyTheme(theme) {
+    const root = document.documentElement;
     if (theme === "light") {
-        document.documentElement.classList.remove("dark");
-        document.documentElement.setAttribute("data-theme", "light");
+        root.classList.remove("dark");
+        root.setAttribute("data-theme", "light");
     } else {
-        document.documentElement.classList.add("dark");
-        document.documentElement.removeAttribute("data-theme");
+        root.classList.add("dark");
+        root.removeAttribute("data-theme");
     }
+    document.querySelectorAll('meta[name="theme-color"]').forEach(m => { m.removeAttribute("media"); m.setAttribute("content", THEME_COLOR[theme]); });
 }
 
 export default function ThemeToggle() {
-    // Read the saved theme up-front instead of setState-in-effect (which flashed the wrong label)
-    const [theme, setTheme] = useState(readSavedTheme);
+    const [theme, setTheme] = useState(readCurrentTheme);
 
-    // Keep <html> in sync with the current theme
+    // Keep <html> and the browser chrome in sync with the current theme
     useEffect(() => { applyTheme(theme); }, [theme]);
 
     const toggle = () => {
         const next = theme === "dark" ? "light" : "dark";
         setTheme(next);
-        try { localStorage.setItem("ignite-theme", next); } catch { }
+        try { localStorage.setItem("ignite-theme", next); } catch { /* private mode */ }
     };
 
     const dark = theme !== "light";

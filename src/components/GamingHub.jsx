@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { getLevel, today, toArr } from '@/utils';
 import {
     getDailyXPProgress, getXPBreakdown, getComboStatus,
-    getLoginBonus, claimLoginBonus, generateWeeklyChallenges, getChallengeProgress,
+    generateWeeklyChallenges, getChallengeProgress,
     getUnlockedTitles, getCurrentTier,
     QUEST_CHAINS, getQuestChainProgress, getXPHistory,
     SKILL_TREE, getSkillTreeProgress, getWeekStart, getWeekSeed,
@@ -12,7 +12,7 @@ import { countWorkoutDays } from '@/lib/workoutHelpers';
 import { Card, Ring, Bar, IconBadge, Pill, ListRow, Tabs, EmptyState } from '@/components/ui/kit';
 import {
     Dumbbell, Apple, Flame, Target, Timer, NotebookPen, Droplet, Zap, Sparkles, Swords, Star, Link2, Brain,
-    Medal, Gem, Lock, CalendarCheck, Gift, RotateCcw, Play, Trophy, Crown, Check as CheckIcon, Award,
+    Medal, Gem, Lock, Gift, RotateCcw, Play, Trophy, Crown, Check as CheckIcon, Award,
 } from 'lucide-react';
 
 
@@ -45,7 +45,7 @@ const TIER_LABELS = { workout_count: "Workouts", streak: "Streak", xp_total: "To
 const HUB_TABS = [["overview", "Overview"], ["challenges", "Weekly"], ["chains", "Chains"], ["titles", "Titles"], ["tree", "Skills"]];
 const stripEmoji = (t) => String(t || "").replace(/^[^\p{L}\p{N}]+/u, "");
 
-export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, workoutLog = {}, addXP = () => { }, loginData = {}, setLoginData = () => { }, xpLog = {}, activeTitle = null, setActiveTitle = () => { }, questChainData = {}, setQuestChainData = () => { } }) {
+export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, workoutLog = {}, addXP = () => { }, xpLog = {}, activeTitle = null, setActiveTitle = () => { }, questChainData = {}, setQuestChainData = () => { } }) {
     const [tab, setTab] = useState("overview"); // overview | challenges | chains | titles | tree
     const d = today();
     const lv = getLevel(totalXP);
@@ -56,17 +56,7 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
     const xpBreakdown = getXPBreakdown(xpLog || {});
     const combo = getComboStatus(st, workoutLog);
 
-    // ── Login Bonus ──
-    // Derived from loginData (not copied into local state) so it stays correct when
-    // loginData loads/changes after mount and can't be claimed twice.
-    const loginBonus = getLoginBonus(loginData || {});
-    const bonusClaimed = loginBonus.claimed;
-
-    const claimBonus = () => {
-        if (getLoginBonus(loginData || {}).claimed) return;
-        setLoginData(claimLoginBonus(loginData || {}));
-        addXP(loginBonus.reward, "Login");
-    };
+    // (The daily login bonus is claimed on Home — see StatusPage.)
 
     // ── Weekly Challenges ──
     const weekSeed = getWeekSeed();
@@ -156,25 +146,6 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                                     <div className="row-title">{stripEmoji(combo.label)}</div>
                                     <div className="row-sub">{combo.activities.join(" + ")} · +{combo.bonusXP} bonus XP</div>
                                 </div>
-                            </div>
-                        </Card>
-                    )}
-
-                    {/* Login Bonus */}
-                    {!bonusClaimed && (
-                        <Card className="slide-up">
-                            <div className="flex items-center gap-3">
-                                <IconBadge icon={CalendarCheck} tone="blue" size={40} />
-                                <div className="flex-1 min-w-0">
-                                    <div className="row-title">Daily login bonus</div>
-                                    <div className="row-sub">Day {loginBonus.streak} streak</div>
-                                </div>
-                                <button type="button" className="bp !py-2 !px-4 !text-[13px]" onClick={claimBonus}><Gift size={15} />+{loginBonus.reward} XP</button>
-                            </div>
-                            <div className="flex gap-1 mt-3" aria-hidden="true">
-                                {[5, 10, 15, 20, 25, 35, 50].map((r, i) => (
-                                    <div key={i} className="flex-1 h-1 rounded-full" style={{ background: i < loginBonus.dayIdx ? "var(--tone-blue)" : i === loginBonus.dayIdx ? "color-mix(in srgb, var(--tone-blue) 55%, transparent)" : "var(--track)" }} />
-                                ))}
                             </div>
                         </Card>
                     )}
@@ -360,23 +331,6 @@ export default function GamingHub({ appState = {}, totalXP = 0, streak = 0, work
                     })}
                 </>
             )}
-        </div>
-    );
-}
-
-// ── Milestone Overlay (import in App.jsx) ──
-export function MilestoneOverlay({ milestone, onClose }) {
-    if (!milestone) return null;
-    return (
-        <div className="fade-in fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.6)" }} onClick={onClose} role="dialog" aria-modal="true" aria-label="Milestone reached">
-            <Card className="slide-up w-full max-w-[340px] text-center !p-6" style={{ boxShadow: "var(--shadow)" }}>
-                <div className="flex justify-center mb-3"><IconBadge icon={Trophy} tone="amber" size={64} round /></div>
-                <div className="text-[12px] font-bold tracking-wide uppercase" style={{ color: "var(--tone-amber)" }}>Milestone reached</div>
-                <div className="text-[21px] font-extrabold mt-1.5 leading-tight" style={{ color: "var(--text-primary)" }}>{milestone.title}</div>
-                {milestone.msg && <div className="text-[14px] mt-1.5" style={{ color: "var(--text-secondary)" }}>{milestone.msg}</div>}
-                <div className="mt-4 flex justify-center"><Pill tone="amber" icon={Zap} className="!text-[15px] !px-3.5 !py-1.5 num">{Number(milestone.xp || 0).toLocaleString()} XP</Pill></div>
-                <button type="button" className="bp w-full mt-5" onClick={onClose}>Continue</button>
-            </Card>
         </div>
     );
 }

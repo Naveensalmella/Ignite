@@ -14,6 +14,7 @@ import VISUAL_MAP from "@/data/exerciseVisualMap.json";
 import { EXERCISES, FIGHTING, WARMUP, COOLDOWN, RUNNING, YOGA, HIIT } from "@/data/exercises";
 import { FORM_TIPS } from "@/data/exerciseMeta";
 import { normalizeMuscles } from "./muscles";
+import { classifyPattern } from "./movePattern";
 
 export const DATASET_SHA = "f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5";
 const REMOTE = `https://raw.githubusercontent.com/yuhonas/free-exercise-db/${DATASET_SHA}/exercises/`;
@@ -39,40 +40,8 @@ for (const list of Object.values(FIGHTING)) list.forEach(e => addInfo(e, { categ
 for (const list of Object.values(RUNNING)) list.forEach(e => addInfo(e, { category: "cardio" }));
 [...WARMUP, ...COOLDOWN, ...YOGA, ...HIIT].forEach(e => addInfo(e));
 
-// ── Fallback movement classification for names we've never seen ──
-const RULES = [
-    [/burpee|sprawl burpee/, "burpee"], [/sprawl/, "sprawl"], [/mountain climber/, "mountain_climber"], [/bear crawl|crawl/, "bear_crawl"],
-    [/jumping jack|star jump/, "jumping_jack"], [/jump rope|skip(ping)? rope|rope jump/, "jump_rope"], [/high knee/, "high_knees"],
-    [/jump squat|squat jump|tuck jump|box jump|broad jump/, "jump_squat"], [/wall sit/, "wall_sit"], [/horse stance/, "horse_stance"],
-    [/sprint|run|jog|fartlek|tempo/, "jog"], [/walk(?!ing lunge)/, "walk"],
-    [/teep|front kick|snap kick|push kick/, "front_kick"], [/side kick|back kick/, "side_kick"], [/kick/, "roundhouse_kick"],
-    [/knee strike|knees?\b(?! raise)|clinch knee/, "knee_strike"], [/elbow/, "elbow_strike"], [/clinch/, "clinch"],
-    [/takedown|double leg|single leg|penetration|level change|shoot/, "level_change"],
-    [/ground|mount|guard|submission|armbar|choke|grappl|gnp|pound/, "ground_strikes"], [/block|parry|check|defen[cs]e/, "block"],
-    [/hook|uppercut|body shot/, "hook_uppercut"], [/jab|cross|punch|1-2/, "jab_cross"], [/shadow|spar|combo|fight|boxing|strike/, "shadow_boxing"],
-    [/stance|footwork|pivot|movement/, "boxing_stance"],
-    [/push ?-?up|press ?-?up/, "pushup"], [/dip/, "dip"], [/pull ?-?up|chin ?-?up|muscle ?-?up/, "pull_up"],
-    [/deadlift|good morning|hinge|swing/, "deadlift"], [/row|pulldown|pull down|face pull/, "row"], [/curl/, "curl"],
-    [/lateral raise|side raise|fly|flye/, "lateral_raise"], [/press|overhead|military|push press|thruster|extension/, "overhead_press"],
-    [/lunge|split squat|step ?-?up/, "lunge"], [/calf/, "calf_raise"], [/squat|leg press/, "squat"],
-    [/bridge|hip thrust/, "glute_bridge"], [/donkey|kickback|fire hydrant/, "donkey_kick"], [/leg swing/, "leg_swing"],
-    [/side plank/, "side_plank"], [/plank|hold/, "plank"], [/bicycle/, "bicycle"], [/russian twist|twist/, "russian_twist"],
-    [/flutter|scissor/, "flutter_kick"], [/leg raise|v-?up|toe touch|knee raise/, "leg_raise"], [/crunch|sit ?-?up|ab /, "crunch"],
-    [/superman|back extension|y-raise/, "superman"],
-    [/warrior|lunge pose/, "warrior"], [/tree pose|balance/, "tree_pose"], [/downward dog|down dog/, "downward_dog"],
-    [/child/, "child_pose"], [/cobra|up dog|upward dog/, "cobra"], [/cat|cow/, "cat_cow"], [/forward fold|toe touch|hamstring/, "forward_fold"],
-    [/arm circle|shoulder roll/, "arm_circles"], [/hip circle/, "hip_circles"], [/savasana|lying|rest/, "lying_rest"],
-    [/meditat|breath|pranayama|mindful/, "meditate"], [/stretch|mobility|yoga|flow|salutation/, "side_stretch"],
-];
-const ANIM_FALLBACK = { push: "pushup", squat: "squat", plank: "plank", burpee: "burpee", punch: "shadow_boxing", kick: "roundhouse_kick", run: "jog", yoga: "side_stretch", hiit: "burpee" };
-
-export function classifyPattern(name, hint = {}) {
-    const n = String(name || "").toLowerCase();
-    for (const [re, p] of RULES) if (re.test(n)) return p;
-    if (hint.anim && ANIM_FALLBACK[hint.anim]) return ANIM_FALLBACK[hint.anim];
-    const bp = hint.bodyPart;
-    return bp === "legs" || bp === "glutes" ? "squat" : bp === "core" ? "crunch" : bp === "cardio" ? "jog" : bp === "chest" ? "pushup" : bp === "back" ? "row" : bp === "arms" ? "curl" : bp === "shoulders" ? "overhead_press" : "stand";
-}
+// Fallback movement classification lives in ./movePattern (Home's stats use it without this file's data).
+export { classifyPattern };
 
 // Token-overlap similarity for names not in the curated map (e.g. AI output).
 function similarity(a, b) {
@@ -82,16 +51,25 @@ function similarity(a, b) {
     return (2 * inter) / (A.size + B.size || 1);
 }
 
+// Fuzzy matches scan the whole map, so remember every answer (names repeat constantly).
+const LOOKUP_CACHE = new Map();
 function lookupMap(name) {
     const k = key(name);
     if (MAP_BY_KEY.has(k)) return MAP_BY_KEY.get(k);
+    if (LOOKUP_CACHE.has(k)) return LOOKUP_CACHE.get(k);
     let best = null, score = 0;
     for (const [mk, v] of MAP_BY_KEY) {
         const s = similarity(k, mk);
         if (s > score) { score = s; best = v; }
     }
-    return score >= 0.8 ? best : null;
+    const hit = score >= 0.8 ? best : null;
+    LOOKUP_CACHE.set(k, hit);
+    return hit;
 }
+
+// Results are pure functions of the input: cache by name (strings) or by object identity.
+const INFO_BY_NAME = new Map();
+const INFO_BY_OBJ = new WeakMap();
 
 /**
  * Everything the UI needs to demonstrate an exercise.
@@ -99,7 +77,22 @@ function lookupMap(name) {
  * @returns { name, frames: [url,url] | null, datasetId, pattern, primary, secondary, steps, tips, level, equipment, category }
  */
 export function getExerciseInfo(ex) {
-    const obj = typeof ex === "string" ? { name: ex } : (ex || {});
+    if (typeof ex === "string") {
+        let hit = INFO_BY_NAME.get(ex);
+        if (!hit) { hit = buildExerciseInfo({ name: ex }); INFO_BY_NAME.set(ex, hit); }
+        return hit;
+    }
+    if (ex && typeof ex === "object") {
+        const hit = INFO_BY_OBJ.get(ex);
+        if (hit && hit.name === (ex.name || "Exercise")) return hit; // guard against in-place edits
+        const info = buildExerciseInfo(ex);
+        INFO_BY_OBJ.set(ex, info);
+        return info;
+    }
+    return buildExerciseInfo({});
+}
+
+function buildExerciseInfo(obj) {
     const name = obj.name || "Exercise";
     const mapped = lookupMap(name);
     const app = APP_INFO.get(key(name)) || (mapped ? APP_INFO.get(key(mapped.name)) : null) || {};
