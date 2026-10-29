@@ -8,7 +8,7 @@ export default function SplashScreen({ message = "" }) {
         <div className="splash" role="status" aria-live="polite">
             <div className="splash-glow" aria-hidden="true" />
             <div className="splash-flame" aria-hidden="true">
-                <BrandMark size={80} />
+                <BrandMark size={80} animated />
             </div>
             <div className="splash-title">IGNITE</div>
             <div className="splash-tagline">Level up your life</div>

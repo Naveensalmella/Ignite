@@ -10,13 +10,13 @@
       <stop offset="0" stop-color="#fff" stop-opacity=".16"/>
       <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
     </linearGradient>
-    <mask id="arrow">
-      <rect width="512" height="512" fill="#fff"/>
-      <path d="M256 282L328 354L298 384L256 342L214 384L184 354Z"/>
-    </mask>
   </defs>
   <rect width="512" height="512" rx="116" fill="url(#g)"/>
   <rect width="512" height="512" rx="116" fill="url(#shine)"/>
-  <!-- Flame with a "level up" arrow -->
-  <path fill="#fff" mask="url(#arrow)" d="M270 64C288 136 386 186 386 312C386 386 328 442 256 442C184 442 126 386 126 312C126 252 154 208 192 180C190 222 204 250 228 262C212 188 232 116 270 64Z"/>
+  <!-- Flame inside an XP ring -->
+  <g>
+    <circle cx="256" cy="262" r="166" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="30"/>
+    <circle cx="256" cy="262" r="166" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-dasharray="751.0 1043.0" transform="rotate(-90 256 262)"/>
+    <path fill="#fff" transform="translate(256 262) scale(.58) translate(-256 -253)" d="M270 64C288 136 386 186 386 312C386 386 328 442 256 442C184 442 126 386 126 312C126 252 154 208 192 180C190 222 204 250 228 262C212 188 232 116 270 64Z"/>
+  </g>
 </svg>
