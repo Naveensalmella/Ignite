@@ -66,6 +66,14 @@ On **Vercel**, add the same variables under *Project → Settings → Environmen
 1. Enable **Authentication** → Email/Password and Google providers. Add your domain under *Authorized domains*.
 2. Create a **Firestore** database and publish the rules in [`firestore.rules`](firestore.rules): either Firebase console → Firestore → Rules → paste → **Publish**, or `npx firebase-tools deploy --only firestore:rules --project <your-project-id>`. Publish them again whenever `firestore.rules` changes — the Social page depends on them.
 
+## Data sources
+
+- **Food list** (`src/data/foodDatabase.js`, `foodsIndian.js`): IGNITE's own Indian and everyday dishes — typical home-style values per 100 g, with usual serving sizes.
+- **Generic foods** (`src/data/foodsGeneric.json`): USDA FoodData Central, SR Legacy (public domain), taken from the [TempoLife food dataset](https://tempolife.app) — *Food nutrition data from TempoLife (tempolife.app), CC-BY-4.0.* Rebuild with `scripts/build-generic-foods.py`.
+- **Barcodes**: [Open Food Facts](https://world.openfoodfacts.org) (ODbL), looked up live.
+
+The Nutrition page works fully without any AI key: search, barcode and the offline "Describe your meal" reader (`src/lib/mealParser.js`) use only this data. With `GEMINI_API_KEY`/`GROQ_API_KEY` set, photo scanning and "Ask AI" for unknown foods are added.
+
 ## Scripts
 
 | Command | |

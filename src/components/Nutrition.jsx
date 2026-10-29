@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { XP } from '../data';
 import { FOOD_DATABASE, FOOD_CATEGORIES, searchFoods } from '../data/foodDatabase';
-import { prepareImage, readFile, scanPhoto as scanPhotoAI, describeMeal, lookupFood, lookupBarcode, getBarcodeDetector } from '@/lib/foodScan';
+import { prepareImage, readFile, scanPhoto as scanPhotoAI, describeMeal, lookupFood, lookupBarcode, getBarcodeDetector, aiKnown, checkAI } from '@/lib/foodScan';
+import { parseMeal, toEntry } from '@/lib/mealParser';
 import { DIET_TEMPLATES, generateDayPlan, generateWeekPlan, getPlanDayTotals, getShoppingList, getSwapOptions as getMealSwaps } from '../data/mealPlanner';
 import { today, dateKey, toArr } from '../utils';
 import HistoryPanel from './HistoryPanel';
@@ -150,6 +151,9 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const [scanError, setScanError] = useState(null);
   const [scanPhoto, setScanPhoto] = useState(null);
   const [scanAdded, setScanAdded] = useState({}); // result index → true once logged
+  const [scanSource, setScanSource] = useState("ai"); // "local" (our food list) | "ai"
+  const [unknownParts, setUnknownParts] = useState([]); // parts of a description we couldn't match
+  const [aiReady, setAiReady] = useState(() => aiKnown() ?? false); // is an AI provider set up on the server?
   const [barcode, setBarcode] = useState({ code: "", busy: false, error: null, live: false });
   const videoRef = useRef(null), streamRef = useRef(null), fileRef = useRef(null), abortRef = useRef(null), detectRef = useRef(null);
 
@@ -301,9 +305,11 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   };
   const cancelScan = () => { abortRef.current?.abort(); abortRef.current = null; setScanning(false); };
 
+  useEffect(() => { let live = true; checkAI().then(ok => { if (live) setAiReady(ok); }); return () => { live = false; }; }, []);
+
   const showResult = (data) => {
     if (data.cancelled) return;
-    if (data.foods?.length > 0) { setScanResults(data.foods.map(f => ({ ...f, mult: 1 }))); setScanAdded({}); setScanError(null); }
+    if (data.foods?.length > 0) { setScanSource("ai"); setUnknownParts([]); setScanResults(data.foods.map(f => ({ ...f, mult: 1 }))); setScanAdded({}); setScanError(null); }
     else setScanError(data.error || "Couldn't identify the food. Try a clearer photo or describe your meal.");
   };
 
@@ -341,21 +347,40 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     try { analyzeImage(await readFile(f)); } catch (err) { setScanMode("choose"); setScanError(err.message); }
   };
 
-  const analyzeText = async (desc) => {
-    if (!desc.trim()) return;
+  // Describe: read the meal with our own food list first (offline, free); AI only for what it can't match.
+  const analyzeText = async (desc, { useAI = false } = {}) => {
+    const text = desc.trim().slice(0, 300);
+    if (!text) return;
     cancelScan();
-    setScanPhoto(null); setScanError(null); setScanResults(null); setScanning(true);
+    setScanPhoto(null); setScanError(null); setScanResults(null); setUnknownParts([]);
+    if (!useAI) {
+      const { items, unknown } = parseMeal(text);
+      if (items.length) {
+        setScanSource("local"); setScanResults(items.map(it => ({ ...toEntry(it), mult: 1 }))); setScanAdded({}); setUnknownParts(unknown);
+        return;
+      }
+      if (!aiReady) { setScanError(`Couldn't recognise "${text.slice(0, 40)}". Try simple names like "2 roti, dal and rice", or search the food list.`); return; }
+    }
+    setScanning(true);
     const ctrl = new AbortController(); abortRef.current = ctrl;
-    showResult(await describeMeal(desc.trim().slice(0, 300), ctrl.signal));
+    showResult(await describeMeal(text, ctrl.signal));
     if (abortRef.current === ctrl) { abortRef.current = null; setScanning(false); }
   };
+  // Ask AI only about the parts our food list didn't recognise, and add them to the current results.
+  const askAIFor = async (part) => {
+    setUnknownParts(u => u.filter(x => x !== part));
+    const data = await describeMeal(part);
+    if (data.foods?.length) setScanResults(r => [...(r || []), ...data.foods.map(f => ({ ...f, mult: 1 }))]);
+    else setScanError(data.error || `Couldn't work out "${part}".`);
+  };
+  const searchInstead = (part) => { resetScan(); setSearch(part); setTab("add"); };
 
   const setResultPortion = (i, mult) => setScanResults(r => r.map((f, j) => j === i ? { ...f, mult } : f));
   const scaledResult = (f) => {
     const m = f.mult || 1;
     const rest = { ...f };
     delete rest.mult;
-    return { ...rest, emoji: f.emoji || "🍽️", category: "AI Scanned", grams: f.grams ? Math.round(f.grams * m) : undefined, cal: Math.round(f.cal * m), protein: Math.round(f.protein * m * 10) / 10, carbs: Math.round(f.carbs * m * 10) / 10, fat: Math.round(f.fat * m * 10) / 10, fiber: Math.round((f.fiber || 0) * m * 10) / 10, serving: m === 1 ? f.serving : `${m}× ${f.serving || "serving"}` };
+    return { ...rest, emoji: f.emoji || "🍽️", category: f.category || "AI Scanned", grams: f.grams ? Math.round(f.grams * m) : undefined, cal: Math.round(f.cal * m), protein: Math.round(f.protein * m * 10) / 10, carbs: Math.round(f.carbs * m * 10) / 10, fat: Math.round(f.fat * m * 10) / 10, fiber: Math.round((f.fiber || 0) * m * 10) / 10, serving: m === 1 ? f.serving : `${m}× ${f.serving || "serving"}` };
   };
   const remember = (foods) => setScanHistory(p => [...foods, ...p.filter(x => !foods.some(f => f.name === x.name))].slice(0, 20));
   const addScanItem = (i) => {
@@ -370,7 +395,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     remember(items);
     resetScan(); setTab("log");
   };
-  const resetScan = () => { cancelScan(); stopCam(); setScanResults(null); setScanPhoto(null); setScanError(null); setScanAdded({}); setScanMode("choose"); };
+  const resetScan = () => { cancelScan(); stopCam(); setScanResults(null); setScanPhoto(null); setScanError(null); setScanAdded({}); setUnknownParts([]); setScanMode("choose"); };
 
   // ── Barcode ──
   const pickBarcodeFood = (food) => {
@@ -454,7 +479,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
           <button type="button" className="icon-btn shrink-0" aria-label="Back to Add food" onClick={backToAdd}><ChevronLeft size={20} /></button>
           <div className="flex-1 min-w-0">
             <div className="text-[18px] font-extrabold" style={{ color: "var(--text-primary)" }}>Food scanner</div>
-            <div className="text-[13px]" style={{ color: "var(--text-dim)" }}>Photo, barcode, or describe your meal</div>
+            <div className="text-[13px]" style={{ color: "var(--text-dim)" }}>{aiReady ? "Photo, barcode, or describe your meal" : "Barcode, or describe your meal"}</div>
           </div>
           <IconBadge icon={Sparkles} tone="violet" size={38} />
         </div>
@@ -464,7 +489,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         <Card tone="amber">
           <div className="flex items-center gap-3 text-[13px]" style={{ color: "var(--text-secondary)" }}>
             <WifiOff size={18} className="shrink-0" aria-hidden="true" />
-            <span>You&apos;re offline. AI scanning needs internet — you can still add foods from the food list or as a custom food.</span>
+            <span>You&apos;re offline. Describe, search and your recent foods still work — photo and barcode lookups need internet.</span>
           </div>
         </Card>
       )}
@@ -472,8 +497,8 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       {/* Mode selector */}
       {scanMode === "choose" && !scanning && !scanResults && (<>
         <div className="tile-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-          <Tile icon={Camera} tone="sky" label="Camera" sub="Point at food" onClick={() => { setScanError(null); setScanMode("camera"); setTimeout(startCam, 50) }} />
-          <Tile icon={ImageUp} tone="teal" label="Upload" sub="From gallery" onClick={() => fileRef.current?.click()} />
+          {aiReady && <Tile icon={Camera} tone="sky" label="Camera" sub="Point at food" onClick={() => { setScanError(null); setScanMode("camera"); setTimeout(startCam, 50) }} />}
+          {aiReady && <Tile icon={ImageUp} tone="teal" label="Upload" sub="From gallery" onClick={() => fileRef.current?.click()} />}
           <Tile icon={ScanBarcode} tone="amber" label="Barcode" sub="Packaged food" onClick={startBarcode} />
           <Tile icon={PenLine} tone="violet" label="Describe" sub="Type your meal" onClick={() => { setScanError(null); setScanMode("text") }} />
         </div>
@@ -535,7 +560,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
 
       {/* Text describe mode */}
       {scanMode === "text" && !scanning && !scanResults && (
-        <Card title="Describe what you ate" className="fade-in">
+        <Card title="Describe what you ate" sub="Works offline — amounts like 2 roti, 1 katori, 200 g" className="fade-in">
           <textarea className="inp resize-none w-full text-sm p-3" value={textDesc} maxLength={300} onChange={e => setTextDesc(e.target.value)}
             placeholder="Example: 2 rotis with dal and chicken curry, a bowl of rice, and buttermilk"
             rows={3} />
@@ -548,7 +573,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
           {scanError && <div className="text-[13px] mb-3" style={{ color: "var(--warn)" }}>{scanError}</div>}
           <div className="flex gap-2">
             <button type="button" className="icon-btn w-11 h-11 shrink-0" aria-label="Back" onClick={backToChoose}><ChevronLeft size={20} /></button>
-            <button type="button" className="bp flex-1" onClick={() => analyzeText(textDesc)} disabled={!textDesc.trim() || offline}><Sparkles size={17} />Analyze food</button>
+            <button type="button" className="bp flex-1" onClick={() => analyzeText(textDesc)} disabled={!textDesc.trim()}><Sparkles size={17} />Find foods</button>
           </div>
         </Card>
       )}
@@ -587,7 +612,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
           {scanPhoto && <div className="w-[120px] h-[120px] rounded-xl overflow-hidden mx-auto mb-3"><img src={scanPhoto} alt="Your food" className="w-full h-full object-cover" /></div>}
           <div className="text-center mb-3">
             <div className="text-[17px] font-bold inline-flex items-center gap-1.5" style={{ color: "var(--ok)" }}><CircleCheck size={19} />{visibleResults.length} item{visibleResults.length > 1 ? "s" : ""} found</div>
-            <div className="text-[12.5px] num" style={{ color: "var(--text-dim)" }}>Total: {resultTotal} kcal · AI estimate — adjust the portion if needed</div>
+            <div className="text-[12.5px] num" style={{ color: "var(--text-dim)" }}>Total: {resultTotal} kcal · {scanSource === "local" ? "from IGNITE's food list" : "AI estimate"} — adjust the portion if needed</div>
           </div>
           <Tabs tabs={MEALS.map(m => [m, m])} value={selMeal} onChange={setSelMeal} label="Meal" className="mb-3" />
 
@@ -607,6 +632,18 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
               </div>
             );
           })}
+
+          {unknownParts.length > 0 && (
+            <div className="mt-3 p-3 rounded-2xl text-[12.5px]" style={{ background: "var(--ghost-bg)", color: "var(--text-secondary)" }}>
+              {unknownParts.map(part => (
+                <div key={part} className="flex items-center gap-2 flex-wrap py-1">
+                  <span className="flex-1 min-w-[140px]">Not in the food list: <b style={{ color: "var(--text-primary)" }}>&quot;{part}&quot;</b></span>
+                  <button type="button" className="chip chip-i text-[12px]" onClick={() => searchInstead(part)}><Search size={13} />Search</button>
+                  {aiReady && <button type="button" className="chip chip-i text-[12px]" disabled={offline} onClick={() => askAIFor(part)}><Sparkles size={13} />Ask AI</button>}
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="flex gap-2.5 mt-4">
             <button type="button" className="bp flex-1" onClick={addAllScan}><CircleCheck size={17} />{Object.keys(scanAdded).length ? "Add the rest & done" : "Add all & done"}</button>
@@ -733,14 +770,14 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       {!selFood && <>
         {/* AI scanner shortcuts */}
         <div className="tile-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-          <Tile icon={Camera} tone="sky" label="Scan" sub="Camera" onClick={openScanCamera} />
-          <Tile icon={ImageUp} tone="teal" label="Photo" sub="From gallery" onClick={() => { resetScan(); fileRef.current?.click(); }} />
+          {aiReady && <Tile icon={Camera} tone="sky" label="Scan" sub="Camera" onClick={openScanCamera} />}
+          {aiReady && <Tile icon={ImageUp} tone="teal" label="Photo" sub="From gallery" onClick={() => { resetScan(); fileRef.current?.click(); }} />}
           <Tile icon={ScanBarcode} tone="amber" label="Barcode" sub="Packaged" onClick={() => { resetScan(); startBarcode(); }} />
-          <Tile icon={PenLine} tone="violet" label="Describe" sub="AI estimate" onClick={openScanText} />
+          <Tile icon={PenLine} tone="violet" label="Describe" sub="Type your meal" onClick={openScanText} />
         </div>
         <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
         {scanHistory.length > 0 && (
-          <button type="button" className="link-btn self-start px-1" onClick={() => { resetScan(); setTab("scan"); }}>Recent AI scans ({scanHistory.length})<ChevronRight size={15} /></button>
+          <button type="button" className="link-btn self-start px-1" onClick={() => { resetScan(); setTab("scan"); }}>Recent scans ({scanHistory.length})<ChevronRight size={15} /></button>
         )}
 
         {/* Quick Add — Recent Foods */}
@@ -772,12 +809,13 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
             {filtered.slice(0, 36).map((f, i) => (<button type="button" key={f.name + i} className="fc" onClick={() => { setSelFood(f); setGrams(100) }}><div className="text-xl" aria-hidden="true">{f.emoji}</div><div className="text-[11.5px] font-medium mt-[3px]" style={{ color: "var(--text-primary)" }}>{f.name}</div><div className="text-[11px] num" style={{ color: "var(--text-dim)" }}>{f.cal} kcal</div></button>))}
           </div>
           {filtered.length === 0 && search && <div className="text-center pt-3 text-[13px]" style={{ color: "var(--text-dim)" }}>No match for &quot;{search}&quot; in the food list.</div>}
-          {search.trim().length >= 2 && filtered.length < 6 && !aiItems && (
+          {aiReady && search.trim().length >= 2 && filtered.length < 6 && !aiItems && (
             <button type="button" className="bg w-full mt-3" disabled={offline} onClick={() => runAiLookup(search)}><Sparkles size={15} />Look up &quot;{search.trim().slice(0, 30)}&quot; with AI</button>
           )}
           {aiItems?.loading && <div className="text-center py-2 text-[12.5px]" role="status" style={{ color: "var(--accent)" }}>Looking it up…</div>}
           {aiItems?.error && <div className="text-center py-2 text-[12.5px]" style={{ color: "var(--warn)" }}>{aiItems.error}</div>}
           {aiItems?.items.length > 0 && (<div className="mt-3"><SubHead>AI lookup · per 100g</SubHead><div className="grid grid-cols-[repeat(auto-fill,minmax(92px,1fr))] gap-2 max-h-[200px] overflow-y-auto">{aiItems.items.map((f, i) => (<button type="button" key={"ai" + i} className="fc" onClick={() => { setSelFood(f); setGrams(100); }}><div className="text-xl" aria-hidden="true">{f.emoji}</div><div className="text-[11.5px] font-medium mt-[3px]" style={{ color: "var(--text-primary)" }}>{f.name}</div><div className="text-[11px] num" style={{ color: "var(--accent)" }}>{f.cal} kcal</div></button>))}</div></div>)}
+          <div className="text-[11px] mt-3" style={{ color: "var(--text-dim)" }}>Values per 100 g. Generic foods: USDA FoodData Central via TempoLife (CC-BY-4.0).</div>
           <div className="mt-3.5">
             <button type="button" onClick={() => setShowCustom(!showCustom)} className="link-btn">{showCustom ? <><X size={15} />Cancel custom food</> : <><Plus size={15} />Add custom food</>}</button>
           </div>

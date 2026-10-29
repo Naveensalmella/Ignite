@@ -8,7 +8,7 @@ import { useDialog } from '@/components/ui/useDialog';
 const STEPS = [
   { title: "Welcome to IGNITE", icon: Flame, tone: "sky", desc: "You have been chosen as a Player. Every real action — a workout, a meal, a habit — earns XP, Gold and stats. Level up for real." },
   { title: "Your Daily Quest", icon: ListChecks, tone: "teal", desc: "Push-ups, sit-ups, squats and a run, scaled to your level and fully editable. Clear it before midnight for XP, Gold and Ability Points — miss it and tomorrow starts in the Penalty Zone. Level up, then pass a Rank Assessment to rise from E-Rank." },
-  { title: "Train and eat well", icon: Dumbbell, tone: "orange", desc: "Pick a ready-made workout or a Gate, with step-by-step guides for every exercise. Log food from 118 Indian dishes or scan a meal with the AI camera, and get meal plans that hit your protein, carbs and fat." },
+  { title: "Train and eat well", icon: Dumbbell, tone: "orange", desc: "Pick a ready-made workout or a Gate, with step-by-step guides for every exercise. Log food from 700+ foods, including hundreds of Indian dishes, by search, barcode or just describing your meal, and get meal plans that hit your protein, carbs and fat." },
   { title: "You're ready", icon: Rocket, tone: "sky", desc: "Your AI Coach knows your rank, stats and quests — ask it anything. Start small: one workout, one meal logged, one quest cleared." },
 ];
 

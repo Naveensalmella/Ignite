@@ -69,6 +69,13 @@ Set "grams" to 100 and "serving" to "100 g" for every item.
 Return ONLY a JSON array, no other text:
 [{"name":"Food Name","emoji":"🍛","grams":100,"cal":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"serving":"100 g"}]`;
 
+// Lets the app know whether any AI provider is set up. Without one, the Nutrition page
+// runs entirely on IGNITE's own food list, meal reader and barcode lookups.
+export async function GET() {
+  const ai = Boolean(process.env.GEMINI_API_KEY || process.env.GROQ_API_KEY || process.env.OPENROUTER_API_KEY);
+  return NextResponse.json({ ai }, { headers: { "Cache-Control": "public, max-age=300" } });
+}
+
 export async function POST(req: NextRequest) {
   const uid = await requireUser(req);
   if (uid instanceof Response) return uid;

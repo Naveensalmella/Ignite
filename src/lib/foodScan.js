@@ -57,6 +57,18 @@ export function readFile(file) {
   });
 }
 
+// ── Is AI set up on the server? (optional — everything else works without it) ──
+const AI_KEY = "ignite-food-ai";
+export function aiKnown() { try { const v = localStorage.getItem(AI_KEY); return v === null ? null : v === "1"; } catch { return null; } }
+export async function checkAI() {
+  try {
+    const r = await fetch("/api/food-scan", { signal: AbortSignal.timeout(8000) });
+    const { ai } = await r.json();
+    try { localStorage.setItem(AI_KEY, ai ? "1" : "0"); } catch { /* optional */ }
+    return !!ai;
+  } catch { return aiKnown() ?? false; }
+}
+
 // ── AI calls (cached) ──
 async function cachedAI(key, body, signal) {
   const hit = key && cacheGet(key);

@@ -1,11 +1,16 @@
 // ══════════════════════════════════════════════════
-// IGNITE — Food Database + AI Nutrition Lookup
-// Local: 118 Indian foods (instant, offline)
-// AI: Groq estimates nutrition for ANY food worldwide
+// IGNITE — our own food database (per 100 g), searchable offline.
+//   • the original 118 Indian foods (below)
+//   • ~210 more Indian & everyday dishes (foodsIndian.js, typical home-style values)
+//   • ~430 plain foods from USDA FoodData Central SR Legacy (foodsGeneric.json, public domain;
+//     taken from the TempoLife dataset, CC-BY-4.0 — see README "Data sources")
+// Each food may carry a typical serving (unit + unitG grams) and other names (aka).
 // ══════════════════════════════════════════════════
+import { INDIAN_EXTRA, BASE_SERVINGS, BASE_ALIASES } from './foodsIndian';
+import GENERIC from './foodsGeneric.json';
 
 // ── LOCAL DATABASE (per 100g) ──
-export const FOOD_DATABASE = [
+const BASE_FOODS = [
   // Rice
   { name: "White Rice (Cooked)", emoji: "🍚", cal: 130, protein: 2.7, carbs: 28, fat: 0.3, fiber: 0.4, category: "Rice" },
   { name: "Brown Rice (Cooked)", emoji: "🍚", cal: 112, protein: 2.6, carbs: 23, fat: 0.9, fiber: 1.8, category: "Rice" },
@@ -141,12 +146,26 @@ export const FOOD_DATABASE = [
   { name: "Sprouts (Moong)", emoji: "🌱", cal: 30, protein: 3, carbs: 4, fat: 0.2, fiber: 1.8, category: "Healthy" },
 ];
 
+const withServing = (f) => {
+  const [unit, grams] = (BASE_SERVINGS[f.name] || "").split(":");
+  return { ...f, ...(unit ? { unit, unitG: Number(grams) } : {}), ...(BASE_ALIASES[f.name] ? { aka: BASE_ALIASES[f.name] } : {}) };
+};
+const curated = [...BASE_FOODS.map(withServing), ...INDIAN_EXTRA];
+const curatedNames = new Set(curated.map(f => f.name.toLowerCase()));
+const generic = GENERIC
+  .filter(([name]) => !curatedNames.has(name.toLowerCase()))
+  .map(([name, emoji, cal, protein, carbs, fat, fiber, category]) => ({ name, emoji, cal, protein, carbs, fat, fiber, category, source: "USDA" }));
+
+// The original foods stay first: meal plans look foods up by name and take the first match.
+export const FOOD_DATABASE = [...curated, ...generic];
+export const FOOD_COUNT = FOOD_DATABASE.length;
+
 export const FOOD_CATEGORIES = [...new Set(FOOD_DATABASE.map(f => f.category))];
 
 // ── LOCAL SEARCH (instant, offline) ──
 // Common Indian/English alternative names, so "chapati", "dahi" or "anda" still match.
 const SYNONYMS = {
-  chapati: "roti", chapathi: "roti", phulka: "roti", fulka: "roti", dahi: "curd", yogurt: "curd", yoghurt: "curd",
+  chapati: "roti", chapathi: "roti", dahi: "curd", yogurt: "curd", yoghurt: "curd",
   anda: "egg", eggs: "egg", murgh: "chicken", murg: "chicken", chawal: "rice", bhat: "rice", aloo: "potato",
   alu: "potato", gobi: "cauliflower", palak: "spinach", channa: "chole", chana: "chole", chickpea: "chole",
   rajmah: "rajma", daal: "dal", dhal: "dal", lentil: "dal", lentils: "dal", paratha: "paratha", parantha: "paratha",
@@ -156,23 +175,37 @@ const SYNONYMS = {
 const normWord = (w) => SYNONYMS[w] || (w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w);
 const words = (s) => s.toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(Boolean).map(normWord);
 
-export function searchFoods(query) {
+export const normalizeWords = words;
+
+// Words of each food's name and other names, computed once.
+let INDEX = null;
+const index = () => INDEX || (INDEX = FOOD_DATABASE.map(f => ({
+  f, name: f.name.toLowerCase(), cat: f.category.toLowerCase(),
+  nameWords: words(f.name), akaWords: (f.aka || []).map(a => words(a)),
+})));
+
+export function searchFoods(query, max = 30) {
   const qWords = words(query || "");
   if (qWords.length === 0) return [];
+  const qPhrase = qWords.join(" ");
   const scored = [];
-  for (const f of FOOD_DATABASE) {
-    const name = f.name.toLowerCase();
-    const nameWords = words(f.name);
+  for (const it of index()) {
     let score = 0;
     for (const q of qWords) {
-      if (nameWords.some(w => w === q)) score += 3;
-      else if (nameWords.some(w => w.startsWith(q))) score += 2;
-      else if (name.includes(q) || f.category.toLowerCase().includes(q)) score += 1;
+      if (it.nameWords.includes(q)) score += 3;
+      else if (it.akaWords.some(a => a.includes(q))) score += 3;
+      else if (it.nameWords.some(w => w.startsWith(q))) score += 2;
+      else if (it.name.includes(q) || it.cat.includes(q)) score += 1;
       else { score = 0; break; } // every word must match something
     }
-    if (score > 0) scored.push([score + (name.startsWith(qWords[0]) ? 1 : 0), f]);
+    if (score === 0) continue;
+    if (it.akaWords.some(a => a.join(" ") === qPhrase) || it.nameWords.join(" ") === qPhrase) score += 4; // exact name / other name
+    if (it.nameWords[0] === qWords[0]) score += 1;
+    score -= it.nameWords.length * 0.05;                  // shorter (more generic) names first
+    if (it.f.source === "USDA") score -= 0.5;             // our Indian dishes before generic ones
+    scored.push([score, it.f]);
   }
-  return scored.sort((a, b) => b[0] - a[0]).slice(0, 30).map(x => x[1]);
+  return scored.sort((a, b) => b[0] - a[0]).slice(0, max).map(x => x[1]);
 }
 
 export function getFoodsByCategory(category) {
