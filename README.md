@@ -71,17 +71,17 @@ On **Vercel**, add the same variables under *Project → Settings → Environmen
 - **Food list** (`src/data/foodDatabase.js`, `foodsIndian.js`): IGNITE's own Indian and everyday dishes — typical home-style values per 100 g, with usual serving sizes.
 - **Generic foods** (`src/data/foodsGeneric.json`): USDA FoodData Central, SR Legacy (public domain), taken from the [TempoLife food dataset](https://tempolife.app) — *Food nutrition data from TempoLife (tempolife.app), CC-BY-4.0.* Rebuild with `scripts/build-generic-foods.py`.
 - **Barcodes**: [Open Food Facts](https://world.openfoodfacts.org) (ODbL), looked up live.
-- **Photo recognition**: Apple's [MobileCLIP-S0](https://github.com/apple/ml-mobileclip) ([`Xenova/mobileclip_s0`](https://huggingface.co/Xenova/mobileclip_s0) on Hugging Face, Apple sample-code licence) run in the browser with [Transformers.js](https://huggingface.co/docs/transformers.js).
+- **Photo recognition**: OpenAI's [CLIP ViT-B/32](https://github.com/openai/CLIP) ([`Xenova/clip-vit-base-patch32`](https://huggingface.co/Xenova/clip-vit-base-patch32) on Hugging Face), run in the browser with [Transformers.js](https://huggingface.co/docs/transformers.js). *CLIP: Copyright (c) 2021 OpenAI, MIT licence.*
 
 The Nutrition page works fully without any AI key: search, barcode, the offline "Describe your meal" reader (`src/lib/mealParser.js`) and photo recognition use only this data. With `GEMINI_API_KEY`/`GROQ_API_KEY` set, "Ask AI" is added for unknown foods and for a detailed photo estimate.
 
 ### Photo recognition (on device)
 
-A photo is matched against every food in the list by MobileCLIP, running in a Web Worker (`src/lib/foodVision.worker.js`). It shows the closest foods at one typical serving, and the user picks what's on the plate. Nothing is uploaded. The image model (~23 MB, plus the 14 MB runtime) downloads from Hugging Face the first time and is cached by the browser, so later photos work offline. ONNX Runtime's WebAssembly engine is served from `public/vendor/ort/`, which `npm install` fills from `node_modules` (`scripts/copy-ort-wasm.mjs`).
+A photo is matched against every food in the list by CLIP, running in a Web Worker (`src/lib/foodVision.worker.js`). It shows the closest foods at one typical serving, and the user picks what's on the plate. Nothing is uploaded. The image model (~53 MB, plus the 14 MB runtime) downloads from Hugging Face the first time and is cached by the browser, so later photos work offline. ONNX Runtime's WebAssembly engine is served from `public/vendor/ort/`, which `npm install` fills from `node_modules` (`scripts/copy-ort-wasm.mjs`).
 
-On 941 photos of 20 Indian and street-food dishes ([`rajistics/indian_food_images`](https://huggingface.co/datasets/rajistics/indian_food_images) test split), the right food is the best match 71% of the time and among the 5 shown 89% of the time; look-alikes (masala vs plain dosa, roti vs paratha, naan vs kulcha) are the usual misses. All 90 exercise photos in `public/exercises/` correctly say "No food found".
+On 941 photos of 20 Indian and street-food dishes ([`rajistics/indian_food_images`](https://huggingface.co/datasets/rajistics/indian_food_images) test split), the right food is the best match 68% of the time and among the 5 shown 88% of the time; look-alikes (roti vs naan, kadai paneer vs other paneer curries, masala vs set dosa) are the usual misses. All 90 exercise photos in `public/exercises/` correctly say "No food found".
 
-The text side of the match (one embedding per food) is precomputed into `public/data/food-vision.json` by `npm run build:food-vision`. Re-run it after adding foods; it needs access to `huggingface.co` and `*.hf.co`. If the file is missing, each device downloads the text model too (~43 MB) and builds the embeddings once, the first time it scans a photo.
+The text side of the match (one embedding per food) is precomputed into `public/data/food-vision.json` by `npm run build:food-vision`. Re-run it after adding foods; it needs access to `huggingface.co` and `*.hf.co`. If the file is missing, each device downloads the text model too (~65 MB) and builds the embeddings once, the first time it scans a photo.
 
 ## Scripts
 

@@ -1,8 +1,8 @@
 // Browser side of the on-device photo recognizer (see foodVision.worker.js): no AI key, no
 // server, and once the model is downloaded it works offline.
-import { VISION_FOODS } from "@/lib/foodVisionShared";
+import { VISION_FOODS, VISION_MODEL } from "@/lib/foodVisionShared";
 
-const READY_KEY = "ignite-food-vision"; // "1" once the model has run here (so it's cached)
+const READY_KEY = `ignite-food-vision:${VISION_MODEL}`; // "1" once this model has run here (so it's cached)
 const BY_NAME = new Map(VISION_FOODS.map(f => [f.name, f]));
 
 let worker = null, seq = 0;
@@ -50,7 +50,7 @@ export function recognizeFood(image, { onProgress, signal, top = 5 } = {}) {
         if (data.type === "error") {
           const offline = typeof navigator !== "undefined" && navigator.onLine === false;
           return finish({ error: offline && !visionReady()
-            ? "The photo recognizer downloads once (about 40 MB) the first time. Connect to the internet, then it works offline."
+            ? "The photo recognizer downloads once (about 70 MB) the first time. Connect to the internet, then it works offline."
             : "Couldn't run the photo recognizer. Check your connection and try again, or describe your meal.", detail: data.message });
         }
         try { localStorage.setItem(READY_KEY, "1"); } catch { /* optional */ }

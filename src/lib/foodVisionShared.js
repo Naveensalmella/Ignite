@@ -4,10 +4,11 @@
 // into public/data/food-vision.json so phones only download the image half of the model.
 import { FOOD_DATABASE } from "@/data/foodDatabase";
 
-// Apple's MobileCLIP-S0 (zero-shot image ↔ text matching), ONNX weights for Transformers.js.
+// OpenAI's CLIP ViT-B/32 (zero-shot image ↔ text matching; MIT licence), ONNX weights for Transformers.js.
+// (Apple's MobileCLIP scored a little better but its weights are licensed for research only.)
 // Pinned to one revision so the precomputed food embeddings always match the weights.
-export const VISION_MODEL = "Xenova/mobileclip_s0";
-export const VISION_REVISION = "757d59c9c6870a76a4b0306f05f5061bca15c39f";
+export const VISION_MODEL = "Xenova/clip-vit-base-patch32";
+export const VISION_REVISION = "6b7c523703ae26e39be4b03774966f8571c7f523";
 
 // Things you cook with rather than photograph as a meal.
 const NOT_A_DISH = /\b(powder|peel|syrup|sugar|whey|isolate)\b|\boil$|\bflour\b(?! tortilla)|^egg (white|yolk|\(raw\))/i;
