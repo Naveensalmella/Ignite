@@ -64,7 +64,7 @@ On **Vercel**, add the same variables under *Project → Settings → Environmen
 ### Firebase setup
 
 1. Enable **Authentication** → Email/Password and Google providers. Add your domain under *Authorized domains*.
-2. Create a **Firestore** database and deploy the rules in [`firestore.rules`](firestore.rules) (Firestore → Rules → paste → Publish).
+2. Create a **Firestore** database and publish the rules in [`firestore.rules`](firestore.rules): either Firebase console → Firestore → Rules → paste → **Publish**, or `npx firebase-tools deploy --only firestore:rules --project <your-project-id>`. Publish them again whenever `firestore.rules` changes — the Social page depends on them.
 
 ## Scripts
 
