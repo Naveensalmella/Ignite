@@ -1,5 +1,5 @@
 // On-device food photo recognizer (runs in a Web Worker so the page stays smooth).
-// MobileCLIP compares the photo with a text description of every food in IGNITE's list and
+// CLIP compares the photo with a text description of every food in IGNITE's list and
 // returns the closest matches. The model downloads from Hugging Face once, then is served from
 // the browser cache, so photos work offline and never leave the device.
 import { env, AutoProcessor, AutoTokenizer, CLIPTextModelWithProjection, CLIPVisionModelWithProjection, RawImage } from "@huggingface/transformers";
@@ -59,8 +59,8 @@ async function loadLabels() {
 
 async function init() {
   await pickRuntime();
-  // fp16 halves the download and matches fp32 on our test photos (the 8-bit version is broken for this model).
-  const opts = { revision: VISION_REVISION, device: "wasm", dtype: "fp16", progress_callback: onProgress };
+  // 4-bit weights: 53 MB instead of 176 MB (fp16), with the same matches as the 64 MB 4-bit/fp32 version on our test photos.
+  const opts = { revision: VISION_REVISION, device: "wasm", dtype: "q4f16", progress_callback: onProgress };
   const [processor, model] = await Promise.all([AutoProcessor.from_pretrained(VISION_MODEL, opts), CLIPVisionModelWithProjection.from_pretrained(VISION_MODEL, opts)]);
   const labels = await loadLabels();
   return { processor, model, labels };

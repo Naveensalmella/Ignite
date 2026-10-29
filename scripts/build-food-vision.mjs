@@ -1,6 +1,6 @@
-// Precomputes the text side of the food photo recognizer: one MobileCLIP embedding per food in
+// Precomputes the text side of the food photo recognizer: one CLIP embedding per food in
 // IGNITE's list, written to public/data/food-vision.json (~350 KB). Without this file the
-// recognizer still works, but each phone first downloads the text model too (~43 MB) and builds
+// recognizer still works, but each phone first downloads the text model too (~65 MB) and builds
 // the embeddings itself. Re-run after adding foods:  npm run build:food-vision
 // Needs internet access to huggingface.co (model weights are served from *.hf.co).
 import { registerHooks } from "node:module";
