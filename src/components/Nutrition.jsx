@@ -8,7 +8,8 @@ import {
 import { XP } from '../data';
 import { FOOD_DATABASE, FOOD_CATEGORIES, searchFoods } from '../data/foodDatabase';
 import { prepareImage, readFile, scanPhoto as scanPhotoAI, describeMeal, lookupFood, lookupBarcode, getBarcodeDetector, aiKnown, checkAI } from '@/lib/foodScan';
-import { parseMeal, toEntry } from '@/lib/mealParser';
+import { parseMeal, toEntry, servingOf } from '@/lib/mealParser';
+import { recognizeFood, visionSupported, visionReady } from '@/lib/foodVision';
 import { DIET_TEMPLATES, generateDayPlan, generateWeekPlan, getPlanDayTotals, getShoppingList, getSwapOptions as getMealSwaps } from '../data/mealPlanner';
 import { today, dateKey, toArr } from '../utils';
 import HistoryPanel from './HistoryPanel';
@@ -151,9 +152,12 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const [scanError, setScanError] = useState(null);
   const [scanPhoto, setScanPhoto] = useState(null);
   const [scanAdded, setScanAdded] = useState({}); // result index → true once logged
-  const [scanSource, setScanSource] = useState("ai"); // "local" (our food list) | "ai"
+  const [scanSource, setScanSource] = useState("ai"); // "local" (our food list) | "photo" (on-device recognizer) | "ai"
   const [unknownParts, setUnknownParts] = useState([]); // parts of a description we couldn't match
   const [aiReady, setAiReady] = useState(() => aiKnown() ?? false); // is an AI provider set up on the server?
+  const [visionOn] = useState(visionSupported); // on-device photo recognizer (no AI key needed)
+  const [visionLoad, setVisionLoad] = useState(null); // { stage, loaded, total } while it works
+  const photoOn = aiReady || visionOn;
   const [barcode, setBarcode] = useState({ code: "", busy: false, error: null, live: false });
   const videoRef = useRef(null), streamRef = useRef(null), fileRef = useRef(null), abortRef = useRef(null), detectRef = useRef(null);
 
@@ -313,18 +317,30 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     else setScanError(data.error || "Couldn't identify the food. Try a clearer photo or describe your meal.");
   };
 
-  const analyzeImage = async (src) => {
+  // Closest foods from our list, each at one typical serving.
+  const showPhotoMatches = (matches) => {
+    setScanSource("photo"); setUnknownParts([]); setScanAdded({}); setScanError(null);
+    setScanResults(matches.map(({ food }) => { const [unit, grams] = servingOf(food); return { ...toEntry({ food, grams, qty: 1, unit }), mult: 1 }; }));
+  };
+
+  // Photos go to the on-device recognizer (free, private, offline once downloaded); to AI when
+  // asked for, or when the recognizer can't run here.
+  const analyzeImage = async (src, { useAI = false } = {}) => {
     cancelScan();
-    setScanMode("camera"); setScanError(null); setScanResults(null); setScanning(true);
+    setScanMode("camera"); setScanError(null); setScanResults(null); setScanning(true); setVisionLoad(null);
     const ctrl = new AbortController(); abortRef.current = ctrl;
     try {
       const jpeg = await prepareImage(src, 1024);
       setScanPhoto(jpeg);
-      showResult(await scanPhotoAI(jpeg, ctrl.signal));
+      const res = useAI || !visionOn ? null : await recognizeFood(jpeg, { signal: ctrl.signal, onProgress: setVisionLoad });
+      if (res?.matches?.length) showPhotoMatches(res.matches);
+      else if (res?.cancelled) { /* the user cancelled */ }
+      else if (aiReady && !res?.noFood) { setVisionLoad(null); showResult(await scanPhotoAI(jpeg, ctrl.signal)); }
+      else setScanError(res?.error || "Couldn't identify the food. Try a clearer photo or describe your meal.");
     } catch (e) {
       setScanError(e?.message || "Couldn't read that photo.");
     }
-    if (abortRef.current === ctrl) { abortRef.current = null; setScanning(false); }
+    if (abortRef.current === ctrl) { abortRef.current = null; setScanning(false); setVisionLoad(null); }
   };
 
   const capture = () => {
@@ -479,7 +495,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
           <button type="button" className="icon-btn shrink-0" aria-label="Back to Add food" onClick={backToAdd}><ChevronLeft size={20} /></button>
           <div className="flex-1 min-w-0">
             <div className="text-[18px] font-extrabold" style={{ color: "var(--text-primary)" }}>Food scanner</div>
-            <div className="text-[13px]" style={{ color: "var(--text-dim)" }}>{aiReady ? "Photo, barcode, or describe your meal" : "Barcode, or describe your meal"}</div>
+            <div className="text-[13px]" style={{ color: "var(--text-dim)" }}>{photoOn ? "Photo, barcode, or describe your meal" : "Barcode, or describe your meal"}</div>
           </div>
           <IconBadge icon={Sparkles} tone="violet" size={38} />
         </div>
@@ -489,7 +505,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         <Card tone="amber">
           <div className="flex items-center gap-3 text-[13px]" style={{ color: "var(--text-secondary)" }}>
             <WifiOff size={18} className="shrink-0" aria-hidden="true" />
-            <span>You&apos;re offline. Describe, search and your recent foods still work — photo and barcode lookups need internet.</span>
+            <span>You&apos;re offline. Describe, search and your recent foods still work{visionReady() ? ", and so do photos" : ""} — {visionReady() ? "barcode lookups need" : "photo and barcode lookups need"} internet.</span>
           </div>
         </Card>
       )}
@@ -497,8 +513,8 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       {/* Mode selector */}
       {scanMode === "choose" && !scanning && !scanResults && (<>
         <div className="tile-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-          {aiReady && <Tile icon={Camera} tone="sky" label="Camera" sub="Point at food" onClick={() => { setScanError(null); setScanMode("camera"); setTimeout(startCam, 50) }} />}
-          {aiReady && <Tile icon={ImageUp} tone="teal" label="Upload" sub="From gallery" onClick={() => fileRef.current?.click()} />}
+          {photoOn && <Tile icon={Camera} tone="sky" label="Camera" sub="Point at food" onClick={() => { setScanError(null); setScanMode("camera"); setTimeout(startCam, 50) }} />}
+          {photoOn && <Tile icon={ImageUp} tone="teal" label="Upload" sub="From gallery" onClick={() => fileRef.current?.click()} />}
           <Tile icon={ScanBarcode} tone="amber" label="Barcode" sub="Packaged food" onClick={startBarcode} />
           <Tile icon={PenLine} tone="violet" label="Describe" sub="Type your meal" onClick={() => { setScanError(null); setScanMode("text") }} />
         </div>
@@ -586,7 +602,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
           </div>
           {scanError && <div className="text-[13px] mb-3 px-3" style={{ color: "var(--warn)" }}>{scanError}</div>}
           <div className="flex gap-2 justify-center flex-wrap">
-            <button type="button" className="bp" onClick={() => analyzeImage(scanPhoto)} disabled={offline}><RefreshCw size={16} />Try again</button>
+            <button type="button" className="bp" onClick={() => analyzeImage(scanPhoto)} disabled={offline && !visionReady()}><RefreshCw size={16} />Try again</button>
             <button type="button" className="bg" onClick={() => { setScanPhoto(null); setScanError(null); setScanMode("text"); }}><PenLine size={16} />Describe instead</button>
             <button type="button" className="icon-btn w-11 h-11" aria-label="Close" onClick={backToChoose}><X size={18} /></button>
           </div>
@@ -600,8 +616,16 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
           <div className="flex gap-1.5 justify-center mb-3" aria-hidden="true">
             {[0, 1, 2].map(i => <div key={i} className="w-[10px] h-[10px] rounded-full" style={{ background: "var(--accent)", animation: `dotPulse 1.2s ${i * .2}s infinite` }} />)}
           </div>
-          <div className="text-sm font-semibold" role="status" style={{ color: "var(--accent)" }}>Analyzing your food…</div>
-          <div className="text-[12px] mt-1" style={{ color: "var(--text-dim)" }}>Estimating calories, protein, carbs and fat</div>
+          {visionLoad?.stage === "download" || visionLoad?.stage === "prepare" ? (<>
+            <div className="text-sm font-semibold" role="status" style={{ color: "var(--accent)" }}>{visionLoad.stage === "download" ? "Downloading the food recognizer…" : "Setting up the food list…"}</div>
+            <div className="max-w-[240px] mx-auto mt-2.5"><Bar value={visionLoad.total ? visionLoad.loaded / visionLoad.total : 0} color="var(--accent)" height={5} label="Food recognizer setup" /></div>
+            <div className="text-[12px] mt-1.5 num" style={{ color: "var(--text-dim)" }}>
+              {visionLoad.stage === "download" ? `${(visionLoad.loaded / 1e6).toFixed(0)} of ${(visionLoad.total / 1e6).toFixed(0)} MB` : `${visionLoad.loaded} of ${visionLoad.total} foods`} · one time only, then photos work offline
+            </div>
+          </>) : (<>
+            <div className="text-sm font-semibold" role="status" style={{ color: "var(--accent)" }}>Analyzing your food…</div>
+            <div className="text-[12px] mt-1" style={{ color: "var(--text-dim)" }}>{visionLoad ? "Matching it with IGNITE's food list, on your device" : "Estimating calories, protein, carbs and fat"}</div>
+          </>)}
           <button type="button" className="bg mt-4" onClick={() => { cancelScan(); setScanError(null); }}><X size={15} />Cancel</button>
         </Card>
       )}
@@ -611,8 +635,13 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         <Card className="fade-in">
           {scanPhoto && <div className="w-[120px] h-[120px] rounded-xl overflow-hidden mx-auto mb-3"><img src={scanPhoto} alt="Your food" className="w-full h-full object-cover" /></div>}
           <div className="text-center mb-3">
-            <div className="text-[17px] font-bold inline-flex items-center gap-1.5" style={{ color: "var(--ok)" }}><CircleCheck size={19} />{visibleResults.length} item{visibleResults.length > 1 ? "s" : ""} found</div>
-            <div className="text-[12.5px] num" style={{ color: "var(--text-dim)" }}>Total: {resultTotal} kcal · {scanSource === "local" ? "from IGNITE's food list" : "AI estimate"} — adjust the portion if needed</div>
+            {scanSource === "photo" ? (<>
+              <div className="text-[17px] font-bold inline-flex items-center gap-1.5" style={{ color: "var(--text-primary)" }}><Sparkles size={18} />Is it one of these?</div>
+              <div className="text-[12.5px]" style={{ color: "var(--text-dim)" }}>Best match first, from IGNITE's food list — add what's on your plate and adjust the portion</div>
+            </>) : (<>
+              <div className="text-[17px] font-bold inline-flex items-center gap-1.5" style={{ color: "var(--ok)" }}><CircleCheck size={19} />{visibleResults.length} item{visibleResults.length > 1 ? "s" : ""} found</div>
+              <div className="text-[12.5px] num" style={{ color: "var(--text-dim)" }}>Total: {resultTotal} kcal · {scanSource === "local" ? "from IGNITE's food list" : "AI estimate"} — adjust the portion if needed</div>
+            </>)}
           </div>
           <Tabs tabs={MEALS.map(m => [m, m])} value={selMeal} onChange={setSelMeal} label="Meal" className="mb-3" />
 
@@ -645,10 +674,23 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
             </div>
           )}
 
-          <div className="flex gap-2.5 mt-4">
-            <button type="button" className="bp flex-1" onClick={addAllScan}><CircleCheck size={17} />{Object.keys(scanAdded).length ? "Add the rest & done" : "Add all & done"}</button>
-            <button type="button" className="bg" onClick={resetScan}><RefreshCw size={16} />New scan</button>
-          </div>
+          {scanSource === "photo" ? (<>
+            <div className="flex gap-2 flex-wrap mt-3 text-[12.5px]">
+              <span className="w-full" style={{ color: "var(--text-dim)" }}>Not here?</span>
+              <button type="button" className="chip chip-i text-[12px]" onClick={() => { resetScan(); setTab("add"); }}><Search size={13} />Search foods</button>
+              <button type="button" className="chip chip-i text-[12px]" onClick={() => { setScanResults(null); setScanPhoto(null); setScanMode("text"); }}><PenLine size={13} />Describe it</button>
+              {aiReady && <button type="button" className="chip chip-i text-[12px]" disabled={offline} onClick={() => analyzeImage(scanPhoto, { useAI: true })}><Sparkles size={13} />Ask AI</button>}
+            </div>
+            <div className="flex gap-2.5 mt-4">
+              <button type="button" className="bp flex-1" onClick={() => { resetScan(); setTab("log"); }}><CircleCheck size={17} />Done</button>
+              <button type="button" className="bg" onClick={resetScan}><RefreshCw size={16} />New scan</button>
+            </div>
+          </>) : (
+            <div className="flex gap-2.5 mt-4">
+              <button type="button" className="bp flex-1" onClick={addAllScan}><CircleCheck size={17} />{Object.keys(scanAdded).length ? "Add the rest & done" : "Add all & done"}</button>
+              <button type="button" className="bg" onClick={resetScan}><RefreshCw size={16} />New scan</button>
+            </div>
+          )}
         </Card>
       )}
     </div>);
@@ -768,10 +810,10 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       </Card>)}
 
       {!selFood && <>
-        {/* AI scanner shortcuts */}
+        {/* Scanner shortcuts */}
         <div className="tile-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-          {aiReady && <Tile icon={Camera} tone="sky" label="Scan" sub="Camera" onClick={openScanCamera} />}
-          {aiReady && <Tile icon={ImageUp} tone="teal" label="Photo" sub="From gallery" onClick={() => { resetScan(); fileRef.current?.click(); }} />}
+          {photoOn && <Tile icon={Camera} tone="sky" label="Scan" sub="Camera" onClick={openScanCamera} />}
+          {photoOn && <Tile icon={ImageUp} tone="teal" label="Photo" sub="From gallery" onClick={() => { resetScan(); fileRef.current?.click(); }} />}
           <Tile icon={ScanBarcode} tone="amber" label="Barcode" sub="Packaged" onClick={() => { resetScan(); startBarcode(); }} />
           <Tile icon={PenLine} tone="violet" label="Describe" sub="Type your meal" onClick={openScanText} />
         </div>

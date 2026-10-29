@@ -43,3 +43,6 @@ next-env.d.ts
 .env.local
 *.log
 .claude/worktrees/
+
+# ONNX Runtime WebAssembly, copied from node_modules on install (scripts/copy-ort-wasm.mjs)
+/public/vendor/ort/
