@@ -115,6 +115,7 @@ Pasta (Red Sauce)|🍝|150|5|25|3.5|2|Fast Food|plate:250|pasta
 Veg Momos (Steamed)|🥟|170|5|28|4|2|Street Food|piece:30|momos;veg momos
 Chicken Momos (Steamed)|🥟|190|10|22|7|1|Street Food|piece:30|chicken momos
 Spring Roll|🥢|240|5|28|12|2|Street Food|piece:60|
+Kathi Roll (Paneer / Chicken)|🌯|230|9.5|26|10|2|Street Food|piece:180|kathi roll;kati roll;frankie;chicken roll;paneer roll
 Pani Puri|🫓|180|3.5|27|6.5|2.5|Street Food|plate:120|golgappa;puchka
 Bhel Puri|🥗|200|5|32|6|3|Street Food|plate:150|bhel
 Sev Puri|🫓|290|6|36|14|3|Street Food|plate:120|

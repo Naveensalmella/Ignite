@@ -28,7 +28,7 @@ export const VISION_FOODS = (() => {
 
 // Non-food labels, so a photo of a person or a room says "no food" instead of naming a dish.
 // Their names start with "#" and are never shown.
-const NOT_FOOD = ["a person", "a face", "a room", "a pet", "a car", "a landscape", "a screenshot", "a page of text", "an empty plate"];
+const NOT_FOOD = ["a person", "a face", "a person exercising", "gym equipment", "a room", "a pet", "a car", "a landscape", "a screenshot", "a page of text", "an empty plate"];
 
 const prompt = (s) => `a photo of ${s}, a type of food.`;
 

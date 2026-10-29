@@ -50,7 +50,7 @@ export function recognizeFood(image, { onProgress, signal, top = 5 } = {}) {
         if (data.type === "error") {
           const offline = typeof navigator !== "undefined" && navigator.onLine === false;
           return finish({ error: offline && !visionReady()
-            ? "The photo recognizer downloads once (about 45 MB) the first time. Connect to the internet, then it works offline."
+            ? "The photo recognizer downloads once (about 40 MB) the first time. Connect to the internet, then it works offline."
             : "Couldn't run the photo recognizer. Check your connection and try again, or describe your meal.", detail: data.message });
         }
         try { localStorage.setItem(READY_KEY, "1"); } catch { /* optional */ }

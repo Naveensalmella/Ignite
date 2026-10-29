@@ -15,7 +15,7 @@ Built with **Next.js 16 (App Router)**, **React 19**, **Zustand**, **Tailwind CS
 | **Shadow Army** | Keep a habit for 14 days and ARISE it as a shadow (Igris, Iron, Tank…). Shadows rank up with your best streak — Soldier → Knight → Elite Knight → Commander → Marshal → Grand Marshal — add an XP bonus while active, and go dormant when the habit breaks |
 | **Job Change** | At Level 40, a 7-day Job Change Quest; then choose Fighter, Assassin, Tank, Mage-Scholar or Ranger-Monk — or the hidden Shadow Monarch class |
 | **Training** | Visual demo for **every** exercise (start/end photos or an animated athlete), 900+ exercise library, workout player with set/weight logging, rest timer and PR detection, muscle-recovery map, 22 programs (strength, combat, running, yoga, HIIT, mind), custom workouts, AI workout builder, progress analytics |
-| **Nutrition** | Food log with 749 Indian/global foods, on-device photo recognition (no AI key), barcode and text food scanner, water tracker, macro targets, meal plans & shopping list |
+| **Nutrition** | Food log with 750 Indian/global foods, on-device photo recognition (no AI key), barcode and text food scanner, water tracker, macro targets, meal plans & shopping list |
 | **AI Coach** | Streaming AI coach that speaks in the System's voice, 4 specialties; knows your rank, stats and quest status; can log food from chat |
 | **Life** | Missions (to-dos), focus timer (Pomodoro), wellness journal, finance tracker, daily routine |
 | **Body Progress** | Progress photos and body measurements, year heatmap, data export |
@@ -77,7 +77,9 @@ The Nutrition page works fully without any AI key: search, barcode, the offline 
 
 ### Photo recognition (on device)
 
-A photo is matched against every food in the list by MobileCLIP, running in a Web Worker (`src/lib/foodVision.worker.js`). It shows the closest foods at one typical serving, and the user picks what's on the plate. Nothing is uploaded. The image model (~45 MB) downloads from Hugging Face the first time and is cached by the browser, so later photos work offline. ONNX Runtime's WebAssembly engine is served from `public/vendor/ort/`, which `npm install` fills from `node_modules` (`scripts/copy-ort-wasm.mjs`).
+A photo is matched against every food in the list by MobileCLIP, running in a Web Worker (`src/lib/foodVision.worker.js`). It shows the closest foods at one typical serving, and the user picks what's on the plate. Nothing is uploaded. The image model (~23 MB, plus the 14 MB runtime) downloads from Hugging Face the first time and is cached by the browser, so later photos work offline. ONNX Runtime's WebAssembly engine is served from `public/vendor/ort/`, which `npm install` fills from `node_modules` (`scripts/copy-ort-wasm.mjs`).
+
+On 941 photos of 20 Indian and street-food dishes ([`rajistics/indian_food_images`](https://huggingface.co/datasets/rajistics/indian_food_images) test split), the right food is the best match 71% of the time and among the 5 shown 89% of the time; look-alikes (masala vs plain dosa, roti vs paratha, naan vs kulcha) are the usual misses. All 90 exercise photos in `public/exercises/` correctly say "No food found".
 
 The text side of the match (one embedding per food) is precomputed into `public/data/food-vision.json` by `npm run build:food-vision`. Re-run it after adding foods; it needs access to `huggingface.co` and `*.hf.co`. If the file is missing, each device downloads the text model too (~43 MB) and builds the embeddings once, the first time it scans a photo.
 

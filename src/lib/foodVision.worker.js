@@ -59,7 +59,8 @@ async function loadLabels() {
 
 async function init() {
   await pickRuntime();
-  const opts = { revision: VISION_REVISION, device: "wasm", dtype: "fp32", progress_callback: onProgress };
+  // fp16 halves the download and matches fp32 on our test photos (the 8-bit version is broken for this model).
+  const opts = { revision: VISION_REVISION, device: "wasm", dtype: "fp16", progress_callback: onProgress };
   const [processor, model] = await Promise.all([AutoProcessor.from_pretrained(VISION_MODEL, opts), CLIPVisionModelWithProjection.from_pretrained(VISION_MODEL, opts)]);
   const labels = await loadLabels();
   return { processor, model, labels };
