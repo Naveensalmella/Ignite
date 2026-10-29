@@ -3,7 +3,7 @@ import { useState, useMemo, useRef, useEffect, Fragment } from 'react';
 import {
   Plus, Minus, X, Droplet, Coffee, Salad, UtensilsCrossed, Utensils, Cookie, Camera, ImageUp, PenLine, Search, Clock,
   ChevronLeft, ChevronRight, RefreshCw, CircleCheck, Sparkles, Save, Pencil, Trash2, Shuffle, Scale, Drumstick, Leaf,
-  Flame, Soup, Wheat, Beef, Coins, Egg, Award, CalendarDays, ShoppingCart, Zap, ScanBarcode, WifiOff,
+  Flame, Soup, Wheat, Beef, Coins, Egg, Award, CalendarDays, ShoppingCart, Zap, ScanBarcode, WifiOff, Download,
 } from 'lucide-react';
 import { XP } from '../data';
 import { FOOD_DATABASE, FOOD_CATEGORIES, searchFoods } from '../data/foodDatabase';
@@ -159,6 +159,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const [visionLoad, setVisionLoad] = useState(null); // { stage, loaded, total } while it works
   const photoOn = aiReady || visionOn;
   const [photoSure, setPhotoSure] = useState(false); // recognizer is sure: show its best match alone
+  const [askDownload, setAskDownload] = useState(false); // first photo: confirm the one-time model download
   const [barcode, setBarcode] = useState({ code: "", busy: false, error: null, live: false });
   const videoRef = useRef(null), streamRef = useRef(null), fileRef = useRef(null), abortRef = useRef(null), detectRef = useRef(null);
 
@@ -326,15 +327,18 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
 
   // Photos go to the on-device recognizer (free, private, offline once downloaded); to AI when
   // asked for, or when the recognizer can't run here.
-  const analyzeImage = async (src, { useAI = false } = {}) => {
+  const analyzeImage = async (src, { useAI = false, download = false } = {}) => {
     cancelScan();
-    setScanMode("camera"); setScanError(null); setScanResults(null); setScanning(true); setVisionLoad(null);
+    setScanMode("camera"); setScanError(null); setScanResults(null); setScanning(true); setVisionLoad(null); setAskDownload(false);
     const ctrl = new AbortController(); abortRef.current = ctrl;
     try {
       const jpeg = await prepareImage(src, 1024);
       setScanPhoto(jpeg);
-      const res = useAI || !visionOn ? null : await recognizeFood(jpeg, { signal: ctrl.signal, onProgress: setVisionLoad });
-      if (res?.matches?.length) showPhotoMatches(res.matches, res.sure);
+      // The first photo downloads the recognizer (~70 MB): ask first, so it never surprises a mobile data plan.
+      const ask = !useAI && visionOn && !download && !visionReady();
+      const res = ask || useAI || !visionOn ? null : await recognizeFood(jpeg, { signal: ctrl.signal, onProgress: setVisionLoad });
+      if (ask) setAskDownload(true);
+      else if (res?.matches?.length) showPhotoMatches(res.matches, res.sure);
       else if (res?.cancelled) { /* the user cancelled */ }
       else if (aiReady && !res?.noFood) { setVisionLoad(null); showResult(await scanPhotoAI(jpeg, ctrl.signal)); }
       else setScanError(res?.error || "Couldn't identify the food. Try a clearer photo or describe your meal.");
@@ -412,7 +416,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
     remember(items);
     resetScan(); setTab("log");
   };
-  const resetScan = () => { cancelScan(); stopCam(); setScanResults(null); setScanPhoto(null); setScanError(null); setScanAdded({}); setUnknownParts([]); setScanMode("choose"); };
+  const resetScan = () => { cancelScan(); stopCam(); setAskDownload(false); setScanResults(null); setScanPhoto(null); setScanError(null); setScanAdded({}); setUnknownParts([]); setScanMode("choose"); };
 
   // ── Barcode ──
   const pickBarcodeFood = (food) => {
@@ -487,7 +491,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   // ══ SCAN VIEW ══
   if (tab === "scan") {
     const backToAdd = () => { resetScan(); setBarcode({ code: "", busy: false, error: null, live: false }); setTab("add"); };
-    const backToChoose = () => { cancelScan(); stopCam(); setScanError(null); setScanMode("choose"); setBarcode({ code: "", busy: false, error: null, live: false }); };
+    const backToChoose = () => { cancelScan(); stopCam(); setAskDownload(false); setScanError(null); setScanMode("choose"); setBarcode({ code: "", busy: false, error: null, live: false }); };
     const oneAnswer = scanSource === "photo" && photoSure;
     const visibleResults = oneAnswer ? (scanResults || []).slice(0, 1) : scanResults || [];
     const resultTotal = visibleResults.reduce((s, f) => s + Math.round(f.cal * (f.mult || 1)), 0);
@@ -596,8 +600,28 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         </Card>
       )}
 
+      {/* First photo: confirm the one-time recognizer download */}
+      {askDownload && scanPhoto && !scanning && !scanResults && (
+        <Card className="text-center">
+          <div className="w-[160px] h-[160px] rounded-2xl overflow-hidden mx-auto mb-4" style={{ border: "1px solid var(--line)" }}>
+            <img src={scanPhoto} alt="Your food" className="w-full h-full object-cover" />
+          </div>
+          <div className="text-[16px] font-bold" style={{ color: "var(--text-primary)" }}>Download the food recognizer?</div>
+          <div className="text-[13px] mt-1.5 mb-4 px-2" style={{ color: "var(--text-secondary)" }}>
+            Your first photo scan downloads about 70 MB, one time. After that, photos are recognised on your phone, even offline.
+            {offline ? <b style={{ color: "var(--warn)" }}> You&apos;re offline — connect to download.</b> : <b> Wi-Fi recommended{typeof navigator !== "undefined" && navigator.connection?.type === "cellular" ? " (you're on mobile data)" : ""}.</b>}
+          </div>
+          <div className="flex gap-2 justify-center flex-wrap">
+            <button type="button" className="bp" disabled={offline} onClick={() => analyzeImage(scanPhoto, { download: true })}><Download size={16} />Download &amp; scan</button>
+            {aiReady && <button type="button" className="bg" disabled={offline} onClick={() => analyzeImage(scanPhoto, { useAI: true })}><Sparkles size={16} />Use AI instead</button>}
+            <button type="button" className="bg" onClick={() => { setAskDownload(false); setScanPhoto(null); setScanMode("text"); }}><PenLine size={16} />Describe instead</button>
+            <button type="button" className="icon-btn w-11 h-11" aria-label="Not now" onClick={backToChoose}><X size={18} /></button>
+          </div>
+        </Card>
+      )}
+
       {/* Photo preview with error/retry (analysis finished without results) */}
-      {scanMode === "camera" && scanPhoto && !scanning && !scanResults && (
+      {scanMode === "camera" && scanPhoto && !scanning && !scanResults && !askDownload && (
         <Card className="text-center">
           <div className="w-[200px] h-[200px] rounded-2xl overflow-hidden mx-auto mb-4" style={{ border: "1px solid var(--line)" }}>
             <img src={scanPhoto} alt="Your food" className="w-full h-full object-cover" />
