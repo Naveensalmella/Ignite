@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Flame, Dumbbell, Apple, MessageCircle, Crown, ArrowRight, House, ListChecks, Backpack, Ghost, Shield } from 'lucide-react';
 import { IconBadge, Pill } from '@/components/ui/kit';
+import BrandMark from '@/components/ui/BrandMark';
 
 const SLIDES = [
     {
@@ -49,7 +50,7 @@ export default function IntroPage({ onGetStarted }) {
             <div className="w-full flex flex-col items-center gap-5" style={{ maxWidth: 400 }}>
                 {/* Brand */}
                 <div className="flex items-center gap-2">
-                    <Flame size={22} strokeWidth={2.2} style={{ color: "var(--accent)" }} aria-hidden="true" />
+                    <BrandMark size={30} />
                     <span className="text-accent-grad text-[22px] font-extrabold" style={{ letterSpacing: 3 }}>IGNITE</span>
                 </div>
 

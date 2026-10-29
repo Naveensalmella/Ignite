@@ -9,8 +9,9 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { Flame, Mail, Lock, User, ArrowLeft, MailCheck, CircleAlert } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft, MailCheck, CircleAlert } from 'lucide-react';
 import { IconBadge } from '@/components/ui/kit';
+import BrandMark from '@/components/ui/BrandMark';
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -101,11 +102,7 @@ export default function AuthPage({ onAuth }) {
       <div className="w-full fade-in" style={{ maxWidth: 400 }}>
         {/* Brand */}
         <div className="text-center mb-6">
-          <div className="mx-auto mb-3 flex items-center justify-center"
-            style={{ width: 60, height: 60, borderRadius: 20, background: "var(--hero-gradient)", color: "#fff", boxShadow: "0 12px 28px rgba(37, 99, 235, .28)" }}
-            aria-hidden="true">
-            <Flame size={30} strokeWidth={2.2} />
-          </div>
+          <BrandMark size={64} className="mx-auto mb-3 block" style={{ filter: "drop-shadow(0 12px 24px rgba(37, 99, 235, .3))" }} />
           <h1 className="text-accent-grad text-[30px] font-extrabold" style={{ letterSpacing: 4 }}>IGNITE</h1>
           <p className="text-[13.5px] mt-1" style={{ color: "var(--text-secondary)" }}>
             {mode === "forgot" ? "Reset your password" : mode === "signup" ? "Create your Hunter account" : "Welcome back, Hunter"}
