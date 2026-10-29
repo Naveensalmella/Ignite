@@ -158,6 +158,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   const [visionOn] = useState(visionSupported); // on-device photo recognizer (no AI key needed)
   const [visionLoad, setVisionLoad] = useState(null); // { stage, loaded, total } while it works
   const photoOn = aiReady || visionOn;
+  const [photoSure, setPhotoSure] = useState(false); // recognizer is sure: show its best match alone
   const [barcode, setBarcode] = useState({ code: "", busy: false, error: null, live: false });
   const videoRef = useRef(null), streamRef = useRef(null), fileRef = useRef(null), abortRef = useRef(null), detectRef = useRef(null);
 
@@ -318,8 +319,8 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   };
 
   // Closest foods from our list, each at one typical serving.
-  const showPhotoMatches = (matches) => {
-    setScanSource("photo"); setUnknownParts([]); setScanAdded({}); setScanError(null);
+  const showPhotoMatches = (matches, sure) => {
+    setScanSource("photo"); setUnknownParts([]); setScanAdded({}); setScanError(null); setPhotoSure(sure);
     setScanResults(matches.map(({ food }) => { const [unit, grams] = servingOf(food); return { ...toEntry({ food, grams, qty: 1, unit }), mult: 1 }; }));
   };
 
@@ -333,7 +334,7 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
       const jpeg = await prepareImage(src, 1024);
       setScanPhoto(jpeg);
       const res = useAI || !visionOn ? null : await recognizeFood(jpeg, { signal: ctrl.signal, onProgress: setVisionLoad });
-      if (res?.matches?.length) showPhotoMatches(res.matches);
+      if (res?.matches?.length) showPhotoMatches(res.matches, res.sure);
       else if (res?.cancelled) { /* the user cancelled */ }
       else if (aiReady && !res?.noFood) { setVisionLoad(null); showResult(await scanPhotoAI(jpeg, ctrl.signal)); }
       else setScanError(res?.error || "Couldn't identify the food. Try a clearer photo or describe your meal.");
@@ -487,7 +488,8 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
   if (tab === "scan") {
     const backToAdd = () => { resetScan(); setBarcode({ code: "", busy: false, error: null, live: false }); setTab("add"); };
     const backToChoose = () => { cancelScan(); stopCam(); setScanError(null); setScanMode("choose"); setBarcode({ code: "", busy: false, error: null, live: false }); };
-    const visibleResults = scanResults || [];
+    const oneAnswer = scanSource === "photo" && photoSure;
+    const visibleResults = oneAnswer ? (scanResults || []).slice(0, 1) : scanResults || [];
     const resultTotal = visibleResults.reduce((s, f) => s + Math.round(f.cal * (f.mult || 1)), 0);
     return (<div className="page fade-in">
       <Card>
@@ -635,7 +637,10 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
         <Card className="fade-in">
           {scanPhoto && <div className="w-[120px] h-[120px] rounded-xl overflow-hidden mx-auto mb-3"><img src={scanPhoto} alt="Your food" className="w-full h-full object-cover" /></div>}
           <div className="text-center mb-3">
-            {scanSource === "photo" ? (<>
+            {oneAnswer ? (<>
+              <div className="text-[17px] font-bold inline-flex items-center gap-1.5" style={{ color: "var(--ok)" }}><CircleCheck size={19} />Found it</div>
+              <div className="text-[12.5px]" style={{ color: "var(--text-dim)" }}>From IGNITE's food list — adjust the portion if needed</div>
+            </>) : scanSource === "photo" ? (<>
               <div className="text-[17px] font-bold inline-flex items-center gap-1.5" style={{ color: "var(--text-primary)" }}><Sparkles size={18} />Is it one of these?</div>
               <div className="text-[12.5px]" style={{ color: "var(--text-dim)" }}>Best match first, from IGNITE's food list — add what's on your plate and adjust the portion</div>
             </>) : (<>
@@ -674,7 +679,13 @@ export default function Nutrition({ foodLog = {}, setFoodLog = () => { }, addXP 
             </div>
           )}
 
-          {scanSource === "photo" ? (<>
+          {oneAnswer ? (<>
+            {scanResults.length > 1 && <button type="button" className="link-btn mt-2 px-1" onClick={() => setPhotoSure(false)}>Not right? See other matches<ChevronRight size={15} /></button>}
+            <div className="flex gap-2.5 mt-4">
+              <button type="button" className="bp flex-1" onClick={() => { if (!scanAdded[0]) addScanItem(0); resetScan(); setTab("log"); }}><CircleCheck size={17} />{scanAdded[0] ? "Done" : "Add & done"}</button>
+              <button type="button" className="bg" onClick={resetScan}><RefreshCw size={16} />New scan</button>
+            </div>
+          </>) : scanSource === "photo" ? (<>
             <div className="flex gap-2 flex-wrap mt-3 text-[12.5px]">
               <span className="w-full" style={{ color: "var(--text-dim)" }}>Not here?</span>
               <button type="button" className="chip chip-i text-[12px]" onClick={() => { resetScan(); setTab("add"); }}><Search size={13} />Search foods</button>
