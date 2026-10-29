@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Naveen Salmella" }],
   icons: {
     icon: [{ url: "/ignite-logo.svg", type: "image/svg+xml" }, { url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
-    apple: [{ url: "/icon-192.png", sizes: "192x192" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
   appleWebApp: { capable: true, title: "IGNITE", statusBarStyle: "black-translucent" },
   openGraph: {
