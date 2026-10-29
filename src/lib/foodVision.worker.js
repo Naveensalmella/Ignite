@@ -17,14 +17,17 @@ const usda = new Set(VISION_LABELS.filter(l => l.usda).map(l => l.name));
 let ready = null;
 const post = (msg) => self.postMessage(msg);
 
-// Download progress, summed over every file being fetched.
+// Download progress, summed over every file being fetched. "progress_total" lists the model's files
+// with their sizes up front, so the bar knows the full size before the big file starts; tiny
+// config files alone (< 1 MB) don't count as a download.
 const files = new Map();
 const onProgress = (p) => {
-  if (p.status !== "progress" || !p.total) return;
-  files.set(p.file, [p.loaded, p.total]);
+  if (p.status === "progress_total") for (const [f, { loaded, total }] of Object.entries(p.files || {})) files.set(f, [loaded, total]);
+  else if (p.status === "progress" && p.total) files.set(p.file, [p.loaded, p.total]);
+  else return;
   let loaded = 0, total = 0;
   for (const [l, t] of files.values()) { loaded += l; total += t; }
-  post({ type: "progress", stage: "download", loaded, total });
+  if (total > 1e6) post({ type: "progress", stage: "download", loaded, total });
 };
 
 // Prefer our own copy of ONNX Runtime's WebAssembly (scripts/copy-ort-wasm.mjs); else the library's CDN default.
